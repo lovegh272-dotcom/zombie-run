@@ -210,70 +210,160 @@ let M=MAPS.forest,D=DIFF.normal,MO=MODES.endless;
 // ================= v48: โหมดเนื้อเรื่อง / กระดานเควส / เควสตัวละคร =================
 let STORY_RUN=null;
 const CHAPTERS=[
-  {n:'บทที่ 1: ป่ามรณะ',ic:'🌲',map:'forest',open:1},
-  {n:'บทที่ 2: เมืองร้าง',ic:'🏙️',map:'city',open:0},
-  {n:'บทที่ 3: โรงพยาบาล',ic:'🏥',map:'hosp',open:0},
-  {n:'บทที่ 4: ท่าเรือร้าง',ic:'⚓',map:'deadport',open:0},
-  {n:'บทที่ 5: สุสานและอเวจี',ic:'⚰️',map:'darkgrave',open:0}
+  {n:'บทที่ 1: ป่ามรณะ',ic:'🌲',map:'forest'},
+  {n:'บทที่ 2: เมืองร้าง',ic:'🏙️',map:'city'},
+  {n:'บทที่ 3: โรงพยาบาลร้าง',ic:'🏥',map:'hosp'},
+  {n:'บทที่ 4: ท่าเรือร้าง',ic:'⚓',map:'deadport'},
+  {n:'บทที่ 5: สุสานและอเวจี',ic:'🪦',map:'darkgrave'}
 ];
-// k: survive=รอดให้ครบเวลา | collect=เก็บของ | defend=ป้องกันเครื่องปั่นไฟ | boss=ล้มบอสประจำบท
+// k: survive | collect (ch=วินาทีต่อชิ้น, heal=วินาทีในวงรักษา) | defend | escort | hold | escape | boss
+// s3: เงื่อนไขดาวที่ 3 {k:'kills'|'time'|'gen'|'npc', v}
 const STAGES={
-  '1-1':{ch:0,n:'หนีออกจากแคมป์',k:'survive',t:180,s3:250,s3t:'ฆ่าซอมบี้ 250 ตัว',diff:'normal',
+  '1-1':{ch:0,n:'หนีออกจากแคมป์',k:'survive',t:180,s3:{k:'kills',v:250},diff:'normal',
     dlg:[['📻 วิทยุ','...ใครได้ยินบ้าง แคมป์ทิศเหนือแตกแล้ว ซอมบี้ทะลักเข้ามาทุกทาง!'],['🧑 คุณ','ต้องประคองตัวให้รอดจนกว่าหน่วยกู้ภัยจะมาถึง... อีก 3 นาที']]},
-  '1-2':{ch:0,n:'ยาที่หายไป',k:'collect',n2:5,tl:240,s3:150,s3t:'เก็บครบภายใน 2:30',diff:'normal',
-    dlg:[['👩‍⚕️ หมอนารา','ผู้รอดชีวิตหลายคนบาดเจ็บ เราต้องการกล่องยา 5 กล่องที่ตกอยู่ทั่วป่า'],['🧑 คุณ','ปล่อยเป็นหน้าที่ผม ตามลูกศรไปเลย!']]},
-  '1-3':{ch:0,n:'เครื่องปั่นไฟสุดท้าย',k:'defend',t:150,ghp:700,s3:.6,s3t:'เครื่องปั่นไฟเหลือ 60% ขึ้นไป',diff:'normal',
-    dlg:[['🔧 ช่างต้น','ถ้าเครื่องปั่นไฟดับ วิทยุขอความช่วยเหลือก็จบ! ช่วยกันซอมบี้ไว้ 2 นาทีครึ่ง'],['🧑 คุณ','อยู่ใกล้ๆ เครื่องไว้ อย่าให้มันโดนรุม']]},
-  '1-4':{ch:0,n:'ผู้พิทักษ์ป่ามรณะ',k:'boss',bt:15,bhp:1.6,s3:150,s3t:'ล้มบอสภายใน 2:30',diff:'normal',
-    dlg:[['📻 วิทยุ','สัญญาณยืนยันแล้ว! เฮลิคอปเตอร์จะลงที่ลานกลางป่า แต่...'],['🧑 คุณ','มีอะไรตัวใหญ่กำลังมา... ต้องล้มมันก่อนถึงจะไปได้!']]}
+  '1-2':{ch:0,n:'ยาที่หายไป',k:'collect',n2:5,ch2:4,heal:20,it:'💊',itn:'กล่องยา',tl:300,s3:{k:'time',v:210},diff:'normal',
+    dlg:[['👩‍⚕️ หมอนารา','ผู้รอดชีวิตบาดเจ็บหนัก! หากล่องยา 5 กล่องที่ตกอยู่ทั่วป่า แต่ละกล่องต้องใช้เวลาแงะออกจากซาก'],['👩‍⚕️ หมอนารา','ได้ครบแล้วกลับมาที่แคมป์ แล้วยืนในวงรักษา 20 วิ ระวังกลิ่นเลือดจะเรียกฝูงมา!']]},
+  '1-3':{ch:0,n:'เครื่องปั่นไฟสุดท้าย',k:'defend',t:150,ghp:700,gi:'🔋',gn:'เครื่องปั่นไฟ',s3:{k:'gen',v:.6},diff:'normal',
+    dlg:[['🔧 ช่างต้น','ถ้าเครื่องปั่นไฟดับ วิทยุขอความช่วยเหลือก็จบ! กันซอมบี้ไว้ 2 นาทีครึ่ง'],['🧑 คุณ','อยู่ใกล้ๆ เครื่องไว้ อย่าให้มันโดนรุม']]},
+  '1-4':{ch:0,n:'ผู้พิทักษ์ป่ามรณะ',k:'boss',bt:15,bhp:1.6,bv:[0],s3:{k:'time',v:150},diff:'normal',
+    dlg:[['📻 วิทยุ','เฮลิคอปเตอร์จะลงที่ลานกลางป่า แต่...'],['🧑 คุณ','มีอะไรตัวใหญ่กำลังมา... ต้องล้มมันก่อน!']]},
+  // ---------- บทที่ 2 ----------
+  '2-1':{ch:1,n:'พาเด็กหญิงไปขึ้นรถบัส',k:'escort',npc:'👧',npcn:'มิว',nhp:420,dist:1700,goal:'🚌',tl:300,s3:{k:'npc',v:.6},diff:'normal',hpM:1.25,
+    dlg:[['👧 มิว','พี่คะ... หนูหาพ่อไม่เจอ รถบัสอพยพจอดอยู่ปลายถนนค่ะ'],['🧑 คุณ','อยู่ใกล้พี่ไว้นะ ถ้าพี่ห่างเกินไปหนูจะหยุดเดิน']]},
+  '2-2':{ch:1,n:'เปิดเสาสัญญาณ',k:'hold',tw:3,hold:10,ti:'📡',tl:300,s3:{k:'time',v:210},diff:'normal',hpM:1.3,
+    dlg:[['📻 ศูนย์อพยพ','เราต้องการสัญญาณจากเสา 3 ต้นในเมือง ถึงจะนำทางเฮลิคอปเตอร์มาได้'],['🧑 คุณ','ยืนเฝ้าเสาแต่ละต้นจนเปิดติด... เสียงจะเรียกพวกมันมาแน่']]},
+  '2-3':{ch:1,n:'คืนที่ยาวนาน',k:'survive',t:240,bossAt:90,bossEv:120,s3:{k:'kills',v:450},diff:'normal',hpM:1.35,
+    dlg:[['📻 ศูนย์อพยพ','เฮลิคอปเตอร์ติดพายุ ต้องรออีก 4 นาที'],['🧑 คุณ','4 นาทีกลางเมืองที่เต็มไปด้วยพวกมัน... ได้เลย']]},
+  '2-4':{ch:1,n:'สัตว์ประหลาดใต้ดิน',k:'boss',bt:12,bhp:2,bv:[1],s3:{k:'time',v:150},diff:'normal',hpM:1.35,
+    dlg:[['👧 มิว','พี่! พื้นถนนมันแตก มีอะไรพ่นกรดออกมา!'],['🧑 คุณ','มิวหลบไป! ตัวนี้พี่จัดการเอง']]},
+  // ---------- บทที่ 3 ----------
+  '3-1':{ch:2,n:'เซรุ่มต้นแบบ',k:'collect',n2:4,ch2:5,heal:20,it:'🧪',itn:'เซรุ่ม',tl:330,s3:{k:'time',v:240},diff:'hell',
+    dlg:[['👩‍⚕️ หมอนารา','ห้องแล็บชั้นล่างมีเซรุ่มต้นแบบ 4 หลอด มันอาจหยุดเชื้อได้'],['👩‍⚕️ หมอนารา','เก็บครบแล้วไปที่วงรักษา ฉันจะฉีดให้ผู้ติดเชื้อ ต้องยืนคุ้มกัน 20 วิ']]},
+  '3-2':{ch:2,n:'ปกป้องห้องผ่าตัด',k:'defend',t:180,ghp:900,gi:'🏥',gn:'ห้องผ่าตัด',s3:{k:'gen',v:.6},diff:'hell',
+    dlg:[['👩‍⚕️ หมอนารา','ฉันกำลังผ่าตัดเอาเชื้อออกจากผู้ป่วย อย่าให้ซอมบี้เข้าใกล้ห้อง 3 นาที!'],['🧑 คุณ','ไม่มีตัวไหนผ่านไปได้แน่']]},
+  '3-3':{ch:2,n:'หนีออกจากโรงพยาบาล',k:'escape',dist:2600,goal:'🚑',tl:150,s3:{k:'time',v:105},diff:'hell',
+    dlg:[['📻 วิทยุ','ตึกกำลังจะถล่ม! รถพยาบาลรออยู่ทางออกฝั่งตะวันออก!'],['🧑 คุณ','วิ่งอย่างเดียว อย่าหยุด!']]},
+  '3-4':{ch:2,n:'หมอผีแห่งวอร์ดมืด',k:'boss',bt:12,bhp:2.2,bv:[2],s3:{k:'time',v:150},diff:'hell',
+    dlg:[['👩‍⚕️ หมอนารา','มันคือผู้อำนวยการโรงพยาบาล... มันเรียกคนไข้ทั้งตึกให้ลุกขึ้นมา!'],['🧑 คุณ','จบเรื่องนี้ที่นี่']]},
+  // ---------- บทที่ 4 ----------
+  '4-1':{ch:3,n:'คุ้มกันช่างเรือ',k:'escort',npc:'🧔',npcn:'ลุงชาญ',nhp:520,dist:2000,goal:'🚤',tl:330,s3:{k:'npc',v:.6},diff:'hell',hpM:1.2,
+    dlg:[['🧔 ลุงชาญ','เรือข้ามฟากยังใช้ได้ แต่ข้าต้องไปถึงห้องเครื่องให้ได้'],['🧑 คุณ','ลุงเดินตามผมมา ผมเปิดทางเอง']]},
+  '4-2':{ch:3,n:'สตาร์ทเครื่องยนต์',k:'hold',tw:3,hold:14,ti:'⚙️',tl:330,s3:{k:'time',v:240},diff:'hell',hpM:1.25,
+    dlg:[['🧔 ลุงชาญ','ต้องเปิดวาล์วเชื้อเพลิง 3 จุดรอบท่า เสียงเครื่องจะดังมาก...'],['🧑 คุณ','งั้นก็ให้มันมาเลย']]},
+  '4-3':{ch:3,n:'คืนพระจันทร์เลือด',k:'survive',t:300,blood:1,bossAt:120,bossEv:120,s3:{k:'kills',v:700},diff:'hell',hpM:1.2,
+    dlg:[['📻 วิทยุ','ดวงจันทร์เป็นสีแดง... พวกมันคลั่งทั้งคืน ต้องรอให้น้ำขึ้นอีก 5 นาที'],['🧔 ลุงชาญ','ยิงไม่ต้องยั้ง!']]},
+  '4-4':{ch:3,n:'ฝาแฝดแห่งท่าเรือ',k:'boss',bt:12,bhp:1.8,bv:[0,1],s3:{k:'time',v:180},diff:'hell',hpM:1.2,
+    dlg:[['🧔 ลุงชาญ','สองตัวนั่นเฝ้าทางขึ้นเรือ!'],['🧑 คุณ','สองตัวก็ล้มได้ ต้องล้มให้หมดทั้งคู่']]},
+  // ---------- บทที่ 5 ----------
+  '5-1':{ch:4,n:'เศษผนึกอเวจี',k:'collect',n2:5,ch2:5,heal:25,it:'🔮',itn:'เศษผนึก',tl:360,s3:{k:'time',v:270},diff:'nightmare',
+    dlg:[['🧙 นักบวชผู้รอดชีวิต','ต้นตอของเชื้อคือประตูอเวจีใต้สุสาน ต้องใช้เศษผนึก 5 ชิ้น'],['🧙 นักบวช','รวบรวมครบแล้วยืนในวงพิธี 25 วิ ฉันจะร่ายผนึก']]},
+  '5-2':{ch:4,n:'แท่นพิธี',k:'defend',t:180,ghp:1000,gi:'🕯️',gn:'แท่นพิธี',s3:{k:'gen',v:.6},diff:'nightmare',
+    dlg:[['🧙 นักบวช','พิธีต้องใช้เวลา 3 นาที ถ้าแท่นพัง ผนึกจะไม่สำเร็จ'],['🧑 คุณ','ผมเฝ้าเอง']]},
+  '5-3':{ch:4,n:'ทางลงสู่อเวจี',k:'escape',dist:3000,goal:'🌀',tl:180,blood:1,s3:{k:'time',v:130},diff:'nightmare',
+    dlg:[['🧙 นักบวช','ประตูเปิดแล้ว! มันจะปิดใน 3 นาที วิ่งไป!'],['🧑 คุณ','ครั้งสุดท้ายแล้ว...']]},
+  '5-4':{ch:4,n:'ราชันย์อเวจี',k:'boss',bt:6,dun:1,map:'crypt',s3:{k:'time',v:240},diff:'nightmare',
+    dlg:[['👑 ราชันย์อเวจี','มนุษย์ตัวเล็ก... เจ้ากล้ามาถึงบัลลังก์ของข้าเชียวหรือ'],['🧑 คุณ','จบทุกอย่างที่นี่ ตอนนี้!']]}
 };
 const STAGE_ORDER=Object.keys(STAGES);
 function stageOpen(id){const i=STAGE_ORDER.indexOf(id);return i===0||((S.story||{})[STAGE_ORDER[i-1]]||0)>0}
 function storyStars(){let t=0;for(const k in (S.story||{}))t+=S.story[k];return t}
 function startStory(id){STORY_RUN=id;start()}
+function s3Text(st){const s=st.s3;return s.k==='kills'?'ฆ่าซอมบี้ '+s.v+' ตัว':s.k==='time'?'ผ่านภายใน '+fmt(s.v):s.k==='gen'?(st.gn||'เป้าหมาย')+'เหลือ '+Math.round(s.v*100)+'%+':(st.npcn||'ผู้รอดชีวิต')+'เลือดเหลือ '+Math.round(s.v*100)+'%+'}
+function stageGoalText(st){return st.k==='survive'?'รอดให้ครบ '+fmt(st.t)+(st.blood?' (พระจันทร์เลือดทั้งด่าน)':''):st.k==='collect'?'เก็บ'+st.itn+' '+st.n2+' ชิ้น (ชิ้นละ '+st.ch2+' วิ) แล้วยืนในวง '+st.heal+' วิ ภายใน '+fmt(st.tl)
+  :st.k==='defend'?'ป้องกัน'+st.gn+' '+fmt(st.t):st.k==='escort'?'พา'+st.npcn+' '+st.npc+' ไปถึง '+st.goal+' ภายใน '+fmt(st.tl):st.k==='hold'?'เปิด '+st.ti+' '+st.tw+' จุด (จุดละ '+st.hold+' วิ) ภายใน '+fmt(st.tl)
+  :st.k==='escape'?'วิ่งไปถึง '+st.goal+' ภายใน '+fmt(st.tl):(st.bv&&st.bv.length>1?'ล้มบอสทั้ง '+st.bv.length+' ตัว':st.dun?'ล้มราชันย์อเวจี (บอสสุดท้าย)':'ล้มบอสประจำบท')}
+function farPoint(d){const a=Math.random()*6.2832,c={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d};pushOut(c,40);return c}
+function storyHorde(n,R){n=Math.max(0,Math.min(n,MAX_Z-Z.length));R=R||Math.max(W_,H_)/2+70;for(let i=0;i<n;i++){const a=i*6.2832/n+Math.random()*.3;mkZ(Math.random()<.35?'fast':Math.random()<.15?'tank':'normal',P.x+Math.cos(a)*R,P.y+Math.sin(a)*R,1.2+G.t/90)}}
 function storyReset(){
   const st=STAGES[STORY_RUN];G.mode='story';G.stg=st;G.stgId=STORY_RUN;G.goal=st.k==='survive'||st.k==='defend'?st.t:0;
-  G.bossAt=st.k==='boss'?st.bt:(st.k==='survive'?120:1e9);G.bossEv=st.k==='survive'?9999:BOSS_EVERY;G.sItems=[];G.gen=null;G.sGot=0;
-  if(st.k==='collect'){const a0=Math.random()*6.28;for(let i=0;i<st.n2;i++){const a=a0+i*6.2832/st.n2+(Math.random()-.5)*.5,d=480+Math.random()*420,c={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d};pushOut(c,30);G.sItems.push(c)}}
+  G.bossAt=st.k==='boss'?st.bt:(st.bossAt||(st.k==='survive'?120:1e9));G.bossEv=st.bossEv||(st.k==='survive'?9999:BOSS_EVERY);
+  G.sItems=[];G.gen=null;G.sGot=0;G.npc=null;G.sTw=[];G.sExit=null;G.sHeal=null;G.sBK=0;G.sHT=0;G.sFear=0;
+  if(st.hpM)D.hp*=st.hpM;
+  if(st.k==='collect'){const a0=Math.random()*6.28;for(let i=0;i<st.n2;i++){const a=a0+i*6.2832/st.n2+(Math.random()-.5)*.5,d=480+Math.random()*420,c={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,p:0};pushOut(c,30);G.sItems.push(c)}G.sHome={x:P.x,y:P.y}}
   if(st.k==='defend'){const c={x:P.x+70,y:P.y};pushOut(c,30);G.gen={x:c.x,y:c.y,hp:st.ghp,max:st.ghp};G.spm*=1.25}
-  G.ban={s:'📖 '+STORY_RUN+' '+st.n+' — '+stageGoalText(st),t:4};
+  if(st.k==='escort'){const g=farPoint(st.dist);G.sExit=g;G.npc={x:P.x+40,y:P.y+20,hp:st.nhp,max:st.nhp,wait:0}}
+  if(st.k==='hold'){for(let i=0;i<st.tw;i++){const c=farPoint(420+i*180);G.sTw.push({x:c.x,y:c.y,c:0})}}
+  if(st.k==='escape'){G.sExit=farPoint(st.dist);G.spm*=1.3}
+  if(st.k==='boss'&&st.dun){G.bossAt=1e9;G.dunBossAt=st.bt}
+  G.ban={s:'📖 '+STORY_RUN+' '+st.n+' — '+stageGoalText(st),t:4.5};
 }
-function stageGoalText(st){return st.k==='survive'?'รอดให้ครบ '+fmt(st.t):st.k==='collect'?'เก็บกล่องยา '+st.n2+' กล่อง ภายใน '+fmt(st.tl):st.k==='defend'?'ป้องกันเครื่องปั่นไฟ '+fmt(st.t):'ล้มบอสประจำบท'}
 function updStory(dt){
   const st=G.stg;if(!st)return;
-  if(st.k==='collect'){for(let i=G.sItems.length-1;i>=0;i--){const c=G.sItems[i];if(Math.hypot(P.x-c.x,P.y-c.y)<P.r+26){G.sItems.splice(i,1);G.sGot++;sfx('pickup');burst(c.x,c.y,'#6f6',12);
-      G.ban={s:'💊 กล่องยา '+G.sGot+'/'+st.n2,t:1.8};if(G.sGot>=st.n2){gameOver(true,'story');return}}}
-    if(G.t>=st.tl){gameOver(false,'story');return}}
+  if(st.blood&&!G.ev){G.ev='blood';G.evt=9999}
+  if(st.tl&&G.t>=st.tl){G.ban={s:'⏰ หมดเวลา!',t:3};gameOver(false,'story');return}
+  if(st.k==='collect'){
+    for(let i=G.sItems.length-1;i>=0;i--){const c=G.sItems[i];
+      if(Math.hypot(P.x-c.x,P.y-c.y)<P.r+30){c.p+=dt;if(Math.random()<dt*2)sfx('ui_tab');if(c.p>=st.ch2){G.sItems.splice(i,1);G.sGot++;sfx('pickup');burst(c.x,c.y,'#6f6',14);
+        G.ban={s:st.it+' '+st.itn+' '+G.sGot+'/'+st.n2,t:1.8};
+        if(G.sItems.length===1&&!G.sFear){G.sFear=1;G.ban={s:'🩸 กลิ่นเลือดลอยไปทั่ว... ฝูงซอมบี้คลั่งกำลังมา!',t:3.5};G.shake=14;sfx('roar');storyHorde(14);spawnElite();G.ev='blood';G.evt=40}
+        if(!G.sItems.length){G.sHeal={x:G.sHome.x,y:G.sHome.y,c:0};G.ban={s:'✅ ครบแล้ว! กลับไปยืนในวงรักษา '+st.heal+' วิ',t:3.5};sfx('misok')}}}
+      else c.p=Math.max(0,c.p-dt*.5)}
+    if(G.sHeal){const h=G.sHeal;if(Math.hypot(P.x-h.x,P.y-h.y)<95){h.c+=dt;G.sHT-=dt;if(G.sHT<=0){G.sHT=5;storyHorde(10)}if(h.c>=st.heal){gameOver(true,'story');return}}}}
   if(st.k==='defend'&&G.gen){const g=G.gen;let n=0;const q=near(g.x,g.y,70);for(const z of q){if(z.hp>0&&z.T.kind!=='boss'&&Math.hypot(z.x-g.x,z.y-g.y)<z.T.r+34)n++}
-    if(n){g.hp-=n*5*D.dm*dt;g.hit=.15}g.hit=Math.max(0,(g.hit||0)-dt);if(g.hp<=0){G.ban={s:'💥 เครื่องปั่นไฟพังแล้ว!',t:3};gameOver(false,'story');return}}
+    if(n){g.hp-=n*5*D.dm*dt;g.hit=.15}g.hit=Math.max(0,(g.hit||0)-dt);if(g.hp<=0){G.ban={s:'💥 '+st.gn+'พังแล้ว!',t:3};gameOver(false,'story');return}}
+  if(st.k==='escort'&&G.npc){const n=G.npc,e=G.sExit,dp=Math.hypot(P.x-n.x,P.y-n.y);
+    if(dp<240){const dx=e.x-n.x,dy=e.y-n.y,d=Math.hypot(dx,dy);if(d>4){n.x+=dx/d*62*dt;n.y+=dy/d*62*dt;pushOut(n,14)}n.wait=0}else{n.wait+=dt;if(n.wait>3){n.wait=-6;G.ban={s:st.npc+' '+st.npcn+': รอด้วย! อย่าทิ้งกันนะ!',t:2}}}
+    let k=0;const q=near(n.x,n.y,60);for(const z of q){if(z.hp>0&&Math.hypot(z.x-n.x,z.y-n.y)<z.T.r+18)k++}
+    if(k){n.hp-=k*6*D.dm*dt;n.hit=.15}n.hit=Math.max(0,(n.hit||0)-dt);
+    G.sHT-=dt;if(G.sHT<=0){G.sHT=14;storyHorde(8)}
+    if(n.hp<=0){G.ban={s:'💔 '+st.npcn+'ไม่รอด...',t:3};gameOver(false,'story');return}
+    if(Math.hypot(n.x-e.x,n.y-e.y)<50){gameOver(true,'story');return}}
+  if(st.k==='hold'){const t=G.sTw.find(w=>w.c<st.hold);if(t){if(Math.hypot(P.x-t.x,P.y-t.y)<85){t.c+=dt;G.sHT-=dt;if(G.sHT<=0){G.sHT=4;storyHorde(7)}
+      if(t.c>=st.hold){sfx('misok');const left=G.sTw.filter(w=>w.c<st.hold).length;G.ban={s:st.ti+' เปิดแล้ว! เหลือ '+left+' จุด',t:2.5};storyHorde(12);if(!left){gameOver(true,'story');return}}}}}
+  if(st.k==='escape'&&G.sExit){const e=G.sExit;G.sHT-=dt;if(G.sHT<=0){G.sHT=6;const a=Math.atan2(P.y-e.y,P.x-e.x),R=Math.max(W_,H_)/2+60,n=Math.min(10,MAX_Z-Z.length);
+      for(let i=0;i<n;i++){const q=a+(i/(n-1||1)-.5)*1.4;mkZ(Math.random()<.5?'fast':'normal',P.x+Math.cos(q)*R,P.y+Math.sin(q)*R,1.2+G.t/80)}}
+    if(Math.hypot(P.x-e.x,P.y-e.y)<60){gameOver(true,'story');return}}
 }
 function drawStory(){
   const st=G.stg;if(!st)return;ctx.save();ctx.textAlign='center';
-  for(const c of G.sItems){const b=Math.sin(G.t*4)*3;ctx.fillStyle='rgba(90,255,120,.18)';ctx.beginPath();ctx.arc(c.x,c.y,26,0,6.28);ctx.fill();ctx.font='26px sans-serif';ctx.fillText('💊',c.x,c.y+9+b)}
-  if(G.gen){const g=G.gen;ctx.fillStyle=g.hit>0?'rgba(255,80,80,.25)':'rgba(255,220,80,.15)';ctx.beginPath();ctx.arc(g.x,g.y,40,0,6.28);ctx.fill();ctx.font='38px sans-serif';ctx.fillText('🔋',g.x,g.y+13);
+  for(const c of G.sItems){const b=Math.sin(G.t*4)*3;ctx.fillStyle='rgba(90,255,120,.18)';ctx.beginPath();ctx.arc(c.x,c.y,30,0,6.28);ctx.fill();
+    if(c.p>0){ctx.strokeStyle='#7f7';ctx.lineWidth=5;ctx.beginPath();ctx.arc(c.x,c.y,34,-Math.PI/2,-Math.PI/2+6.2832*c.p/st.ch2);ctx.stroke()}
+    ctx.font='26px sans-serif';ctx.fillText(st.it,c.x,c.y+9+b)}
+  const ring=(x,y,r,f,col,ic)=>{ctx.fillStyle='rgba('+col+',.14)';ctx.beginPath();ctx.arc(x,y,r,0,6.28);ctx.fill();ctx.strokeStyle='rgba('+col+',.9)';ctx.lineWidth=3;ctx.setLineDash([12,9]);ctx.lineDashOffset=-G.t*30;ctx.beginPath();ctx.arc(x,y,r,0,6.28);ctx.stroke();ctx.setLineDash([]);
+    if(f>0){ctx.strokeStyle='rgba('+col+',1)';ctx.lineWidth=7;ctx.beginPath();ctx.arc(x,y,r-8,-Math.PI/2,-Math.PI/2+6.2832*Math.min(1,f));ctx.stroke()}if(ic){ctx.font='34px sans-serif';ctx.fillText(ic,x,y+12)}};
+  if(G.sHeal)ring(G.sHeal.x,G.sHeal.y,95,G.sHeal.c/st.heal,'110,255,160','⛺');
+  if(G.gen){const g=G.gen;ctx.fillStyle=g.hit>0?'rgba(255,80,80,.25)':'rgba(255,220,80,.15)';ctx.beginPath();ctx.arc(g.x,g.y,40,0,6.28);ctx.fill();ctx.font='38px sans-serif';ctx.fillText(st.gi||'🔋',g.x,g.y+13);
     ctx.fillStyle='#300';ctx.fillRect(g.x-32,g.y-40,64,7);ctx.fillStyle=g.hp/g.max>.5?'#5f5':g.hp/g.max>.25?'#fd4':'#f44';ctx.fillRect(g.x-32,g.y-40,64*Math.max(0,g.hp/g.max),7)}
+  if(G.sExit){const e=G.sExit;ring(e.x,e.y,60,0,'255,220,90',st.goal)}
+  if(G.npc){const n=G.npc;ctx.font='34px sans-serif';ctx.fillText(st.npc,n.x,n.y+12);ctx.fillStyle='#300';ctx.fillRect(n.x-24,n.y-32,48,6);ctx.fillStyle=n.hit>0?'#f66':'#5f5';ctx.fillRect(n.x-24,n.y-32,48*Math.max(0,n.hp/n.max),6);
+    if(Math.hypot(P.x-n.x,P.y-n.y)>=240){ctx.font='bold 12px sans-serif';ctx.fillStyle='#ff8';ctx.fillText('รอด้วย!',n.x,n.y-38)}}
+  for(const t of G.sTw){const cur=G.sTw.find(w=>w.c<st.hold)===t;if(t.c>=st.hold){ctx.font='30px sans-serif';ctx.globalAlpha=.6;ctx.fillText(st.ti,t.x,t.y+10);ctx.globalAlpha=1;continue}if(cur)ring(t.x,t.y,85,t.c/st.hold,'120,200,255',st.ti)}
   ctx.restore();
 }
-function drawStoryArrows(){const st=G.stg;if(!st)return;for(const c of G.sItems)edgeArrow(c.x,c.y,'💊','#6f6');if(G.gen)edgeArrow(G.gen.x,G.gen.y,'🔋','#fd4')}
+function drawStoryArrows(){const st=G.stg;if(!st)return;for(const c of G.sItems)edgeArrow(c.x,c.y,st.it,'#6f6');if(G.gen)edgeArrow(G.gen.x,G.gen.y,st.gi,'#fd4');if(G.sHeal)edgeArrow(G.sHeal.x,G.sHeal.y,'⛺','#7fa');
+  if(G.sExit)edgeArrow(G.sExit.x,G.sExit.y,st.goal,'#fd4');if(G.npc)edgeArrow(G.npc.x,G.npc.y,st.npc,'#f9c');const t=G.sTw.find(w=>w.c<st.hold);if(t)edgeArrow(t.x,t.y,st.ti,'#7cf')}
 function storyHud(by){const st=G.stg;if(!st)return by;ctx.fillStyle='#fd8';ctx.font='bold 13px sans-serif';
-  let t='📖 '+G.stgId+' '+st.n+': ';if(st.k==='collect')t+='💊 '+G.sGot+'/'+st.n2+' (เหลือ '+fmt(Math.max(0,Math.ceil(st.tl-G.t)))+')';else if(st.k==='defend')t+='🔋 '+Math.max(0,Math.round(G.gen.hp/G.gen.max*100))+'%';else if(st.k==='boss')t+=G.boss?'ล้มบอส!':'บอสกำลังมา...';else t+='รอดให้ครบเวลา';
+  let t='📖 '+G.stgId+' '+st.n+': ';
+  if(st.k==='collect')t+=G.sHeal?'⛺ '+Math.floor(G.sHeal.c)+'/'+st.heal+' วิ':st.it+' '+G.sGot+'/'+st.n2;
+  else if(st.k==='defend')t+=(st.gi||'🔋')+' '+Math.max(0,Math.round(G.gen.hp/G.gen.max*100))+'%';
+  else if(st.k==='escort')t+=st.npc+' '+Math.max(0,Math.round(G.npc.hp/G.npc.max*100))+'% | ถึง '+st.goal+' อีก '+Math.round(Math.hypot(G.npc.x-G.sExit.x,G.npc.y-G.sExit.y))+'m';
+  else if(st.k==='hold')t+=st.ti+' '+G.sTw.filter(w=>w.c>=st.hold).length+'/'+st.tw;
+  else if(st.k==='escape')t+=st.goal+' อีก '+Math.round(Math.hypot(P.x-G.sExit.x,P.y-G.sExit.y))+'m';
+  else if(st.k==='boss')t+=G.boss?'ล้มบอส! ('+G.sBK+'/'+(st.dun?1:st.bv.length)+')':'บอสกำลังมา...';else t+='รอดให้ครบเวลา';
+  if(st.tl)t+=' | ⏱ '+fmt(Math.max(0,Math.ceil(st.tl-G.t)));
   ctx.fillText(t,12,by);return by+18}
+function storyBossDead(z){
+  const st=G.stg;G.sBK++;G.bossKills++;burst(z.x,z.y,'#fd4',30);G.shake=18;EB.length=0;
+  const need=st.dun?1:st.bv.length;
+  if(G.sBK>=need){G.boss=null;sfx('extract');G.ban={s:'🏆 ล้มบอสได้แล้ว!',t:3};setTimeout(()=>{if(state==='play')gameOver(true,'story')},1500)}
+  else{G.boss=Z.find(q=>q!==z&&q.T.kind==='boss'&&q.hp>0)||null;G.ban={s:'💀 ล้มไป 1 ตัว! เหลืออีก '+(need-G.sBK),t:2.5};sfx('misok')}
+}
 function storyResult(win){
   const st=G.stg,id=G.stgId;if(!st)return null;let stars=0,s3=false;
-  if(win){stars=1;if(P.hp>=P.max*.5)stars++;
-    s3=st.k==='survive'?G.kills>=st.s3:st.k==='collect'?G.t<=st.s3:st.k==='defend'?(G.gen&&G.gen.hp/G.gen.max>=st.s3):G.t<=st.s3;if(s3)stars++}
+  if(win){stars=1;if(P.hp>=P.max*.5)stars++;const c=st.s3;
+    s3=c.k==='kills'?G.kills>=c.v:c.k==='time'?G.t<=c.v:c.k==='gen'?(G.gen&&G.gen.hp/G.gen.max>=c.v):(G.npc&&G.npc.hp/G.npc.max>=c.v);if(s3)stars++}
   S.story=S.story||{};const old=S.story[id]||0;let rw=0;
-  if(win){if(!old)rw+=100*(st.ch+1);rw+=Math.max(0,stars-old)*50;if(old)rw+=30;if(stars>old)S.story[id]=stars;questAdd('story',1)}
+  if(win){if(!old)rw+=100*(st.ch+1);rw+=Math.max(0,stars-old)*50*(1+st.ch*.5);if(old)rw+=30*(st.ch+1);rw=Math.round(rw);if(stars>old)S.story[id]=stars;questAdd('story',1)}
   return{stars,old,rw,hp:P.hp>=P.max*.5,s3};
 }
 function showStory(){
   STORY_RUN=null;
   let h='<h2 style="margin:0">📖 โหมดเนื้อเรื่อง</h2><div class="coin">⭐ '+storyStars()+' / '+STAGE_ORDER.length*3+'</div>';
-  CHAPTERS.forEach((c,ci)=>{h+='<div class="sub">'+c.ic+' '+c.n+(c.open?'':' — 🔒 เร็วๆ นี้')+'</div>';
-    if(!c.open)return;
-    STAGE_ORDER.filter(id=>STAGES[id].ch===ci).forEach(id=>{const st=STAGES[id],op=stageOpen(id),sv=(S.story||{})[id]||0;
+  CHAPTERS.forEach((c,ci)=>{const ids=STAGE_ORDER.filter(id=>STAGES[id].ch===ci),open=stageOpen(ids[0]);
+    h+='<div class="sub">'+c.ic+' '+c.n+(open?'':' 🔒 (ผ่านบทก่อนหน้า)')+'</div>';if(!open)return;
+    ids.forEach(id=>{const st=STAGES[id],op=stageOpen(id),sv=(S.story||{})[id]||0,dk=DIFF[st.diff];
       h+='<div class="card btn'+(op?'':' off')+'" data-a="stg" data-i="'+id+'"><div class="row"><b>'+id+' '+st.n+'</b><span class="tag'+(sv?' ok':'')+'">'+(op?'⭐'.repeat(sv)+'☆'.repeat(3-sv):'🔒')+'</span></div>'+
-        '<small>🎯 '+stageGoalText(st)+'<br>★ ผ่านด่าน ★ เลือดเหลือ 50%+ ★ '+st.s3t+'</small></div>'})});
+        '<small>🎯 '+stageGoalText(st)+'<br>'+dk.ic+' '+dk.n+(st.hpM?' (ซอมบี้อึด x'+st.hpM+')':'')+' · ★ผ่าน ★เลือด 50%+ ★'+s3Text(st)+'</small></div>'})});
   h+='<button class="big sec" data-a="menu">← กลับ</button>';page(h);
 }
 function showStageIntro(id){
@@ -341,7 +431,7 @@ function pickCfg(){
   M=MAPS[mk];M.id=mk;
   D=DIFF[S.diff]||DIFF.normal;MO=MODES[S.mode]||MODES.endless;
   if(S.mode==='daily'){const c=dailyCfg();M=MAPS[c.map];M.id=c.map;D=DIFF.normal}
-  if(STORY_RUN){const st=STAGES[STORY_RUN],mk2=CHAPTERS[st.ch].map;M=MAPS[mk2];M.id=mk2;D=DIFF[st.diff]||DIFF.normal;MO={n:'เนื้อเรื่อง '+STORY_RUN,ic:'📖',goal:0,bonus:0}}
+  if(STORY_RUN){const st=STAGES[STORY_RUN],mk2=st.map||CHAPTERS[st.ch].map;M=MAPS[mk2];M.id=mk2;D=DIFF[st.diff]||DIFF.normal;MO={n:'เนื้อเรื่อง '+STORY_RUN,ic:'📖',goal:0,bonus:0}}
 }
 
 // ---------- รูปด่าน (img/maps/map_<id>.png = พื้น, img/maps/obs_<id>_<n>.png = สิ่งกีดขวางตามลำดับ em) ----------
@@ -1115,7 +1205,7 @@ function reset(){
      // v37
      heli:null,extM:1,mcoin:0,cm:1,zsm:1,spm:1,noHeal:0,pacts:0,pactL:[],mis:null,misAt:75+Math.random()*20,misOk:0,lastMis:'',sup:null,elite:null,lastEv:'',hordeA:0,hordeT:0,
      bossEv:BOSS_EVERY,evMul:1,misMul:1,daily:null,
-     inDun:0,dptl:null,dunSeen:0,dunBossAt:0,dunWin:0,warp:null,warpIn:0,stg:null,stgId:'',sItems:[],gen:null,sGot:0,chN:0,
+     inDun:0,dptl:null,dunSeen:0,dunBossAt:0,dunWin:0,warp:null,warpIn:0,stg:null,stgId:'',sItems:[],gen:null,sGot:0,chN:0,npc:null,sTw:[],sExit:null,sHeal:null,sBK:0,sHT:0,sFear:0,
      relic:0,comp:null,fus:{},fusB:{},fusT:{}
   };
   TELE.length=0;REL.length=0;
@@ -1621,7 +1711,8 @@ function spawnBoss(){
   const a=Math.random()*Math.PI*2,d=Math.max(W_,H_)/2+120;
   const z=mkZ('boss',P.x+Math.cos(a)*d,P.y+Math.sin(a)*d,1+G.bossN*.85);
   z.bv=G.bossN%3;z.col=BOSS_COL[z.bv];z.cd=2; z.enraged=false;
-  if(G.stg&&G.stg.k==='boss'){z.hp*=G.stg.bhp;z.max=z.hp;z.bv=0;z.col=BOSS_COL[0]}
+  if(G.stg&&G.stg.k==='boss'){const bl=G.stg.bv||[0];z.hp*=G.stg.bhp||1;z.max=z.hp;z.bv=bl[0];z.col=BOSS_COL[z.bv];G.bossAt=1e9;
+    for(let k=1;k<bl.length;k++){const a2=Math.random()*6.28,z2=mkZ('boss',P.x+Math.cos(a2)*420,P.y+Math.sin(a2)*420,1+G.bossN*.85);if(z2){z2.hp=z.hp;z2.max=z.max;z2.bv=bl[k];z2.col=BOSS_COL[bl[k]];z2.cd=1.5;z2.bs='walk';z2.bt=2}}}
   G.boss=z;G.bossN++;G.ban={s:BOSS_BAN[z.bv],t:2.5};sfx('boss');sfx('roar');G.shake=10;
   if(!G.mis&&!G.inDun)startBossMis();
 }
@@ -1965,7 +2056,7 @@ function updDun(dt){
   if(G.warp){const p=G.dptl;G.warp.t-=dt;if(p){P.x+=(p.x-P.x)*Math.min(1,dt*8);P.y+=(p.y-P.y)*Math.min(1,dt*8);p.t=Math.max(p.t,1)}
     if(G.warp.t<=0){G.warp=null;enterDungeon();G.warpIn=.9;return}}
   if(G.warpIn>0)G.warpIn=Math.max(0,G.warpIn-dt);
-  if(G.inDun&&G.dunBossAt&&G.t>=G.dunBossAt){G.dunBossAt=0;spawnDunBoss()}
+  if((G.inDun||(G.stg&&G.stg.dun))&&G.dunBossAt&&G.t>=G.dunBossAt){G.dunBossAt=0;spawnDunBoss()}
 }
 function dunBossDead(z){
   G.boss=null;G.bossKills++;G.dunWin=1;S.st.dun=(S.st.dun||0)+1;
@@ -2074,8 +2165,8 @@ function killZ(z){
   addDecal({x:z.x,y:z.y,r:T.r*1.2,c:'#4a0808',t:8});
   if(T.kind==='goblin'&&z.elite){CH.push({x:z.x,y:z.y});dropRelic(z.x-30,z.y);for(let i=0;i<14;i++)GEM.push({x:z.x+(Math.random()-.5)*60,y:z.y+(Math.random()-.5)*60,v:5});G.mcoin+=50;G.elite=null;if(G.ev==='elite'){G.ev=null;G.evAt=G.t+(50+Math.random()*40)*G.evMul}G.ban={s:'👑 ล้มหัวหน้าซอมบี้ทอง! +50 🪙',t:2.5};sfx('misok');return;}
   if(T.kind==='goblin'){CH.push({x:z.x,y:z.y});for(let i=0;i<8;i++)GEM.push({x:z.x+(Math.random()-.5)*40,y:z.y+(Math.random()-.5)*40,v:5});G.ban={s:'💰 จัดการหัวขโมยสำเร็จ!',t:2.5};return;}
+  if(T.kind==='boss'&&G.stg&&G.stg.k==='boss'){storyBossDead(z);return}
   if(T.kind==='boss'&&z.dun){dunBossDead(z);return}
-  if(T.kind==='boss'&&G.stg&&G.stg.k==='boss'){G.boss=null;G.bossKills++;burst(z.x,z.y,'#fd4',30);G.shake=18;sfx('extract');G.ban={s:'🏆 ล้มบอสประจำบทได้แล้ว!',t:3};setTimeout(()=>{if(state==='play')gameOver(true,'story')},1500);return}
   if(T.kind==='boss'){
     misAdd('bossk');dropRelic(z.x+30,z.y);
     for(let i=0;i<6;i++)GEM.push({x:z.x+(Math.random()-.5)*80,y:z.y+(Math.random()-.5)*80,v:5});
@@ -3126,7 +3217,7 @@ function gameOver(win,how){
   LAST=(G.mode==='daily'?'📅 ท้าทายรายวัน '+G.daily.date+' | ':'')+'🧟 Zombie Run | '+M0.n+' '+D.n+' | รอด '+fmt(s)+' ฆ่า '+G.kills+' ตัว | คะแนน '+score.toLocaleString()+(win?' (ชนะ!)':how==='heli'?' (ถอนตัวสำเร็จ 🚁)':'')+' มาท้าสู้กันไหม?';
   checkAch();save();
   let h='<h1 style="margin:0">'+(sr?(win?'🏆 ผ่านด่าน '+G.stgId+'!':'💀 ด่าน '+G.stgId+' ล้มเหลว'):win?'🏆 ชนะแล้ว! คุณรอดมาได้':how==='heli'?'🚁 ถอนตัวสำเร็จ!':'💀 จบรอบ')+'</h1>'+
-    (sr&&win?'<div style="font-size:30px">'+'⭐'.repeat(sr.stars)+'☆'.repeat(3-sr.stars)+'</div><div style="font-size:13px;color:#bcd">★ ผ่านด่าน '+(sr.hp?'★':'☆')+' เลือด 50%+ '+(sr.s3?'★':'☆')+' '+G.stg.s3t+'</div>':'')+
+    (sr&&win?'<div style="font-size:30px">'+'⭐'.repeat(sr.stars)+'☆'.repeat(3-sr.stars)+'</div><div style="font-size:13px;color:#bcd">★ ผ่านด่าน '+(sr.hp?'★':'☆')+' เลือด 50%+ '+(sr.s3?'★':'☆')+' '+s3Text(G.stg)+'</div>':'')+
     '<div>'+EI('map',M0.id,M0.ic)+M0.n+' | '+EI('diff',keyOf(DIFF,D),D.ic)+D.n+' | '+EI('mode',keyOf(MODES,MO),MO.ic)+MO.n+'</div>'+
     '<div>รอดชีวิต '+fmt(s)+' | ฆ่า '+G.kills+' ตัว | LV '+G.lv+'</div>'+
     '<div>บอสที่ฆ่าได้: '+G.bossKills+' | วิวัฒนาการ: '+G.evoN+'</div>'+
@@ -3637,7 +3728,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v48 (เกม v48) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v49 (เกม v49) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
