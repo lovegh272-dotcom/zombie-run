@@ -265,7 +265,7 @@ const STAGES={
     dlg:[['👑 ราชันย์อเวจี','มนุษย์ตัวเล็ก... เจ้ากล้ามาถึงบัลลังก์ของข้าเชียวหรือ'],['🧑 คุณ','จบทุกอย่างที่นี่ ตอนนี้!']]}
 };
 const STAGE_ORDER=Object.keys(STAGES);
-function stageOpen(id){const i=STAGE_ORDER.indexOf(id);return i===0||((S.story||{})[STAGE_ORDER[i-1]]||0)>0}
+function stageOpen(id){const i=STAGE_ORDER.indexOf(id);return i===0||S.stgAll||((S.story||{})[STAGE_ORDER[i-1]]||0)>0}
 function storyStars(){let t=0;for(const k in (S.story||{}))t+=S.story[k];return t}
 function startStory(id){STORY_RUN=id;start()}
 function s3Text(st){const s=st.s3;return s.k==='kills'?'ฆ่าซอมบี้ '+s.v+' ตัว':s.k==='time'?'ผ่านภายใน '+fmt(s.v):s.k==='gen'?(st.gn||'เป้าหมาย')+'เหลือ '+Math.round(s.v*100)+'%+':(st.npcn||'ผู้รอดชีวิต')+'เลือดเหลือ '+Math.round(s.v*100)+'%+'}
@@ -3183,7 +3183,7 @@ function showSet(){
     (devOn()?setCard('imp','import','นำเข้าด่าน/ตัวละคร (AI)','วาง JSON ที่ได้จาก AI',''):'')+
     (devOn()?setCard('perf','perf','บันทึกประสิทธิภาพ','ค่า FPS/ซอมบี้/เฟรมสะดุดของแต่ละรอบ คัดลอกส่งให้ผู้พัฒนา'):'')+
     (devOn()?setCard('dun','key','🕳️ เข้าดันเจี้ยนลับ (ทดสอบ)','เริ่มเกมแล้ววาร์ปเข้าดันเจี้ยนอเวจีทันที ใช้ตัวละคร/ความยากที่เลือกไว้'):'')+
-    (devOn()?setCard('cheat','key','ใส่รหัสโกง','รหัส: RICH = +99,999 เหรียญ | ALL = ปลดล็อกตัวละครและด่านทั้งหมด'):'')+
+    (devOn()?setCard('cheat','key','ใส่รหัสโกง','รหัส: RICH = +99,999 เหรียญ | ALL = ปลดล็อกตัวละคร แผนที่ และด่านเนื้อเรื่องทั้งหมด | STAGE = ปลดล็อกด่านเนื้อเรื่องทุกบท'):'')+
     setCard('bk','floppy','เซฟสำรอง','คัดลอกข้อมูลทั้งหมดเก็บไว้')+
     setCard('rs','tray','นำเข้าเซฟสำรอง','วางข้อความที่คัดลอกไว้')+
     setCard('reset','trash','ล้างข้อมูลเซฟทั้งหมด','เหรียญ ตัวละคร อันดับ จะหายหมด')+
@@ -3270,10 +3270,11 @@ else if(a==='delimp'){if(confirm('ลบด่านและตัวละค�
   }
   else if(a==='dun'){start();setTimeout(()=>{if(state==='play'){const c={x:P.x+90,y:P.y,t:25};G.dptl=c;G.dunSeen=1}},350)}
   else if(a==='cheat'){
-    const c=(prompt('ใส่รหัส (RICH / ALL)')||'').trim().toUpperCase();
+    const c=(prompt('ใส่รหัส (RICH / ALL / STAGE)')||'').trim().toUpperCase();
     if(c==='RICH'){S.coins+=99999;save();sfx('buy');alert('+99,999 🪙')}
     else if(c==='ALL'){Object.keys(CHARS).forEach(id=>{if(!S.chars.includes(id))S.chars.push(id)});
-      Object.keys(MAPS).forEach(id=>{if(!MAPS[id].hidden&&!S.maps.includes(id))S.maps.push(id)});save();sfx('buy');alert('ปลดล็อกทั้งหมดแล้ว')}
+      Object.keys(MAPS).forEach(id=>{if(!MAPS[id].hidden&&!S.maps.includes(id))S.maps.push(id)});S.stgAll=1;save();sfx('buy');alert('ปลดล็อกทั้งหมดแล้ว')}
+    else if(c==='STAGE'){S.stgAll=1;Object.keys(CHARS).forEach(id=>{if(CHARS[id].st&&!S.chars.includes(id))S.chars.push(id)});save();sfx('buy');alert('ปลดล็อกด่านเนื้อเรื่องทั้งหมด (ทุกบท) + ตัวละครจากเนื้อเรื่องแล้ว\nดาวและรางวัลผ่านด่านครั้งแรกยังได้ตามปกติ')}
     else if(c)alert('รหัสไม่ถูกต้อง');
     showSet();
   }
@@ -3851,7 +3852,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v50 (เกม v50) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v51 (เกม v51) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
