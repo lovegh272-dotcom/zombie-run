@@ -207,11 +207,141 @@ function dailyCfg(){
 }
 function dailyRec(){const k=dayKey();if(!S.daily||S.daily.d!==k)S.daily={d:k,best:0,tries:0,clr:0};return S.daily}
 let M=MAPS.forest,D=DIFF.normal,MO=MODES.endless;
+// ================= v48: โหมดเนื้อเรื่อง / กระดานเควส / เควสตัวละคร =================
+let STORY_RUN=null;
+const CHAPTERS=[
+  {n:'บทที่ 1: ป่ามรณะ',ic:'🌲',map:'forest',open:1},
+  {n:'บทที่ 2: เมืองร้าง',ic:'🏙️',map:'city',open:0},
+  {n:'บทที่ 3: โรงพยาบาล',ic:'🏥',map:'hosp',open:0},
+  {n:'บทที่ 4: ท่าเรือร้าง',ic:'⚓',map:'deadport',open:0},
+  {n:'บทที่ 5: สุสานและอเวจี',ic:'⚰️',map:'darkgrave',open:0}
+];
+// k: survive=รอดให้ครบเวลา | collect=เก็บของ | defend=ป้องกันเครื่องปั่นไฟ | boss=ล้มบอสประจำบท
+const STAGES={
+  '1-1':{ch:0,n:'หนีออกจากแคมป์',k:'survive',t:180,s3:250,s3t:'ฆ่าซอมบี้ 250 ตัว',diff:'normal',
+    dlg:[['📻 วิทยุ','...ใครได้ยินบ้าง แคมป์ทิศเหนือแตกแล้ว ซอมบี้ทะลักเข้ามาทุกทาง!'],['🧑 คุณ','ต้องประคองตัวให้รอดจนกว่าหน่วยกู้ภัยจะมาถึง... อีก 3 นาที']]},
+  '1-2':{ch:0,n:'ยาที่หายไป',k:'collect',n2:5,tl:240,s3:150,s3t:'เก็บครบภายใน 2:30',diff:'normal',
+    dlg:[['👩‍⚕️ หมอนารา','ผู้รอดชีวิตหลายคนบาดเจ็บ เราต้องการกล่องยา 5 กล่องที่ตกอยู่ทั่วป่า'],['🧑 คุณ','ปล่อยเป็นหน้าที่ผม ตามลูกศรไปเลย!']]},
+  '1-3':{ch:0,n:'เครื่องปั่นไฟสุดท้าย',k:'defend',t:150,ghp:700,s3:.6,s3t:'เครื่องปั่นไฟเหลือ 60% ขึ้นไป',diff:'normal',
+    dlg:[['🔧 ช่างต้น','ถ้าเครื่องปั่นไฟดับ วิทยุขอความช่วยเหลือก็จบ! ช่วยกันซอมบี้ไว้ 2 นาทีครึ่ง'],['🧑 คุณ','อยู่ใกล้ๆ เครื่องไว้ อย่าให้มันโดนรุม']]},
+  '1-4':{ch:0,n:'ผู้พิทักษ์ป่ามรณะ',k:'boss',bt:15,bhp:1.6,s3:150,s3t:'ล้มบอสภายใน 2:30',diff:'normal',
+    dlg:[['📻 วิทยุ','สัญญาณยืนยันแล้ว! เฮลิคอปเตอร์จะลงที่ลานกลางป่า แต่...'],['🧑 คุณ','มีอะไรตัวใหญ่กำลังมา... ต้องล้มมันก่อนถึงจะไปได้!']]}
+};
+const STAGE_ORDER=Object.keys(STAGES);
+function stageOpen(id){const i=STAGE_ORDER.indexOf(id);return i===0||((S.story||{})[STAGE_ORDER[i-1]]||0)>0}
+function storyStars(){let t=0;for(const k in (S.story||{}))t+=S.story[k];return t}
+function startStory(id){STORY_RUN=id;start()}
+function storyReset(){
+  const st=STAGES[STORY_RUN];G.mode='story';G.stg=st;G.stgId=STORY_RUN;G.goal=st.k==='survive'||st.k==='defend'?st.t:0;
+  G.bossAt=st.k==='boss'?st.bt:(st.k==='survive'?120:1e9);G.bossEv=st.k==='survive'?9999:BOSS_EVERY;G.sItems=[];G.gen=null;G.sGot=0;
+  if(st.k==='collect'){const a0=Math.random()*6.28;for(let i=0;i<st.n2;i++){const a=a0+i*6.2832/st.n2+(Math.random()-.5)*.5,d=480+Math.random()*420,c={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d};pushOut(c,30);G.sItems.push(c)}}
+  if(st.k==='defend'){const c={x:P.x+70,y:P.y};pushOut(c,30);G.gen={x:c.x,y:c.y,hp:st.ghp,max:st.ghp};G.spm*=1.25}
+  G.ban={s:'📖 '+STORY_RUN+' '+st.n+' — '+stageGoalText(st),t:4};
+}
+function stageGoalText(st){return st.k==='survive'?'รอดให้ครบ '+fmt(st.t):st.k==='collect'?'เก็บกล่องยา '+st.n2+' กล่อง ภายใน '+fmt(st.tl):st.k==='defend'?'ป้องกันเครื่องปั่นไฟ '+fmt(st.t):'ล้มบอสประจำบท'}
+function updStory(dt){
+  const st=G.stg;if(!st)return;
+  if(st.k==='collect'){for(let i=G.sItems.length-1;i>=0;i--){const c=G.sItems[i];if(Math.hypot(P.x-c.x,P.y-c.y)<P.r+26){G.sItems.splice(i,1);G.sGot++;sfx('pickup');burst(c.x,c.y,'#6f6',12);
+      G.ban={s:'💊 กล่องยา '+G.sGot+'/'+st.n2,t:1.8};if(G.sGot>=st.n2){gameOver(true,'story');return}}}
+    if(G.t>=st.tl){gameOver(false,'story');return}}
+  if(st.k==='defend'&&G.gen){const g=G.gen;let n=0;const q=near(g.x,g.y,70);for(const z of q){if(z.hp>0&&z.T.kind!=='boss'&&Math.hypot(z.x-g.x,z.y-g.y)<z.T.r+34)n++}
+    if(n){g.hp-=n*5*D.dm*dt;g.hit=.15}g.hit=Math.max(0,(g.hit||0)-dt);if(g.hp<=0){G.ban={s:'💥 เครื่องปั่นไฟพังแล้ว!',t:3};gameOver(false,'story');return}}
+}
+function drawStory(){
+  const st=G.stg;if(!st)return;ctx.save();ctx.textAlign='center';
+  for(const c of G.sItems){const b=Math.sin(G.t*4)*3;ctx.fillStyle='rgba(90,255,120,.18)';ctx.beginPath();ctx.arc(c.x,c.y,26,0,6.28);ctx.fill();ctx.font='26px sans-serif';ctx.fillText('💊',c.x,c.y+9+b)}
+  if(G.gen){const g=G.gen;ctx.fillStyle=g.hit>0?'rgba(255,80,80,.25)':'rgba(255,220,80,.15)';ctx.beginPath();ctx.arc(g.x,g.y,40,0,6.28);ctx.fill();ctx.font='38px sans-serif';ctx.fillText('🔋',g.x,g.y+13);
+    ctx.fillStyle='#300';ctx.fillRect(g.x-32,g.y-40,64,7);ctx.fillStyle=g.hp/g.max>.5?'#5f5':g.hp/g.max>.25?'#fd4':'#f44';ctx.fillRect(g.x-32,g.y-40,64*Math.max(0,g.hp/g.max),7)}
+  ctx.restore();
+}
+function drawStoryArrows(){const st=G.stg;if(!st)return;for(const c of G.sItems)edgeArrow(c.x,c.y,'💊','#6f6');if(G.gen)edgeArrow(G.gen.x,G.gen.y,'🔋','#fd4')}
+function storyHud(by){const st=G.stg;if(!st)return by;ctx.fillStyle='#fd8';ctx.font='bold 13px sans-serif';
+  let t='📖 '+G.stgId+' '+st.n+': ';if(st.k==='collect')t+='💊 '+G.sGot+'/'+st.n2+' (เหลือ '+fmt(Math.max(0,Math.ceil(st.tl-G.t)))+')';else if(st.k==='defend')t+='🔋 '+Math.max(0,Math.round(G.gen.hp/G.gen.max*100))+'%';else if(st.k==='boss')t+=G.boss?'ล้มบอส!':'บอสกำลังมา...';else t+='รอดให้ครบเวลา';
+  ctx.fillText(t,12,by);return by+18}
+function storyResult(win){
+  const st=G.stg,id=G.stgId;if(!st)return null;let stars=0,s3=false;
+  if(win){stars=1;if(P.hp>=P.max*.5)stars++;
+    s3=st.k==='survive'?G.kills>=st.s3:st.k==='collect'?G.t<=st.s3:st.k==='defend'?(G.gen&&G.gen.hp/G.gen.max>=st.s3):G.t<=st.s3;if(s3)stars++}
+  S.story=S.story||{};const old=S.story[id]||0;let rw=0;
+  if(win){if(!old)rw+=100*(st.ch+1);rw+=Math.max(0,stars-old)*50;if(old)rw+=30;if(stars>old)S.story[id]=stars;questAdd('story',1)}
+  return{stars,old,rw,hp:P.hp>=P.max*.5,s3};
+}
+function showStory(){
+  STORY_RUN=null;
+  let h='<h2 style="margin:0">📖 โหมดเนื้อเรื่อง</h2><div class="coin">⭐ '+storyStars()+' / '+STAGE_ORDER.length*3+'</div>';
+  CHAPTERS.forEach((c,ci)=>{h+='<div class="sub">'+c.ic+' '+c.n+(c.open?'':' — 🔒 เร็วๆ นี้')+'</div>';
+    if(!c.open)return;
+    STAGE_ORDER.filter(id=>STAGES[id].ch===ci).forEach(id=>{const st=STAGES[id],op=stageOpen(id),sv=(S.story||{})[id]||0;
+      h+='<div class="card btn'+(op?'':' off')+'" data-a="stg" data-i="'+id+'"><div class="row"><b>'+id+' '+st.n+'</b><span class="tag'+(sv?' ok':'')+'">'+(op?'⭐'.repeat(sv)+'☆'.repeat(3-sv):'🔒')+'</span></div>'+
+        '<small>🎯 '+stageGoalText(st)+'<br>★ ผ่านด่าน ★ เลือดเหลือ 50%+ ★ '+st.s3t+'</small></div>'})});
+  h+='<button class="big sec" data-a="menu">← กลับ</button>';page(h);
+}
+function showStageIntro(id){
+  const st=STAGES[id];let h='<h2 style="margin:0">📖 '+id+' '+st.n+'</h2><div class="sub">🎯 '+stageGoalText(st)+'</div>';
+  st.dlg.forEach(l=>{h+='<div class="card"><b>'+l[0]+'</b><small>'+l[1]+'</small></div>'});
+  h+='<button class="big" data-a="stggo" data-i="'+id+'">▶️ เริ่มด่าน</button><button class="big sec" data-a="story">← กลับ</button>';page(h);
+}
+// ---------- กระดานเควส ----------
+const QT={ // n=[รายวัน,รายสัปดาห์]
+  kills:{t:'ฆ่าซอมบี้ {n} ตัว',n:[400,3000],r:[90,500]},
+  kchar:{t:'ฆ่าซอมบี้ {n} ตัวด้วย {c}',n:[250,1500],r:[110,550]},
+  map:{t:'เล่นแผนที่ {m} {n} รอบ',n:[2,6],r:[80,450]},
+  mis:{t:'ทำภารกิจย่อยสำเร็จ {n} ครั้ง',n:[3,15],r:[100,520]},
+  boss:{t:'ฆ่าบอส {n} ตัว',n:[2,15],r:[110,600]},
+  surv:{t:'รอดเกิน {m2} นาทีในรอบเดียว {n} ครั้ง',n:[1,3],r:[100,500]},
+  story:{t:'ผ่านด่านเนื้อเรื่อง {n} ด่าน',n:[1,5],r:[100,500]},
+  chest:{t:'เปิดหีบ {n} ใบ',n:[4,25],r:[90,480]},
+  evo:{t:'วิวัฒนาการอาวุธ {n} ครั้ง',n:[2,10],r:[100,520]},
+  dun:{t:'พิชิตดันเจี้ยนอเวจี {n} ครั้ง',n:[0,1],r:[0,700]}
+};
+function weekKey(){return 'w'+Math.floor((Date.now()+7*3600e3+3*864e5)/(7*864e5))}
+function seedRnd(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}let a=h>>>0;return()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296}}
+function mkQuest(type,w,rnd){const q=QT[type],o={type,n:q.n[w],c:0,r:q.r[w],ok:0};
+  if(type==='kchar'){const cs=S.chars&&S.chars.length?S.chars:['soldier'];o.ch=cs[Math.floor(rnd()*cs.length)]}
+  if(type==='map'){const ms=(S.maps||['forest']).filter(m=>MAPS[m]&&!MAPS[m].hidden);o.m=ms[Math.floor(rnd()*ms.length)]||'forest'}
+  if(type==='surv')o.m2=w?10:5;return o}
+function genQuests(key,w){const rnd=seedRnd(key),pool=Object.keys(QT).filter(k=>QT[k].n[w]>0&&!(k==='story'&&!w&&!stageOpen('1-1'))),out=[];
+  while(out.length<3&&pool.length){const i=Math.floor(rnd()*pool.length);out.push(mkQuest(pool.splice(i,1)[0],w,rnd))}return out}
+function questsNow(){
+  const dk=dayKey(),wk=weekKey();
+  if(!S.qd||S.qd.k!==dk)S.qd={k:dk,l:genQuests('d'+dk,0),rr:0,bn:0};
+  if(!S.qw||S.qw.k!==wk)S.qw={k:wk,l:genQuests(wk,1)};
+  return[S.qd,S.qw];
+}
+function qText(q){return QT[q.type].t.replace('{n}',q.n).replace('{c}',q.ch?CHARS[q.ch].ic+' '+CHARS[q.ch].n:'').replace('{m}',q.m&&MAPS[q.m]?MAPS[q.m].ic+' '+MAPS[q.m].n:'').replace('{m2}',q.m2||'')}
+function questAdd(type,v,ctx2){const done=[];questsNow().forEach(b=>b.l.forEach(q=>{if(q.type!==type||q.c>=q.n)return;
+  if(type==='kchar'&&ctx2!==q.ch)return;if(type==='map'&&ctx2!==q.m)return;if(type==='surv'&&!(ctx2>=q.m2*60))return;
+  q.c=Math.min(q.n,q.c+v);if(q.c>=q.n)done.push(qText(q))}));return done}
+function questRun(){ // เรียกตอนจบรอบ
+  const d=[];const push=a=>a.forEach(x=>d.push(x));
+  push(questAdd('kills',G.kills));push(questAdd('kchar',G.kills,S.sel));push(questAdd('map',1,(G.m0||M).id));push(questAdd('mis',G.misOk||0));
+  push(questAdd('boss',G.bossKills));push(questAdd('surv',1,G.t));push(questAdd('chest',G.chN||0));push(questAdd('evo',G.evoN||0));if(G.dunWin)push(questAdd('dun',1));
+  return d}
+function questClaimable(){const[a,b]=questsNow();return a.l.concat(b.l).filter(q=>q.c>=q.n&&!q.ok).length+(a.l.every(q=>q.ok)&&!a.bn?1:0)}
+function showQuests(){
+  const[dq,wq]=questsNow();let h='<h2 style="margin:0">📋 กระดานเควส</h2><div class="coin">🪙 '+S.coins+'</div>';
+  const row=(q,b,i)=>'<div class="card'+(q.ok?' done':'')+'"><div class="row"><b>'+(q.ok?'✅ ':'')+qText(q)+'</b>'+(q.ok?'<span class="tag ok">รับแล้ว</span>':q.c>=q.n?'<span class="tag" data-a="qclaim" data-i="'+b+i+'">รับ +'+q.r+' 🪙</span>':'<span class="tag no">'+q.c+'/'+q.n+'</span>')+'</div>'+
+    (b==='d'&&!q.ok&&q.c<q.n&&!S.qd.rr?'<small><span class="tag" data-a="qrr" data-i="'+i+'">🔄 เปลี่ยนเควสนี้ (ฟรีวันละ 1 ครั้ง)</span></small>':'')+'</div>';
+  h+='<div class="sub">☀️ รายวัน (รีเซ็ตเที่ยงคืน)</div>';dq.l.forEach((q,i)=>h+=row(q,'d',i));
+  const all=dq.l.every(q=>q.ok);h+='<div class="card'+(dq.bn?' done':'')+'"><div class="row"><b>🎁 ทำเควสรายวันครบ 3 อย่าง</b>'+(dq.bn?'<span class="tag ok">รับแล้ว</span>':all?'<span class="tag" data-a="qbonus">รับ +250 🪙</span>':'<span class="tag no">'+dq.l.filter(q=>q.ok).length+'/3</span>')+'</div></div>';
+  h+='<div class="sub">📅 รายสัปดาห์ (รีเซ็ตวันจันทร์)</div>';wq.l.forEach((q,i)=>h+=row(q,'w',i));
+  h+='<div class="sub">🧑‍🤝‍🧑 เควสตัวละคร</div>';(S.chars||[]).forEach(id=>{const c=CHARS[id],st=cqState(id),nx=CQ[st.t];
+    h+='<div class="card'+(st.t>=3?' done':'')+'"><div class="row"><b>'+c.ic+' '+c.n+' — ขั้น '+st.t+'/3</b>'+(st.t>=3?'<span class="tag ok">ครบ (ดาเมจ +8%)</span>':'<span class="tag no">'+cqProg(id)+'</span>')+'</div>'+(nx?'<small>ถัดไป: '+nx.t+' → +'+nx.r+' 🪙'+(st.t===2?' + ดาเมจถาวร +8% ของตัวนี้':'')+'</small>':'')+'</div>'});
+  h+='<button class="big sec" data-a="menu">← กลับ</button>';page(h);
+}
+// ---------- เควสตัวละคร (3 ขั้น ต่อตัว) ----------
+const CQ=[{t:'ฆ่าซอมบี้รวม 600 ตัวด้วยตัวนี้',r:300},{t:'ฆ่าบอสรวม 8 ตัวด้วยตัวนี้',r:600},{t:'รอดครบ 10 นาทีในรอบเดียวด้วยตัวนี้',r:1000}];
+function cqState(id){S.cq=S.cq||{};return S.cq[id]=S.cq[id]||{k:0,b:0,s:0,t:0}}
+function cqProg(id){const s=cqState(id);return s.t===0?s.k+'/600':s.t===1?s.b+'/8':(s.s?'1':'0')+'/1'}
+function cqRun(){const s=cqState(S.sel),out=[];s.k+=G.kills;s.b+=G.bossKills;if(G.t>=600)s.s=1;
+  const need=[()=>s.k>=600,()=>s.b>=8,()=>s.s];while(s.t<3&&need[s.t]()){S.coins+=CQ[s.t].r;out.push(CHARS[S.sel].ic+' เควสตัวละคร ขั้น '+(s.t+1)+': +'+CQ[s.t].r+' 🪙'+(s.t===2?' + ดาเมจถาวร +8%':''));s.t++}
+  return out}
 function pickCfg(){
   const mk=MAPS[S.map]&&S.maps.includes(S.map)?S.map:'forest';
   M=MAPS[mk];M.id=mk;
   D=DIFF[S.diff]||DIFF.normal;MO=MODES[S.mode]||MODES.endless;
   if(S.mode==='daily'){const c=dailyCfg();M=MAPS[c.map];M.id=c.map;D=DIFF.normal}
+  if(STORY_RUN){const st=STAGES[STORY_RUN],mk2=CHAPTERS[st.ch].map;M=MAPS[mk2];M.id=mk2;D=DIFF[st.diff]||DIFF.normal;MO={n:'เนื้อเรื่อง '+STORY_RUN,ic:'📖',goal:0,bonus:0}}
 }
 
 // ---------- รูปด่าน (img/maps/map_<id>.png = พื้น, img/maps/obs_<id>_<n>.png = สิ่งกีดขวางตามลำดับ em) ----------
@@ -961,7 +1091,7 @@ const hexRGB=h=>{const n=parseInt(h.slice(1),16);return((n>>16)&255)+','+((n>>8)
 // ---------- Reset ----------
 function reset(){
   pickCfg();  // ── เพิ่มบรรทัดนี้เพื่อรีเซ็ตค่าความยาก D ให้กลับมาเท่าค่าเริ่มต้นของหมวดที่เลือกทุกครั้ง ──
-  D = Object.assign({}, S.mode==='daily'?DIFF.normal:(DIFF[S.diff] || DIFF.normal));
+  D = Object.assign({}, STORY_RUN?(DIFF[STAGES[STORY_RUN].diff]||DIFF.normal):S.mode==='daily'?DIFF.normal:(DIFF[S.diff] || DIFF.normal));
   OB.clear();
   GR.clear();
   const C=CHARS[S.sel]||CHARS.soldier,u=lvOf;
@@ -985,7 +1115,7 @@ function reset(){
      // v37
      heli:null,extM:1,mcoin:0,cm:1,zsm:1,spm:1,noHeal:0,pacts:0,pactL:[],mis:null,misAt:75+Math.random()*20,misOk:0,lastMis:'',sup:null,elite:null,lastEv:'',hordeA:0,hordeT:0,
      bossEv:BOSS_EVERY,evMul:1,misMul:1,daily:null,
-     inDun:0,dptl:null,dunSeen:0,dunBossAt:0,dunWin:0,warp:null,warpIn:0,
+     inDun:0,dptl:null,dunSeen:0,dunBossAt:0,dunWin:0,warp:null,warpIn:0,stg:null,stgId:'',sItems:[],gen:null,sGot:0,chN:0,
      relic:0,comp:null,fus:{},fusB:{},fusT:{}
   };
   TELE.length=0;REL.length=0;
@@ -993,6 +1123,8 @@ function reset(){
   if(G.mode==='extract')G.ex=makeExtraction();
   G.dk=S.mode==='daily'?'normal':G.dk;
   if(G.mode==='daily'){const c=dailyCfg();G.daily=c;c.bad.f();c.good.f();G.ban={s:'📅 '+c.bad.n+' | '+c.good.n,t:4.5}}
+  if(STORY_RUN)storyReset();
+  if(cqState(S.sel).t>=3)G.dmg*=1.08;
     Z=[];EB=[];GEM=[];HEART=[];DROP=[];CH=[];NADE=[];TXT=[];BOLT=[];FZ=[];FX=[];IMP=[];
   MINE.length=0;BMR.length=0;DECALS.length=0;BARRELS.length=0;G.bT=0;
 
@@ -1489,6 +1621,7 @@ function spawnBoss(){
   const a=Math.random()*Math.PI*2,d=Math.max(W_,H_)/2+120;
   const z=mkZ('boss',P.x+Math.cos(a)*d,P.y+Math.sin(a)*d,1+G.bossN*.85);
   z.bv=G.bossN%3;z.col=BOSS_COL[z.bv];z.cd=2; z.enraged=false;
+  if(G.stg&&G.stg.k==='boss'){z.hp*=G.stg.bhp;z.max=z.hp;z.bv=0;z.col=BOSS_COL[0]}
   G.boss=z;G.bossN++;G.ban={s:BOSS_BAN[z.bv],t:2.5};sfx('boss');sfx('roar');G.shake=10;
   if(!G.mis&&!G.inDun)startBossMis();
 }
@@ -1550,7 +1683,7 @@ function updEvent(dt){
 }
 const HELI_LIFE=18,HELI_NEED=1.2,HELI_R=70;
 function spawnHeli(x,y){
-  if(G.mode==='extract')return;
+  if(G.mode==='extract'||G.stg)return;
   const h={x:x,y:y+170,t:HELI_LIFE,land:1.6,prog:0,leave:0,mult:Math.min(4,1+.5*G.bossKills)};
   pushOut(h,40);G.heli=h;sfx('heli');
 }
@@ -1822,7 +1955,7 @@ function updAmb(dt){
   const b=G.boss;if(b&&b.hp>0){b.stT=(b.stT||0)-dt;if(b.stT<=0){b.stT=b.bs==='charge'?.22:.6;if(b.bs!=='wind'&&!b.spt&&!b.tpt)sfx('boss_step',b.x,b.y)}}
 }
 function updDun(dt){
-  updAmb(dt);updV44(dt);
+  updAmb(dt);updV44(dt);updStory(dt);if(state!=='play')return;
   if(G.warp&&!G.dptl)G.warp=null;
   for(let i=TELE.length-1;i>=0;i--){const w=TELE[i];w.t-=dt;if(w.t<=0){
     if(w.met){burst(w.x,w.y,'#f84',18);FX.push({x:w.x,y:w.y,r:0,max:w.r,t:0,c:'255,140,40'});if(Math.hypot(P.x-w.x,P.y-w.y)<w.r+P.r*.5)hurt(22,true);sfx('boom')}
@@ -1921,7 +2054,7 @@ function newB(x,y,vx,vy,l,p,dm,c){
   b.hit.length=0;b.x=x;b.y=y;b.vx=vx;b.vy=vy;b.l=l;b.p=p;b.dm=dm;b.c=c;b.hm=0;b.sp=0;b.am=0;b.sm=1;b.wsg=0;B.push(b);
 }
 function openChest(){
-  sfx('chest');P.hp=Math.min(P.max,P.hp+P.max*.3);
+  G.chN=(G.chN||0)+1;sfx('chest');P.hp=Math.min(P.max,P.hp+P.max*.3);
   const r=evoReady();
   if(r.length){
     const e=r[0];if(e.main){G.mevo=1;G.fl={t:.5,c:PCOL[S.sel]||'#fd4'};FX.push({x:P.x,y:P.y,r:0,max:520,t:0,c:'255,255,255'})}else G.evo[e.w]=1;G.evoN++;sfx('evo');G.shake=12;
@@ -1942,20 +2075,21 @@ function killZ(z){
   if(T.kind==='goblin'&&z.elite){CH.push({x:z.x,y:z.y});dropRelic(z.x-30,z.y);for(let i=0;i<14;i++)GEM.push({x:z.x+(Math.random()-.5)*60,y:z.y+(Math.random()-.5)*60,v:5});G.mcoin+=50;G.elite=null;if(G.ev==='elite'){G.ev=null;G.evAt=G.t+(50+Math.random()*40)*G.evMul}G.ban={s:'👑 ล้มหัวหน้าซอมบี้ทอง! +50 🪙',t:2.5};sfx('misok');return;}
   if(T.kind==='goblin'){CH.push({x:z.x,y:z.y});for(let i=0;i<8;i++)GEM.push({x:z.x+(Math.random()-.5)*40,y:z.y+(Math.random()-.5)*40,v:5});G.ban={s:'💰 จัดการหัวขโมยสำเร็จ!',t:2.5};return;}
   if(T.kind==='boss'&&z.dun){dunBossDead(z);return}
+  if(T.kind==='boss'&&G.stg&&G.stg.k==='boss'){G.boss=null;G.bossKills++;burst(z.x,z.y,'#fd4',30);G.shake=18;sfx('extract');G.ban={s:'🏆 ล้มบอสประจำบทได้แล้ว!',t:3};setTimeout(()=>{if(state==='play')gameOver(true,'story')},1500);return}
   if(T.kind==='boss'){
     misAdd('bossk');dropRelic(z.x+30,z.y);
     for(let i=0;i<6;i++)GEM.push({x:z.x+(Math.random()-.5)*80,y:z.y+(Math.random()-.5)*80,v:5});
         const c={x:z.x,y:z.y};pushOut(c,30);CH.push(c);
     
     // [เพิ่มใหม่] เสกประตูมิติหลังฆ่าบอส
-    G.ptl.push({x: z.x, y: z.y - 85});
+    if(!G.stg)G.ptl.push({x: z.x, y: z.y - 85});
     
     G.boss=null;G.bossKills++;
     G.ban={s:'🏆 ฆ่าบอสได้! เก็บหีบและเข้าประตูมิติไปด่านต่อไป',t:3.5}; // แก้ข้อความแจ้งเตือน
     spawnHeli(z.x,z.y); // v37: ทางเลือก ถอนตัว (จบรอบ เหรียญคูณ) หรือ เข้าประตูไปต่อ
     if(G.heli)G.ban={s:'🏆 ฆ่าบอสได้! 🚁 ขึ้นเฮลิ = จบรอบ เหรียญ x'+G.heli.mult.toFixed(1)+' | 🌀 ประตู = ไปต่อ',t:4.5};
     // v41: ประตูดันเจี้ยนลับ (35% หรือการันตีบอสตัวที่ 3 ถ้ายังไม่เคยเจอ)
-    if(!G.dunSeen&&G.mode!=='extract'&&(Math.random()<.35||G.bossKills>=3)){const c={x:z.x-210,y:z.y+40,t:25};pushOut(c,40);G.dptl=c;G.dunSeen=1;
+    if(!G.dunSeen&&G.mode!=='extract'&&!G.stg&&(Math.random()<.35||G.bossKills>=3)){const c={x:z.x-210,y:z.y+40,t:25};pushOut(c,40);G.dptl=c;G.dunSeen=1;
       setTimeout(()=>{if(state==='play')G.ban={s:'🕳️ ประตูดันเจี้ยนลับปรากฏ! (25 วิ) ข้างในมีบอสสุดโหด',t:4}},2600);sfx('event')}
     G.shake=12;
     return;
@@ -2094,7 +2228,7 @@ function update(dt){
   G.achT-=dt;if(G.achT<=0){G.achT=1;checkAch()}
   if(G.goal&&G.t>=G.goal){
     G.t=G.goal;
-    gameOver(G.mode!=='extract');
+    gameOver(G.mode!=='extract',G.stg?'story':undefined);
     return;
   }
   let mx=joy.dx,my=joy.dy;
@@ -2667,22 +2801,24 @@ const COINI='<i class="ei co" style="--ic:url(img/ui/ic_coin.png)"></i>';
 function BI(n){return '<i class="bi" style="--ic:url(img/ui/ic_'+n+'.png)"></i>'}
 function MI(n){return n[0]==='!'?'<i class="mi em">'+n.slice(1)+'</i>':'<i class="mi" style="--ic:url(img/ui/ic_'+n+'.png)"></i>'}
 function showMenu(){
-  state='menu';pickCfg();
+  state='menu';STORY_RUN=null;pickCfg();
   const C=CHARS[S.sel];
   page('<h1 style="margin:0">🧟 ZOMBIE RUN</h1>'+
     '<div class="coin">🪙 '+S.coins+'</div>'+
     '<div>ตัวละคร: '+C.ic+' '+C.n+' | สถิติ: '+fmt(S.st.best)+'</div>'+
     '<div style="font-size:14px;color:#8cf">'+EI('map',M.id,M.ic)+M.n+' | '+EI('diff',keyOf(DIFF,D),D.ic)+D.n+' | '+EI('mode',keyOf(MODES,MO),MO.ic)+MO.n+'</div>'+
     '<button class="big" data-a="start">'+BI('play')+'เริ่มเกม</button>'+
+    '<button class="big sec" data-a="story">📖 โหมดเนื้อเรื่อง <span style="font-size:13px">⭐'+storyStars()+'</span></button>'+
     '<button class="big sec" data-a="mode">'+BI('map')+'แผนที่และโหมด</button>'+
     '<div class="grid2">'+
     '<button class="big sec sm" data-a="shop">'+BI('shop')+'ร้านอัป</button>'+
     '<button class="big sec sm" data-a="chars">'+BI('chars')+'ตัวละคร</button>'+
     '<button class="big sec sm" data-a="miss">'+BI('miss')+'ภารกิจ</button>'+
+    '<button class="big sec sm" data-a="quest">📋 เควส'+(questClaimable()?' <span style="color:#f66">●'+questClaimable()+'</span>':'')+'</button>'+
     '<button class="big sec sm" data-a="evo">'+BI('evo')+'วิวัฒนาการ</button>'+
     '<button class="big sec sm" data-a="lb">'+BI('lb')+'อันดับ</button>'+
     '<button class="big sec sm" data-a="stats">'+BI('stats')+'สถิติ</button>'+
-    '<button class="big sec sm" data-a="set" style="grid-column:span 2">'+BI('set')+'ตั้งค่า</button></div>'+
+    '<button class="big sec sm" data-a="set">'+BI('set')+'ตั้งค่า</button></div>'+
     '<div style="font-size:13px;color:#bcd;max-width:340px">ลากนิ้วฝั่งซ้ายเพื่อเดิน (WASD บนคอม, P = พัก)<br>ปืนยิงอัตโนมัติ — วิ่งหนีให้นานที่สุด<br>แต่ละตัวละครมีสกิลเฉพาะตัว: 💨 DASH | 💥 BLAST | 🛡️ SHIELD | 🌟 ULT (ปุ่มใหญ่ขวาล่าง)<br>ปุ่มลัดคอม: 1/Space, 2, 3, 4/Q/E</div>');
 }
 function showGuide(){
@@ -2695,7 +2831,7 @@ function showGuide(){
     <button class="big sec" data-a="set">← กลับ</button>`);
 }
 function showMode(){
-  pickCfg();
+  STORY_RUN=null;pickCfg();
   let h='<h2 style="margin:0">🗺️ แผนที่และโหมด</h2><div class="coin">🪙 '+S.coins+'</div><div class="sub">แผนที่</div>';
   for(const id in MAPS){
     const m=MAPS[id],own=S.maps.includes(id),sel=S.map===id&&own;if(m.hidden)continue;
@@ -2882,8 +3018,8 @@ ov.addEventListener('click',e=>{
   const a=b.dataset.a,i=b.dataset.i;
   // v43: เสียงปุ่มเมนู
   if(S.uis!==0){if(b.classList.contains('off'))sfx('ui_err');else if(a==='menu'||a==='pback'||a==='back'||a==='resume')sfx('ui_back');
-    else if(['mode','chars','shop','miss','evo','lb','stats','set','guide','pset'].includes(a))sfx('ui_tab');
-    else if(['q','sfx','bgm','mute','uis','fps','aim','vib'].includes(a))sfx('ui_toggle');else if(a!=='buy'&&a!=='devtap'&&a!=='wslot')sfx('ui')}
+    else if(['mode','chars','shop','miss','evo','lb','stats','set','guide','pset','story','quest'].includes(a))sfx('ui_tab');
+    else if(['q','sfx','bgm','mute','uis','fps','aim','vib'].includes(a))sfx('ui_toggle');else if(a!=='buy'&&a!=='devtap'&&a!=='wslot'&&a!=='qclaim'&&a!=='qbonus')sfx('ui')}
   if(a==='start')start();
   else if(a==='menu')showMenu();
   else if(a==='guide')showGuide();
@@ -2903,6 +3039,13 @@ ov.addEventListener('click',e=>{
 else if(a==='delimp'){if(confirm('ลบด่านและตัวละครที่นำเข้าทั้งหมด?')){delCustom();showImport('ลบแล้ว')}}
   else if(a==='resume')togglePause();
   else if(a==='quit'){state='play';gameOver(false)}
+  else if(a==='story'){showStory()}
+  else if(a==='stg'){if(stageOpen(i))showStageIntro(i);else sfx('ui_err')}
+  else if(a==='stggo'){startStory(i)}
+  else if(a==='quest'){showQuests()}
+  else if(a==='qclaim'){const[dq,wq]=questsNow(),q=(i[0]==='d'?dq:wq).l[+i.slice(1)];if(q&&q.c>=q.n&&!q.ok){q.ok=1;S.coins+=q.r;save();sfx('buy')}showQuests()}
+  else if(a==='qbonus'){const[dq]=questsNow();if(dq.l.every(q=>q.ok)&&!dq.bn){dq.bn=1;S.coins+=250;save();sfx('chest')}showQuests()}
+  else if(a==='qrr'){const[dq]=questsNow();if(!dq.rr){const used=dq.l.map(q=>q.type),pool=Object.keys(QT).filter(k=>QT[k].n[0]>0&&!used.includes(k));if(pool.length){dq.l[+i]=mkQuest(pool[Math.floor(Math.random()*pool.length)],0,Math.random);dq.rr=1;save()}}showQuests()}
   else if(a==='wslot'){S.wsl=S.wsl||{};const n=S.wsl[i]||0,c=WSLOT_PRICE[n];if(n<2&&S.coins>=c){S.coins-=c;S.wsl[i]=n+1;save();sfx('buy')}else sfx('ui_err');showChars()}
   else if(a==='uis'){S.uis=S.uis===0?1:0;save();showSet()}
   else if(a==='q'){S.q=S.q==='auto'?'high':S.q==='high'?'low':'auto';save();if(G&&state==='paused'){lowQ=S.q==='low';applyDPR()}showSet()}
@@ -2969,6 +3112,8 @@ function gameOver(win,how){
     if(win&&!drec.clr){drec.clr=1;dfirst=200}
     const st=S.dstreak||{last:'',n:0},td=drec.d;if(st.last!==td){st.n=st.last===dayKey(1)?st.n+1:1;st.last=td}S.dstreak=st}
   rc+=dfirst;
+  const sr=G.stg?storyResult(win):null;if(sr)rc+=sr.rw;
+  const qd=questRun(),cqd=cqRun();
   G.runCoins=rc;S.coins+=rc;
   S.st.coins+=rc;S.st.kills+=G.kills;S.st.boss+=G.bossKills;S.st.games++;
   if(win)S.st.wins=(S.st.wins||0)+1;
@@ -2980,7 +3125,8 @@ function gameOver(win,how){
   const rk=S.lb.indexOf(en);
   LAST=(G.mode==='daily'?'📅 ท้าทายรายวัน '+G.daily.date+' | ':'')+'🧟 Zombie Run | '+M0.n+' '+D.n+' | รอด '+fmt(s)+' ฆ่า '+G.kills+' ตัว | คะแนน '+score.toLocaleString()+(win?' (ชนะ!)':how==='heli'?' (ถอนตัวสำเร็จ 🚁)':'')+' มาท้าสู้กันไหม?';
   checkAch();save();
-  let h='<h1 style="margin:0">'+(win?'🏆 ชนะแล้ว! คุณรอดมาได้':how==='heli'?'🚁 ถอนตัวสำเร็จ!':'💀 จบรอบ')+'</h1>'+
+  let h='<h1 style="margin:0">'+(sr?(win?'🏆 ผ่านด่าน '+G.stgId+'!':'💀 ด่าน '+G.stgId+' ล้มเหลว'):win?'🏆 ชนะแล้ว! คุณรอดมาได้':how==='heli'?'🚁 ถอนตัวสำเร็จ!':'💀 จบรอบ')+'</h1>'+
+    (sr&&win?'<div style="font-size:30px">'+'⭐'.repeat(sr.stars)+'☆'.repeat(3-sr.stars)+'</div><div style="font-size:13px;color:#bcd">★ ผ่านด่าน '+(sr.hp?'★':'☆')+' เลือด 50%+ '+(sr.s3?'★':'☆')+' '+G.stg.s3t+'</div>':'')+
     '<div>'+EI('map',M0.id,M0.ic)+M0.n+' | '+EI('diff',keyOf(DIFF,D),D.ic)+D.n+' | '+EI('mode',keyOf(MODES,MO),MO.ic)+MO.n+'</div>'+
     '<div>รอดชีวิต '+fmt(s)+' | ฆ่า '+G.kills+' ตัว | LV '+G.lv+'</div>'+
     '<div>บอสที่ฆ่าได้: '+G.bossKills+' | วิวัฒนาการ: '+G.evoN+'</div>'+
@@ -2993,6 +3139,9 @@ function gameOver(win,how){
     '<div class="coin" style="color:#8cf">คะแนน '+score.toLocaleString()+(rk>=0?' (อันดับ '+(rk+1)+' 🏆)':'')+'</div>'+
     '<div class="coin">+'+rc+' 🪙'+(bonus?' (รวมโบนัสชนะ '+bonus+')':'')+' | รวม '+S.coins+'</div>';
   if(G.newAch.length)h+='<div class="card done"><b>🏅 ภารกิจสำเร็จ</b><small>'+G.newAch.join('<br>')+'</small></div>';
+  if(qd.length||cqd.length)h+='<div class="card done"><b>📋 เควสสำเร็จ</b><small>'+qd.concat(cqd).join('<br>')+(qd.length?'<br>ไปกดรับรางวัลที่ 📋 เควส':'')+'</small></div>';
+  if(sr&&win){const i=STAGE_ORDER.indexOf(G.stgId),nx=STAGE_ORDER[i+1];if(nx)h+='<button class="big" data-a="stg" data-i="'+nx+'">▶️ ด่านถัดไป '+nx+'</button>'}
+  if(sr)h+='<button class="big sec" data-a="story">📖 เลือกด่าน</button>';
   h+='<button class="big" data-a="start">'+BI('retry')+'เล่นใหม่</button><button class="big sec" data-a="share">'+BI('share')+'แชร์คะแนน</button>'+
      '<div class="grid2"><button class="big sec sm" data-a="mode">'+BI('map')+'แผนที่</button><button class="big sec sm" data-a="shop">'+BI('shop')+'ร้านอัป</button>'+
      '<button class="big sec sm" data-a="lb">'+BI('lb')+'อันดับ</button><button class="big sec sm" data-a="menu">เมนูหลัก</button></div>';
@@ -3092,7 +3241,7 @@ function draw(){
     ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('ไปสเตจ ' + (G.stage + 1), p.x, p.y - 45);
   });
-  drawV37World();drawV44World();
+  drawV37World();drawV44World();drawStory();
 
   // ซอมบี้ (สไปรต์ + ตัดทิ้งที่อยู่นอกจอ)
   const vx=W_/2+100,vy=H_/2+100;
@@ -3358,7 +3507,7 @@ function draw(){
   if(er.length){ctx.fillStyle='#fd4';ctx.fillText('🎁 พร้อมวิวัฒนาการ: '+er[0].n+' (ฆ่าบอสเพื่อรับหีบ)',12,by);by+=16}
   else{ctx.fillStyle='#fc8';evoPath().forEach(l=>{ctx.fillText(l,12,by);by+=16});ctx.fillStyle='#fff'}
 
-  by=drawV37Hud(by);
+  by=storyHud(by);by=drawV37Hud(by);
 // [เพิ่มใหม่] HUD ข้อความแจ้งเตือน Quest
   if(G.quest && G.quest.active){
       ctx.fillStyle='#fd4';
@@ -3399,7 +3548,7 @@ function draw(){
     ctx.fillStyle='#000';ctx.fillText(G.ban.s,W_/2+2,H_*.28+2);ctx.fillStyle='#fd4';ctx.fillText(G.ban.s,W_/2,H_*.28);ctx.globalAlpha=1}
   if(G.ex)drawExtractionArrow();
   if(G.quest && G.quest.active)drawQuestArrow(); // [เพิ่มใหม่] วาดลูกศรชี้เป้าเควส
-  drawV37Arrows();
+  drawV37Arrows();drawStoryArrows();
   drawWarpFlash();
 
   if(joy.on){
@@ -3488,7 +3637,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v47 (เกม v47) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v48 (เกม v48) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
