@@ -1771,8 +1771,9 @@ function drawWarpFlash(){
 // ================= v41: ดันเจี้ยนลับ / บอสอเวจี =================
 const TELE=[];
 function teleWarn(x,y,r,t,c){TELE.push({x,y,r,t,m:t,c:c||'255,60,60'})}
-function bossRing(z,n,sp,dm){const off=Math.random()*6.28;for(let k=0;k<n;k++){const q=off+k*6.2832/n;EB.push({x:z.x,y:z.y,vx:Math.cos(q)*sp,vy:Math.sin(q)*sp,l:4,dm:dm})}G.shake=Math.max(G.shake,6)}
+function bossRing(z,n,sp,dm){if(EB.length>220)return;const off=Math.random()*6.28;for(let k=0;k<n;k++){const q=off+k*6.2832/n;EB.push({x:z.x,y:z.y,vx:Math.cos(q)*sp,vy:Math.sin(q)*sp,l:4,dm:dm})}G.shake=Math.max(G.shake,6)}
 function enterDungeon(test){
+  if(PR)PR.dun=Math.floor(G.t);
   G.inDun=1;G.dptl=null;G.dunSeen=1;G.prevMap=M.id;
   M=MAPS.crypt;M.id='crypt';OB.clear();
   for(const z of Z){if(z.T.kind!=='goblin'&&z.T.kind!=='boss')GEM.push({x:z.x,y:z.y,v:z.T.xp})}
@@ -1801,7 +1802,7 @@ function dunBossAI(z,a,d,dt){
   }else{
     spd=T.spd*(ph===3?1.1:.7);
     if(z.spt>0){z.spt-=dt;spd=0;z.spe=(z.spe||0)-dt;if(z.spe<=0){z.spe=ph===3?.06:.08;z.spa=(z.spa||0)+.37;
-      for(const o of(ph===3?[0,2.094,4.189]:[0,Math.PI]))EB.push({x:z.x,y:z.y,vx:Math.cos(z.spa+o)*185,vy:Math.sin(z.spa+o)*185,l:4.2,dm:10})}}
+      if(EB.length<260)for(const o of(ph===3?[0,2.094,4.189]:[0,Math.PI]))EB.push({x:z.x,y:z.y,vx:Math.cos(z.spa+o)*185,vy:Math.sin(z.spa+o)*185,l:4.2,dm:10})}}
     else if(z.tpt>0){spd=0;z.tpt-=dt;if(z.tpt<=0){burst(z.x,z.y,'#f35',20);z.x=z.tx;z.y=z.ty;burst(z.x,z.y,'#f35',26);sfx('boom');bossRing(z,18,175,13)}}
     else{z.cd-=dt;if(z.cd<=0){
       const r=Math.random();
@@ -2529,7 +2530,7 @@ function update(dt){
           if(z.enraged&&!z.chain){z.chain=1;z.bs='wind';z.bt=.45}else{z.chain=0;z.bs='walk';z.bt=z.p2?2.2:3}}}
       }else if(z.bv===1){
         if(z.spt>0){z.spt-=dt;spd=0;z.spe=(z.spe||0)-dt;if(z.spe<=0){z.spe=.07;z.spa=(z.spa||0)+.42;
-          for(const o of[0,Math.PI])EB.push({x:z.x,y:z.y,vx:Math.cos(z.spa+o)*190,vy:Math.sin(z.spa+o)*190,l:4,dm:9,c:'#7f7'})}}
+          if(EB.length<260)for(const o of[0,Math.PI])EB.push({x:z.x,y:z.y,vx:Math.cos(z.spa+o)*190,vy:Math.sin(z.spa+o)*190,l:4,dm:9,c:'#7f7'})}}
         else{spd=T.spd*.6;z.cd-=dt;
         if(z.cd<=0&&z.p2&&(z.vol||0)%3===2){z.spt=1.6;z.vol++;z.cd=2.6;sfx('skill')}
         else if(z.cd<=0){
@@ -3183,7 +3184,7 @@ function draw(){
   if(G.blade>0){const ev=G.evo.blade,n=ev?8:1+G.blade,R=ev?115:78,br=ev?15:11;
     ctx.fillStyle=ev?'#fe8':'#9ef';ctx.strokeStyle='#fff';ctx.lineWidth=2;
     for(let k=0;k<n;k++){const a=G.ba+k*Math.PI*2/n,bx=P.x+Math.cos(a)*R,by=P.y+Math.sin(a)*R;
-      if(WIMG.blade){const sz=br*3.6;ctx.save();ctx.translate(bx,by);ctx.rotate(a+Math.PI/2+.5);if(ev){ctx.shadowColor='#fe6';ctx.shadowBlur=12}ctx.drawImage(WIMG.blade,-sz/2,-sz/2,sz,sz);ctx.restore()}
+      if(WIMG.blade){const sz=br*3.6;ctx.save();ctx.translate(bx,by);ctx.rotate(a+Math.PI/2+.5);if(ev){ctx.fillStyle='rgba(255,230,100,.28)';ctx.beginPath();ctx.arc(0,0,sz*.42,0,6.28);ctx.fill()}ctx.drawImage(WIMG.blade,-sz/2,-sz/2,sz,sz);ctx.restore()}
       else{ctx.beginPath();ctx.arc(bx,by,br,0,6.28);ctx.fill();ctx.stroke()}}}
   NADE.forEach(n=>{const x=n.sx+(n.tx-n.sx)*n.t,y=n.sy+(n.ty-n.sy)*n.t-Math.sin(Math.PI*n.t)*60;
     ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(n.sx+(n.tx-n.sx)*n.t,n.sy+(n.ty-n.sy)*n.t,8,4,0,0,6.28);ctx.fill();
@@ -3469,7 +3470,7 @@ function perfTick(){
   pa.n++;pa.fps=Math.min(pa.fps,fps);pa.avg+=avgMs;pa.max=Math.max(pa.max,lastPeakFrameMs);pa.up+=upMs;pa.dr+=drMs;
   if(pa.n>=5){
     if(PR&&PR.rows.length<240){
-      PR.rows.push([Math.floor(G.t),pa.fps,r1(pa.avg/5),Math.round(pa.max),r1(pa.up/5),r1(pa.dr/5),Z.length,MAX_Z,FX.length+G.fxl.length,PART.length,TXT.length,DECALS.length,lowQ?1:0]);
+      PR.rows.push([Math.floor(G.t),pa.fps,r1(pa.avg/5),Math.round(pa.max),r1(pa.up/5),r1(pa.dr/5),Z.length,MAX_Z,FX.length+G.fxl.length,PART.length,TXT.length,DECALS.length,lowQ?1:0,EB.length,B.length,perfFlags()]);
       if(PR.rows.length%4===0)perfSave();
     }
     pa.n=0;pa.fps=999;pa.avg=pa.max=pa.up=pa.dr=0;
@@ -3477,30 +3478,32 @@ function perfTick(){
 }
 // เฟรมสะดุด (>45ms): จดว่าเฟรมก่อนหน้าใช้ update/draw กี่ ms และบนจอมีอะไร (B=บอส U=ULT + ชื่ออีเวนต์)
 // ถ้า ms สูงแต่ upd+drw ต่ำ แปลว่าคอขวดอยู่นอก JS (GPU/ระบบ)
+// v47: ป้ายสถานะ D=ในดันเจี้ยน B=มีบอส C=มีคู่หู Fn=สูตรผสม En=วิวัฒนาการ U=ULT
+function perfFlags(){try{const f=Object.keys(G.fus||{}).filter(k=>G.fus[k]).length;return[G.inDun?'D':'',G.boss?'B':'',G.comp?'C':'',f?'F'+f:'',G.evoN?'E'+G.evoN:'',(G.ult&&G.ult.t>0)?'U':''].filter(Boolean).join('')||'-'}catch(e){return'-'}}
 function perfSpike(jf){
-  if(PR&&jf>45&&jf<500&&PR.sp.length<40)
-    PR.sp.push([Math.floor(G.t),Math.round(jf),r1(pfu),r1(pfd),Z.length,FX.length+G.fxl.length,PART.length,[G.boss?'B':'',(G.ult&&G.ult.t>0)?'U':'',necroCnt()?'N':'',G.ev||''].filter(Boolean).join('+')]);
+  if(PR&&jf>34&&jf<500&&PR.sp.length<40)
+    PR.sp.push([Math.floor(G.t),Math.round(jf),r1(pfu),r1(pfd),Z.length,FX.length+G.fxl.length,PART.length,[perfFlags(),necroCnt()?'N':'',G.ev||'','eb'+EB.length,'b'+B.length].filter(Boolean).join('+')]);
   pfu=fu;pfd=fd;
 }
 function perfReport(n){
-  const a=perfLoad().slice(-(n||2));
+  const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v46 (เกม v46) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v47 (เกม v47) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
-    o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s\n'+r.ua+'\n';
+    o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
     o+='[สรุปรายนาที] นาที: avg_ms / max_ms / min_fps / upd / drw / Zสูงสุด / capต่ำสุด / คุณภาพ\n';
     Object.keys(mins).forEach(m=>{
       const w=mins[m],n2=w.length,av=x=>w.reduce((t,q)=>t+q[x],0)/n2;
       o+=m+': '+av(2).toFixed(1)+' / '+Math.max(...w.map(q=>q[3]))+' / '+Math.min(...w.map(q=>q[1]))+' / '+av(4).toFixed(1)+' / '+av(5).toFixed(1)+' / '+Math.max(...w.map(q=>q[6]))+' / '+Math.min(...w.map(q=>q[7]))+' / '+(w.some(q=>q[12])?'LOW':'HIGH')+'\n';
     });
-    o+='[แถวทุก 5 วินาที] t,fps,avg,max,upd,drw,Z,cap,fx,pt,tx,dc,low\n'+r.rows.map(w=>w.join(',')).join('\n')+'\n';
+    o+='[แถวทุก 5 วินาที] t,fps,avg,max,upd,drw,Z,cap,fx,pt,tx,dc,low,eb,b,flags\n'+r.rows.map(w=>w.join(',')).join('\n')+'\n';
     o+='[เฟรมสะดุด n='+r.sp.length+'] t,ms,upd,drw,Z,fx,pt,flags\n'+r.sp.map(w=>w.join(',')).join('\n')+'\n';
   });
   return o;
 }
 function showPerf(){
-  const a=perfLoad(),txt=perfReport(2).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const a=perfLoad(),txt=perfReport(5).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   page('<h2 style="margin:0">📊 บันทึกประสิทธิภาพ</h2>'+
     '<div style="font-size:13px;color:#bcd;max-width:340px">เก็บอัตโนมัติทุกรอบ ('+a.length+'/5 รอบ) กดคัดลอกแล้ววางส่งในแชทได้เลย</div>'+
     '<textarea id="pft" readonly style="height:180px">'+txt+'</textarea>'+
