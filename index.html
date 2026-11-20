@@ -170,11 +170,11 @@ const lvOf=id=>S.up[id]||0;
 // ---------- Maps / Difficulty / Modes ----------
 const MAPS={
   crypt:{n:'ดันเจี้ยนอเวจี',ic:'🕳️',hidden:1,d:'ด่านลับ (เข้าได้จากประตูหลังฆ่าบอส)',price:99999,seed:6660,bg:'#1c0f15',grid:'#2c1821',ob:'#0d0709',em:['🦴','⚰️','🕯️','🗿','💀','⛓️'],dens:2,rmin:20,rmax:34,bias:['mini','necromancer','tank'],bp:.22},
-  forest:{n:'ป่ามรณะ',ic:'🌲',d:'ต้นไม้เยอะ ใช้หลบและกั้นฝูงได้ ซอมบี้ปกติ',price:0,seed:1,bg:'#1b2418',grid:'#26331f',ob:'#12200f',em:['🌲','🌳','🪨','🪵','🌿'],dens:3,rmin:22,rmax:36,bias:null,bp:0},
-  city:{n:'เมืองร้าง',ic:'🏙️',d:'รถและกำแพงกั้นทาง ซอมบี้วิ่งเร็วออกเยอะ',price:250,seed:2,bg:'#23262b',grid:'#30343b',ob:'#141619',em:['🚗','🚌','🧱','🛍️','🗑️','🏚️'],dens:2,rmin:26,rmax:42,bias:['fast'],bp:.18},
-  hosp:{n:'โรงพยาบาลร้าง',ic:'🏥',d:'ซอมบี้พิเศษ ระเบิด/คายกรด/แบ่งร่าง ออกเยอะ',price:500,seed:3,bg:'#1f2a2c',grid:'#2b3b3e',ob:'#0f191b',em:['🛏️','🗄️','⚰️','🧰','♿'],dens:2,rmin:22,rmax:34,bias:['boom','spit','split'],bp:.2,fx:'toxic'},
-  deadport:{n:'ท่าเรือร้าง',ic:'⚓',d:'ตู้คอนเทนเนอร์กั้นทาง ซอมบี้เกราะหนาและตัวระเบิดออกบ่อย',price:0,seed:2847,bg:'#172633',grid:'#293b49',ob:'#0b151e',em:['📦','🛢️','⚓','🚢','🧵'],dens:3,rmin:24,rmax:42,bias:['tank','boom','normal'],bp:0.25,fx:'port'},
-  darkgrave:{n:'สุสานยามค่ำคืน',ic:'🪦',d:'สุสานหมอกหนาท่ามกลางความมืด ซอมบี้วิ่งเร็วและพ่นพิษโจมตี',price:0,seed:7391,bg:'#211a32',grid:'#352a49',ob:'#120e1d',em:['🪦','⚰️','🌳','🕯️','🗿','🌲'],dens:1,rmin:16,rmax:30,bias:['fast','boom','spit'],bp:0.3,fx:'dark'}
+  forest:{n:'ป่ามรณะ',ic:'🌲',d:'ต้นไม้เยอะ ใช้หลบและกั้นฝูงได้ ซอมบี้ปกติ',price:0,seed:1,bg:'#1b2418',grid:'#26331f',ob:'#12200f',em:['🌲','🌳','🪨','🪵','🌿'],dens:3,rmin:22,rmax:36,bias:['fast','split','normal'],bp:.18},
+  city:{n:'เมืองร้าง',ic:'🏙️',d:'รถและกำแพงกั้นทาง ซอมบี้วิ่งเร็วออกเยอะ',price:250,seed:2,bg:'#23262b',grid:'#30343b',ob:'#141619',em:['🚗','🚌','🧱','🛍️','🗑️','🏚️'],dens:2,rmin:26,rmax:42,bias:['fast','boom','shield','hazmat'],bp:.24},
+  hosp:{n:'โรงพยาบาลร้าง',ic:'🏥',d:'ซอมบี้พิเศษ ระเบิด/คายกรด/แบ่งร่าง ออกเยอะ',price:500,seed:3,bg:'#1f2a2c',grid:'#2b3b3e',ob:'#0f191b',em:['🛏️','🗄️','⚰️','🧰','♿'],dens:2,rmin:22,rmax:34,bias:['spit','healer','split','faceless'],bp:.24,fx:'toxic'},
+  deadport:{n:'ท่าเรือร้าง',ic:'⚓',d:'ตู้คอนเทนเนอร์กั้นทาง ซอมบี้เกราะหนาและตัวระเบิดออกบ่อย',price:0,seed:2847,bg:'#172633',grid:'#293b49',ob:'#0b151e',em:['📦','🛢️','⚓','🚢','🧵'],dens:3,rmin:24,rmax:42,bias:['tank','boom','shield','fisher'],bp:.25,fx:'port'},
+  darkgrave:{n:'สุสานยามค่ำคืน',ic:'🪦',d:'สุสานหมอกหนาท่ามกลางความมืด ซอมบี้วิ่งเร็วและพ่นพิษโจมตี',price:0,seed:7391,bg:'#211a32',grid:'#352a49',ob:'#120e1d',em:['🪦','⚰️','🌳','🕯️','🗿','🌲'],dens:1,rmin:16,rmax:30,bias:['necromancer','screamer','fast','wraith'],bp:.26,fx:'dark'}
 };
 const DIFF={
   easy:{n:'ง่าย',ic:'🙂',hp:.75,sp:.8,dm:.8,coin:.7,d:'ซอมบี้อ่อนและน้อยลง เหรียญ x0.7'},
@@ -1430,7 +1430,7 @@ function addDecal(d){if(DECALS.length>=(lowQ?14:(MOB?26:44)))DECALS.shift();DECA
 function addTxt(x,y,s,c){if(TXT.length<(lowQ?10:(MOB?22:36)))TXT.push({x:x+(Math.random()-.5)*10,y,s,c:c||'#fff',l:.6})}
 function hitZ(z,d){
   let c=false;
-  if(z.shk>0)d*=1.2;
+  if(z.shk>0)d*=1.2;if(z.arm)d*=.6;
   if(G.crit&&Math.random()<G.crit*.08){d*=2;c=true;hStop(.03);}
   z.hp-=d;z.flash=.08;if(c)addTxtB(z.x,z.y-z.T.r-6,'💥'+Math.round(d),'#ffcf3a');else addTxt(z.x,z.y-z.T.r,Math.round(d),null);
   if(G.el&&!elBusy&&z.hp>0)elApply(z);
@@ -1834,10 +1834,12 @@ function spawnZ(){
   else if(t>110&&r>=.50&&r<.53)type='healer';
   else if(t>130&&r>=.53&&r<.555&&necroCnt()<3)type='necromancer';
     if(M.bias&&t>15&&Math.random()<M.bp)type=M.bias[Math.floor(Math.random()*M.bias.length)];
-  {const mt=MZT[M.id];if(mt&&t>15&&Math.random()<(G.stg?.13:.07))type=mt}
+  {const mt=MZT[M.id];if(mt&&t>10&&Math.random()<(G.stg?.15:.16))type=mt}
+  if(type==='necromancer'&&necroCnt()>=3)type='fast';
   if(t>30&&Math.random()<0.015)type='goblin';
   const a=Math.random()*Math.PI*2,d=Math.max(W_,H_)/2+60;
-  const z=mkZ(type,P.x+Math.cos(a)*d,P.y+Math.sin(a)*d,1+t/80);
+  const z=mkZ(type,P.x+Math.cos(a)*d,P.y+Math.sin(a)*d,(1+t/80)*(G.thrOn?1+.12*G.thr:1));
+  if(z&&G.thr>=2&&type!=='goblin'&&Math.random()<(G.thr>=10?.3:.15))z.arm=1;
   if(z&&type==='tank'&&Math.random()<0.05)z.aura='spd';
 }
 function spawnBoss(){
@@ -2175,7 +2177,7 @@ function reviveAct(a){if(state!=='revive')return;const c=rvCost();
   Z.forEach(z=>{if(z.T.kind==='boss')return;const d=Math.hypot(z.x-P.x,z.y-P.y);if(d<350){const q=Math.atan2(z.y-P.y,z.x-P.x);z.x+=Math.cos(q)*220;z.y+=Math.sin(q)*220}});
   G.ban={s:a==='rvF'?'🪶 ฟีนิกซ์ชุบชีวิต!':'✨ ชุบชีวิต!',t:2};ov.style.display='none';state='play';last=performance.now()}
 function drawElDots(){const cols={brn:'#ff8a2a',pst:'#7fdc3a',chl3:'#8fe4ff',shk:'#ffe94a'};
-  for(const z of Z){if(z.hp<=0)continue;let n=0;const a=[];if(z.brn>0)a.push(cols.brn);if(z.pst>0)a.push(cols.pst);if(z.slow>0&&z.chl3>0)a.push(cols.chl3);if(z.shk>0)a.push(cols.shk);if(!a.length)continue;
+  for(const z of Z){if(z.hp<=0)continue;if(z.arm){ctx.strokeStyle='rgba(170,190,210,.75)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(z.x,z.y,z.T.r+5,0,6.28);ctx.stroke()}if(!G.el)continue;let n=0;const a=[];if(z.brn>0)a.push(cols.brn);if(z.pst>0)a.push(cols.pst);if(z.slow>0&&z.chl3>0)a.push(cols.chl3);if(z.shk>0)a.push(cols.shk);if(!a.length)continue;
     const y=z.y-z.T.r*2.4-8,x0=z.x-(a.length-1)*5;for(const c of a){ctx.fillStyle=c;ctx.beginPath();ctx.arc(x0+n*10,y,3.6,0,6.28);ctx.fill();n++}
     if(z.pst>1){ctx.fillStyle='#cf8';ctx.font='bold 9px sans-serif';ctx.fillText(z.pst,x0+(a.indexOf(cols.pst))*10,y-6)}}}
 // โทนสีแต่ละด่านในบท: x-1 ปกติ · x-2 ค่ำ · x-3 ฝน/พายุ · x-4 บอส (แดง)
@@ -2185,6 +2187,27 @@ function drawV53Screen(){if(!STORY_RUN)return;const n=+String(STORY_RUN).split('
   if(t.rain&&!lowQ){ctx.strokeStyle='rgba(190,210,240,.42)';ctx.lineWidth=1.2;ctx.beginPath();for(let k=0;k<55;k++){const x=(k*137+G.t*90)%(W_+60)-30,y=(k*71+G.t*620)%(H_+40)-20;ctx.moveTo(x,y);ctx.lineTo(x-5,y+16)}ctx.stroke()}
   if(t.vig){const g=ctx.createRadialGradient(W_/2,H_/2,Math.min(W_,H_)*.35,W_/2,H_/2,Math.max(W_,H_)*.7);g.addColorStop(0,'rgba(80,0,10,0)');g.addColorStop(1,'rgba(80,0,10,'+(.35+.08*Math.sin(G.t*2))+')');ctx.fillStyle=g;ctx.fillRect(0,0,W_,H_)}
   ctx.restore()}
+// ================= v57: ระดับภัย / ด่านถล่ม / เกียรติยศ =================
+const THRM={2:'ซอมบี้เกราะเริ่มออก (วงสีเทา รับดาเมจน้อยลง)',4:'ฝูงตัวเร็วบุกทุก 30 วิ',6:'ระลอกใหญ่ทุก 45 วิ',8:'ซอมบี้เร็วขึ้น 15%',10:'ซอมบี้เกราะออกบ่อยขึ้น'};
+function v57Init(){G.thr=0;G.thrOn=!STORY_RUN&&['endless','m15','m30'].includes(S.mode);G.prv=G.thrOn?Math.min(S.prSel||0,S.prMax||0):0;G.clp=null;G.ovr=-1;
+  if(G.prv){const k=G.prv;D.hp*=1+.15*k;D.dm*=1+.08*k;D.sp*=1+.04*k;D.coin*=1+.12*k;G.xpm*=1+.1*k}}
+function endClp(){if(G.clp&&G.ovr>=0)G.zsm/=1.3;G.clp=null;G.ovr=-1}
+function updV57(dt){
+  if(G.thrOn){const L=Math.floor(G.t/60);if(L>G.thr){G.thr=L;G.cm*=1.05;const m=THRM[L];G.ban={s:'☠️ ระดับภัย '+L+(m?' — '+m:' — ซอมบี้อึดขึ้น')+' · เหรียญ +5%',t:3};sfx('event');if(L===8)G.zsm*=1.15}
+    if(G.thr>=4){G.fpT=(G.fpT===undefined?30:G.fpT)-dt;if(G.fpT<=0){G.fpT=30;const a=Math.random()*6.28,R=Math.max(W_,H_)/2+60;for(let i=0;i<8&&Z.length<MAX_Z;i++)mkZ('fast',P.x+Math.cos(a+i*.12)*R,P.y+Math.sin(a+i*.12)*R,(1+G.t/80)*(1+.12*G.thr))}}
+    if(G.thr>=6){G.wvT=(G.wvT===undefined?45:G.wvT)-dt;if(G.wvT<=0){G.wvT=45;storyHorde(14);G.ban={s:'🌊 ระลอกใหญ่มาแล้ว!',t:2}}}}
+  const c=G.clp;if(!c)return;
+  if(!G.ptl.length){endClp();return}
+  if(G.ovr<0){c.t-=dt;if(c.t<=0){G.ovr=0;G.zsm*=1.3;G.ban={s:'☠️ ด่านถล่ม! หมอกพิษปิดเข้ามา รีบเข้าประตูมิติ!',t:3};sfx('event');G.shake=12}}
+  else{G.ovr+=dt;const R=Math.max(150,900-G.ovr*20);if(Math.hypot(P.x-c.x,P.y-c.y)>R&&!(P.inv>0)){P.hp-=P.max*.06*dt;if(Math.random()<dt*3)burst(P.x,P.y,'#9c4',2)}}
+}
+function drawV57World(){const c=G.clp;if(!c||G.ovr<0)return;const R=Math.max(150,900-G.ovr*20);
+  ctx.save();ctx.fillStyle='rgba(90,150,40,.32)';ctx.beginPath();ctx.rect(P.x-W_,P.y-H_,W_*2,H_*2);ctx.arc(c.x,c.y,R,0,6.2832,true);ctx.fill('evenodd');
+  ctx.strokeStyle='rgba(170,255,90,.8)';ctx.lineWidth=4;ctx.setLineDash([16,10]);ctx.lineDashOffset=-G.t*40;ctx.beginPath();ctx.arc(c.x,c.y,R,0,6.2832);ctx.stroke();ctx.setLineDash([]);ctx.restore()}
+function drawV57Screen(){const c=G.clp;if(!c)return;ctx.save();ctx.textAlign='center';ctx.font='bold 15px sans-serif';
+  const s=G.ovr<0?'🌀 ประตูมิติ: เข้าภายใน '+Math.ceil(c.t)+' วิ ก่อนด่านถล่ม':'☠️ ด่านถล่ม! รีบเข้าประตูมิติ ('+Math.round(G.ovr)+' วิ)';
+  ctx.fillStyle='#000a';ctx.fillRect(W_/2-170,52,340,24);ctx.fillStyle=G.ovr<0?(c.t<10&&Math.sin(G.t*8)>0?'#f86':'#ffd75a'):'#bf6';ctx.fillText(s,W_/2,69);ctx.restore();
+  edgeArrow(c.x,c.y,'🌀','#c9f')}
 function updV44(dt){
   for(let i=REL.length-1;i>=0;i--){const r=REL[i];if(Math.hypot(P.x-r.x,P.y-r.y)<P.r+24){REL.splice(i,1);gainRelic(r.x,r.y)}}
   const c=G.comp;
@@ -2300,7 +2323,7 @@ function drawWarpFlash(){
 const TELE=[];
 function teleWarn(x,y,r,t,c){TELE.push({x,y,r,t,m:t,c:c||'255,60,60'})}
 function bossRing(z,n,sp,dm){if(EB.length>220)return;const off=Math.random()*6.28;for(let k=0;k<n;k++){const q=off+k*6.2832/n;EB.push({x:z.x,y:z.y,vx:Math.cos(q)*sp,vy:Math.sin(q)*sp,l:4,dm:dm})}G.shake=Math.max(G.shake,6)}
-function enterDungeon(test){
+function enterDungeon(test){endClp();
   if(PR)PR.dun=Math.floor(G.t);
   G.inDun=1;G.dptl=null;G.dunSeen=1;G.prevMap=M.id;
   M=MAPS.crypt;M.id='crypt';OB.clear();
@@ -2350,7 +2373,7 @@ function updAmb(dt){
   const b=G.boss;if(b&&b.hp>0){b.stT=(b.stT||0)-dt;if(b.stT<=0){b.stT=b.bs==='charge'?.22:.6;if(b.bs!=='wind'&&!b.spt&&!b.tpt)sfx('boss_step',b.x,b.y)}}
 }
 function updDun(dt){
-  updAmb(dt);updV44(dt);updV50(dt);updV52(dt);updStory(dt);if(state!=='play')return;
+  updAmb(dt);updV44(dt);updV50(dt);updV52(dt);updV57(dt);updStory(dt);if(state!=='play')return;
   if(G.warp&&!G.dptl)G.warp=null;
   for(let i=TELE.length-1;i>=0;i--){const w=TELE[i];w.t-=dt;if(w.t<=0){
     if(w.fn)try{w.fn()}catch(e){}
@@ -2482,7 +2505,7 @@ function killZ(z){
         const c={x:z.x,y:z.y};pushOut(c,30);CH.push(c);
     
     // [เพิ่มใหม่] เสกประตูมิติหลังฆ่าบอส
-    if(!G.stg)G.ptl.push({x: z.x, y: z.y - 85});
+    if(!G.stg){G.ptl.push({x: z.x, y: z.y - 85});if(G.thrOn){endClp();G.clp={t:30,x:z.x,y:z.y-85};G.ovr=-1}}
     
     G.boss=null;G.bossKills++;
     G.ban={s:'🏆 ฆ่าบอสได้! เก็บหีบและเข้าประตูมิติไปด่านต่อไป',t:3.5}; // แก้ข้อความแจ้งเตือน
@@ -2836,7 +2859,7 @@ function update(dt){
   updMis(dt);updHeli(dt);if(state!=='play')return;
   updDun(dt);
 
-  G.spawn+=dt*Math.min(7.5,.9+G.t/70+Math.pow(G.t/140,1.1))*Math.max(.3,1.35-Z.length/MAX_Z)*(MOB?.9:1)*D.sp*G.spm*(G.ev==='blood'?1.6:1)*(G.inDun?.5:1);
+  G.spawn+=dt*Math.min(9.5,1.2+G.t/55+Math.pow(G.t/120,1.15))*(1+.08*(G.thr||0))*(G.ovr>=0&&G.clp?2.5+G.ovr*.05:1)*(1+.06*(G.prv||0))*Math.max(.3,1.35-Z.length/MAX_Z)*(MOB?.9:1)*D.sp*G.spm*(G.ev==='blood'?1.6:1)*(G.inDun?.5:1);
   while(G.spawn>=1){G.spawn--;if(Z.length<MAX_Z)spawnZ()}
   if(G.t>=G.bossAt){G.bossAt+=G.bossEv||BOSS_EVERY;spawnBoss()}
 
@@ -3150,7 +3173,7 @@ function update(dt){
   for(let i=G.ptl.length-1;i>=0;i--){
     const p=G.ptl[i];
     if(Math.hypot(P.x-p.x,P.y-p.y) < P.r + 35){
-      G.ptl.splice(i, 1);
+      G.ptl.length=0;endClp();
       G.stage++;
       
       // สุ่มเปลี่ยนด่าน (ฉากหลังและสิ่งกีดขวางเปลี่ยน)
@@ -3173,6 +3196,7 @@ D.dm = Math.min(D.dm*1.2, DIFF[G.dk].dm*3);
       G.ban = {s: '🌀 สเตจ ' + G.stage + ' (' + M.n + ') | มอนสเตอร์แกร่งขึ้น 20%!', t: 4};
       G.shake = 20; sfx('lvl');
       FX.push({x: P.x, y: P.y, r: 0, max: 800, t: 0, c: '150,100,255'}); // ระเบิดแสงวงกว้าง
+      break;
     }
   }
   for(let i=PART.length-1;i>=0;i--){
@@ -3262,6 +3286,9 @@ function showMode(){
     const d=DIFF[id],sel=S.diff===id;
     h+='<div class="card btn'+(sel?' done':'')+'" data-a="diff" data-i="'+id+'"><div class="row"><div><b>'+EI('diff',id,d.ic)+d.n+'</b><small>'+d.d+'</small></div>'+(sel?'<span class="tag ok">ใช้อยู่</span>':'')+'</div></div>';
   }
+  {const mx=S.prMax||0,cur=Math.min(S.prSel||0,mx);h+='<div class="sub">⭐ ระดับเกียรติยศ (โหมดไม่จำกัด / รอด 15-30 นาที)</div><div class="card"><small>แต่ละระดับ: ซอมบี้เลือด +15% ตีแรง +8% เกิดถี่ +6% · เหรียญ +12% XP +10%<br>ปลดระดับถัดไป: เล่นที่ระดับสูงสุดที่ปลดแล้ว รอด 8 นาที หรือชนะโหมดจับเวลา</small><div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px">';
+    for(let k=0;k<=10;k++){const op=k<=mx;h+='<button class="tag'+(k===cur?' ok':op?'':' no')+'" style="min-width:38px;padding:6px 8px;border:none" data-a="prs" data-i="'+k+'">'+(op?(k?'⭐'+k:'ปกติ'):'🔒'+k)+'</button>'}
+    h+='</div></div>'}
   h+='<div class="sub">โหมดเกม</div>';
   for(const id in MODES){
     const d=MODES[id],sel=S.mode===id;let dd=d.d;
@@ -3520,6 +3547,7 @@ else if(a==='delimp'){if(confirm('ลบด่านและตัวละค�
     else if(S.coins>=m.price){S.coins-=m.price;S.maps.push(i);S.map=i;save();sfx('buy')}
     showMode();
   }else if(a==='diff'){S.diff=i;save();showMode()}
+  else if(a==='prs'){const k=+i;if(k<=(S.prMax||0)){S.prSel=k;save();showMode()}else sfx('ui_err')}
   else if(a==='mod'){S.mode=i;save();showMode()}
 });
 
@@ -3527,6 +3555,7 @@ function gameOver(win,how){
   const M0=G.m0||M;
   state='over';G.win=!!win;if(how!=='heli')sfx('over');if(PR){PR.end=Math.floor(G.t);perfSave()}
   const s=Math.floor(G.t);
+  if(G.thrOn&&G.prv===(S.prMax||0)&&G.prv<10&&(G.t>=480||win)){S.prMax=G.prv+1;G.prMsg='🎉 ปลดล็อกระดับเกียรติยศ ⭐'+S.prMax+'! (เลือกได้ที่หน้าแผนที่และโหมด)'}
   const base=Math.floor(s/6)+Math.floor(G.kills/10)+G.bossKills*40+G.evoN*30;
   const bonus=win?MO.bonus:0;
   const hx=how==='heli'?(G.extM||1):1;
@@ -3559,7 +3588,7 @@ function gameOver(win,how){
     (G.dunWin?'<div style="color:#f66">🕳️ พิชิตดันเจี้ยนอเวจี!</div>':'')+
     (how==='heli'?'<div style="color:#7f7">🚁 โบนัสถอนตัว: เหรียญ x'+hx.toFixed(1)+'</div>':'')+
     (G.misOk||G.mcoin?'<div>🎯 ภารกิจย่อยสำเร็จ '+G.misOk+' | เหรียญจากภารกิจ/เหตุการณ์ +'+G.mcoin+'</div>':'')+
-    (G.pacts?'<div>📜 สัญญาต้องสาป: '+G.pactL.join(' ')+(G.cm>1?' (เหรียญ x'+G.cm.toFixed(2)+')':'')+'</div>':'')+
+    (G.prMsg?'<div style="color:#ffd75a"><b>'+G.prMsg+'</b></div>':'')+(G.thrOn?'<div>☠️ ระดับภัยสูงสุด '+G.thr+(G.prv?' · ⭐ เกียรติยศ '+G.prv:'')+'</div>':'')+(G.pacts?'<div>📜 สัญญาต้องสาป: '+G.pactL.join(' ')+(G.cm>1?' (เหรียญ x'+G.cm.toFixed(2)+')':'')+'</div>':'')+
     (G.ex?'<div>📡 อะไหล่ที่เก็บได้: '+G.ex.count+'/3'+(win?' | ป้องกันจุดอพยพสำเร็จ':G.ex.phase==='defend'?' | ป้องกันได้ '+fmt(Math.floor(45-G.ex.defend))+'/0:45':G.t>=G.goal?' | หมดเวลา':'')+'</div>':'')+
     '<div class="coin" style="color:#8cf">คะแนน '+score.toLocaleString()+(rk>=0?' (อันดับ '+(rk+1)+' 🏆)':'')+'</div>'+
     '<div class="coin">+'+rc+' 🪙'+(bonus?' (รวมโบนัสชนะ '+bonus+')':'')+' | รวม '+S.coins+'</div>';
@@ -3572,7 +3601,7 @@ function gameOver(win,how){
      '<button class="big sec sm" data-a="lb">'+BI('lb')+'อันดับ</button><button class="big sec sm" data-a="menu">เมนูหลัก</button></div>';
   page(h);
 }
-function start(){warmI=0;warmImgs(true);applyAimUI();AIM.on=false;aimT=null;ac();if(!muted&&bgmOn)startBGM();lockLand();joy.on=false;joy.dx=joy.dy=0;reset();perfStart();lowQ=S.q==='low';applyDPR();fpsAcc=0;fpsN=0;lowCnt=0;try{draw()}catch(e){}ov.style.display='none';state='play';last=performance.now();if(G.pend>0)setTimeout(openNext,400)}
+function start(){warmI=0;warmImgs(true);applyAimUI();AIM.on=false;aimT=null;ac();if(!muted&&bgmOn)startBGM();lockLand();joy.on=false;joy.dx=joy.dy=0;reset();v57Init();perfStart();lowQ=S.q==='low';applyDPR();fpsAcc=0;fpsN=0;lowCnt=0;try{draw()}catch(e){}ov.style.display='none';state='play';last=performance.now();if(G.pend>0)setTimeout(openNext,400)}
 
 // ---------- Draw ----------
 function draw(){
@@ -3666,7 +3695,7 @@ function draw(){
     ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('ไปสเตจ ' + (G.stage + 1), p.x, p.y - 45);
   });
-  drawV37World();drawV44World();drawV50World();drawV52World();drawStory();
+  drawV37World();drawV44World();drawV50World();drawV52World();drawV57World();drawStory();
 
   // ซอมบี้ (สไปรต์ + ตัดทิ้งที่อยู่นอกจอ)
   const vx=W_/2+100,vy=H_/2+100;
@@ -3889,7 +3918,7 @@ function draw(){
   if(P.mf>0&&!fr){const mz=MZ[S.sel]||MZ.soldier;ctx.fillStyle=mz[2];ctx.beginPath();ctx.arc(mz[0],mz[1],6+Math.random()*3,0,6.28);ctx.fill()}
   ctx.restore();
   ctx.globalAlpha=1;
-  if(G.el)drawElDots();
+  if(G.el||G.thr>=2)drawElDots();
   ctx.font='bold 14px sans-serif';ctx.textAlign='center';
   {const sh=TXT.length<=12;TXT.forEach(t=>{ctx.globalAlpha=Math.min(1,t.l*3);if(t.b)ctx.font='bold 21px sans-serif';if(sh||t.b){ctx.fillStyle='#000';ctx.fillText(t.s,t.x+1,t.y+1)}ctx.fillStyle=t.c;ctx.fillText(t.s,t.x,t.y);if(t.b)ctx.font='bold 14px sans-serif'})}
   ctx.globalAlpha=1;ctx.restore();
@@ -3910,7 +3939,7 @@ function draw(){
     g.addColorStop(0,'rgba(10,12,14,0)');g.addColorStop(1,'rgba(10,12,14,.93)');
     ctx.globalAlpha=Math.min(1,G.evt);ctx.fillStyle=g;ctx.fillRect(0,0,W_,H_);ctx.globalAlpha=1;
   }
-  drawV53Screen();
+  drawV53Screen();drawV57Screen();
   drawV37Overlay();
   if(M.fx==='dark'&&G.lit<=0){
     const g=ctx.createRadialGradient(W_/2,H_/2,180,W_/2,H_/2,360);
@@ -3923,7 +3952,7 @@ function draw(){
   ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';ctx.textAlign='left';
   const evs=G.ev==='fog'?'  🌫️':G.ev==='rain'?'  🌧️XP x2':G.ev==='blood'?'  🌕XP x1.5':'';
   const tm=G.goal?fmt(Math.floor(G.t))+'/'+fmt(G.goal):fmt(Math.floor(G.t));
-  ctx.fillText('LV '+G.lv+'   ⏱ '+tm+'   ☠ '+G.kills+(G.rev?'   ✨'+G.rev:'')+(G.fth?'   🪶':'')+evs,14,42);
+  ctx.fillText('LV '+G.lv+'   ⏱ '+tm+'   ☠ '+G.kills+(G.rev?'   ✨'+G.rev:'')+(G.fth?'   🪶':'')+(G.thrOn?'   ☠️'+G.thr:'')+(G.prv?'   ⭐'+G.prv:'')+evs,14,42);
   const bw=Math.min(240,W_*.5);
   ctx.fillStyle='#400';ctx.fillRect(10,52,bw,14);ctx.fillStyle='#e33';ctx.fillRect(10,52,bw*Math.max(0,P.hp)/P.max,14);
   ctx.fillStyle='#fff';ctx.fillText(Math.ceil(Math.max(0,P.hp))+'/'+Math.round(P.max),16,64);
@@ -4070,7 +4099,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v56 (เกม v56) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v57 (เกม v57) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
