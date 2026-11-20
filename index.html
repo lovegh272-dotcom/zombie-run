@@ -35,6 +35,24 @@ canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none}
 #ov .navb button{width:42px;height:42px;border-radius:12px;border:2px solid #6c8;background:#132018e6;color:#fff;font-size:20px;box-shadow:0 2px 8px #000a}
 #ov .card.rec{outline:3px solid #ffcf3a;outline-offset:-3px;border-color:#ffcf3a!important;box-shadow:0 0 14px #ffcf3a88;background:linear-gradient(#3a3012cc,#1c1a10cc)}
 #ov .rect{display:block;color:#ffd75a;font-size:12px;margin-top:3px}
+#boot{position:fixed;inset:0;z-index:50;background:#120a0a url(img/ui/cover.jpg) center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:max(12px,env(safe-area-inset-top)) 16px max(14px,env(safe-area-inset-bottom));color:#fff;text-align:center;transition:opacity .45s}
+#boot.hide{opacity:0;pointer-events:none}
+#boot .bt-logo{width:min(70vw,560px);aspect-ratio:1000/306;background:url(img/ui/logo.png) center/contain no-repeat;filter:drop-shadow(0 6px 10px #000c);animation:btIn .8s ease-out}
+@keyframes btIn{from{transform:scale(.7);opacity:0}to{transform:none;opacity:1}}
+#boot .bt-tip{margin-top:auto;margin-bottom:10px;max-width:640px;background:#000b;border:1px solid #6c8a;border-radius:12px;padding:8px 14px;font-size:14px;line-height:1.35;min-height:20px}
+#boot .bt-bar{width:min(80vw,520px);height:12px;border-radius:8px;background:#0009;border:2px solid #9c6;overflow:hidden}
+#boot .bt-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#6c3,#cf5);transition:width .2s}
+#boot .bt-st{margin-top:6px;font-size:13px;color:#dfe;text-shadow:0 1px 3px #000}
+#boot.ready .bt-st{font-size:18px;font-weight:bold;color:#ffd75a;animation:btPulse 1.1s infinite}
+@keyframes btPulse{50%{opacity:.45}}
+#ov .vn{width:min(94vw,720px);display:flex;gap:12px;align-items:flex-end;background:#0b120ee6;border:2px solid #6c8;border-radius:14px;padding:10px 12px;text-align:left;min-height:120px}
+#ov .vn .pf{width:110px;height:110px;flex:0 0 110px;border-radius:12px;background:#1d2a22 center/cover no-repeat;border:2px solid #9c6;display:flex;align-items:center;justify-content:center;font-size:54px}
+#ov .vn .nm{color:#ffd75a;font-weight:bold;font-size:16px;margin-bottom:4px}
+#ov .vn .tx{font-size:16px;line-height:1.45;min-height:46px}
+#ov .vn .nx{float:right;color:#9c6;font-size:12px;animation:btPulse 1s infinite}
+#ov .rc{width:min(94vw,640px);background:#0b120ee6;border:2px solid #6c8;border-radius:14px;padding:12px;text-align:center}
+#ov .rc .zs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 0}
+#ov .rc .zs span{background:#1d2a22;border-radius:10px;padding:4px 8px;font-size:13px}
 #ov{position:fixed;inset:0;background:#000d;display:none;overflow-y:auto;color:#fff;text-align:center;padding:16px;z-index:10;touch-action:pan-y}
 .pg{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;margin:auto}
 .card{background:#2a3340;border:2px solid #6cf;border-radius:12px;padding:10px 14px;width:min(340px,92vw);font-size:15px;text-align:left}
@@ -123,6 +141,7 @@ button.big.sm{padding:4px 6px;width:auto;font-size:15px}
   <div class="sk" id="sf"><span class="ic">🔫</span><small>FIRE</small></div>
 </div>
 <div id="ov"></div>
+<div id="boot"><div class="bt-logo"></div><div class="bt-tip" id="btTip"></div><div class="bt-bar"><i id="btBar"></i></div><div class="bt-st" id="btSt">กำลังโหลด...</div></div>
 <div id="rot"><div class="ph">📱</div><div>กรุณาหมุนเครื่องเป็นแนวนอน</div></div>
 <script>
 // v53: เก็บรูปทุกรูปที่สร้าง เพื่อถอดรหัสล่วงหน้า (กันเฟรมสะดุดตอนรูปถูกวาดครั้งแรก)
@@ -407,11 +426,18 @@ function showStory(){
         '<small>🎯 '+stageGoalText(st)+'<br>'+dk.ic+' '+dk.n+(st.hpM?' (ซอมบี้อึด x'+st.hpM+')':'')+' · ★ผ่าน ★เลือด 50%+ ★'+s3Text(st)+'</small></div>'})});
   h+='<button class="big sec" data-a="menu">← กลับ</button>';page(h);
 }
-function showStageIntro(id){
-  const st=STAGES[id];let h='<h2 style="margin:0">📖 '+id+' '+st.n+'</h2><div class="sub">🎯 '+stageGoalText(st)+'</div>';
-  st.dlg.forEach(l=>{h+='<div class="card"><b>'+l[0]+'</b><small>'+l[1]+'</small></div>'});
-  h+='<button class="big" data-a="stggo" data-i="'+id+'">▶️ เริ่มด่าน</button><button class="big sec" data-a="story">← กลับ</button>';page(h);
-}
+function showStageIntro(id){VN={id,i:0};vnShow()}
+let VN=null;
+function vnPic(who){const m=[['คุณ','img/face_'+S.sel+'.png'],['หมอนารา','img/face_nara.png'],['นักบวช','img/face_priest.png'],['มิว','img/portraits/mew.png'],['ลุงชาญ','img/portraits/chan.png'],['ช่างต้น','img/portraits/ton.png'],['วิทยุ','img/portraits/radio.png'],['ศูนย์อพยพ','img/portraits/radio.png']];for(const [k,u] of m)if(who.indexOf(k)>=0)return u;return''}
+function vnShow(){const st=STAGES[VN.id],l=st.dlg[VN.i],last=VN.i>=st.dlg.length-1;
+  const who=l[0],nm=who.replace(/^[^ ]+ /,''),pic=vnPic(who),em=who.split(' ')[0];
+  let h='<h2 style="margin:0">📖 '+VN.id+' '+st.n+'</h2><div class="sub">🎯 '+stageGoalText(st)+'</div>'+
+    '<div class="vn" data-a="vnnext"><div class="pf"'+(pic?' style="background-image:url('+pic+')"':'')+'>'+(pic?'':em)+'</div><div style="flex:1"><div class="nm">'+(nm||who)+'</div><div class="tx" id="vnTx"></div><div class="nx">'+(last?'':'แตะเพื่อไปต่อ ▶ ('+(VN.i+1)+'/'+st.dlg.length+')')+'</div></div></div>';
+  h+=(last?'<button class="big" data-a="stggo" data-i="'+VN.id+'">▶️ เริ่มด่าน</button>':'<button class="big sec" data-a="vnskip">⏭ ข้ามบทสนทนา</button>')+'<button class="big sec" data-a="story">← กลับ</button>';
+  page(h);const tx=l[1];let n=0;clearInterval(VN.iv);VN.full=false;const el=document.getElementById('vnTx');
+  VN.iv=setInterval(()=>{n+=2;if(!el.isConnected){clearInterval(VN.iv);return}el.textContent=tx.slice(0,n);if(n>=tx.length){clearInterval(VN.iv);VN.full=true}},28);VN.tx=tx;VN.el=el}
+function vnNext(){if(!VN)return;if(!VN.full){clearInterval(VN.iv);VN.el.textContent=VN.tx;VN.full=true;return}
+  const st=STAGES[VN.id];if(VN.i<st.dlg.length-1){VN.i++;vnShow()}}
 // ---------- กระดานเควส ----------
 const QT={ // n=[รายวัน,รายสัปดาห์]
   kills:{t:'ฆ่าซอมบี้ {n} ตัว',n:[400,3000],r:[90,500]},
@@ -2208,6 +2234,28 @@ function drawV57Screen(){const c=G.clp;if(!c)return;ctx.save();ctx.textAlign='ce
   const s=G.ovr<0?'🌀 ประตูมิติ: เข้าภายใน '+Math.ceil(c.t)+' วิ ก่อนด่านถล่ม':'☠️ ด่านถล่ม! รีบเข้าประตูมิติ ('+Math.round(G.ovr)+' วิ)';
   ctx.fillStyle='#000a';ctx.fillRect(W_/2-170,52,340,24);ctx.fillStyle=G.ovr<0?(c.t<10&&Math.sin(G.t*8)>0?'#f86':'#ffd75a'):'#bf6';ctx.fillText(s,W_/2,69);ctx.restore();
   edgeArrow(c.x,c.y,'🌀','#c9f')}
+// ================= v58: หน้าโหลด / การ์ดเตรียมตัว =================
+const TIPS=['🔥+❄️ ติดไฟและเย็นพร้อมกัน = แตกกระจาย ดาเมจแรงมาก','☠️ พิษซ้อนได้ 5 ชั้น หักเลือดเป็น % เหมาะกับบอส','🔷 เก็บเรลิกครบ 3 ชิ้น (จากบอส/ก๊อบลินทอง) คู่หูประจำตัวจะออกมาช่วย',
+  '🧬 อาวุธ LV5 + ไอเท็มคู่ แล้วฆ่าบอสเปิดหีบ = วิวัฒนาการ','🌀 ฆ่าบอสแล้วรีบเข้าประตูมิติภายใน 30 วิ ไม่งั้นด่านถล่ม','⭐ การ์ดกรอบทองตอนอัปเลเวล = ทางไปอาวุธวิวัฒนาการ',
+  '🪶 ขนนกฟีนิกซ์จากบอส ใช้ชุบชีวิตได้ฟรี 1 ครั้ง','☠️ ระดับภัยขึ้นทุก 1 นาที ยิ่งอยู่นาน ซอมบี้ยิ่งโหด แต่เหรียญเยอะขึ้น','🕳️ บางครั้งหลังฆ่าบอสจะมีประตูดันเจี้ยนลับ ข้างในมีบอสสุดโหด',
+  '⚙️ ตั้งค่า > เลือกการ์ดอัตโนมัติ ช่วยให้ไม่ต้องหยุดเล่นตอนอัปเลเวล','🛡️ ซอมบี้วงสีเทามีเกราะ รับดาเมจน้อยลง ใช้ธาตุช่วย','📖 โหมดเนื้อเรื่องผ่านบท 3 และบท 5 ได้ตัวละครใหม่ฟรี'];
+let bootDone=false;
+function bootStart(){const b=document.getElementById('boot');if(!b)return;let ti=Math.floor(Math.random()*TIPS.length);const tipEl=document.getElementById('btTip');tipEl.textContent='💡 '+TIPS[ti];
+  const tipI=setInterval(()=>{ti=(ti+1)%TIPS.length;tipEl.textContent='💡 '+TIPS[ti]},3200);const t0=performance.now();
+  const iv=setInterval(()=>{const tot=ALLIMG.length||1,ok=ALLIMG.filter(i=>i.complete).length,f=ok/tot,el=performance.now()-t0;
+    document.getElementById('btBar').style.width=Math.round(f*100)+'%';document.getElementById('btSt').textContent='กำลังโหลด... '+Math.round(f*100)+'%';
+    if((f>=1&&el>700)||el>15000){clearInterval(iv);warmI=0;warmImgs(true);b.classList.add('ready');document.getElementById('btBar').style.width='100%';document.getElementById('btSt').textContent='แตะเพื่อเริ่ม';
+      const go=()=>{b.removeEventListener('pointerdown',go);clearInterval(tipI);bootDone=true;try{ac();if(!muted&&bgmOn)startBGM()}catch(e){}sfx('ui');b.classList.add('hide');setTimeout(()=>b.remove(),500)};
+      b.addEventListener('pointerdown',go)}},120)}
+function runCard(){const m=M,zs=[];const nm={normal:'ซอมบี้ปกติ',fast:'ตัวเร็ว',tank:'ตัวถึก',boom:'ตัวระเบิด',spit:'คายกรด',split:'แบ่งร่าง',screamer:'กรีดร้อง',shield:'โล่',healer:'ตัวรักษา',necromancer:'เนโครแมนเซอร์',
+  root:'🌿 รากไม้',hazmat:'☣️ ชุดกันสารพิษ',faceless:'👻 คนไข้ไร้เงา',fisher:'🕸️ ชาวประมง',wraith:'💀 วิญญาณอาฆาต',mini:'ลูกสมุน'};
+  const mt=MZT[m.id];if(mt)zs.push(nm[mt]);(m.bias||[]).forEach(k=>{const n=nm[k]||k;if(!zs.includes(n))zs.push(n)});
+  const md=MODES[S.mode]||{},dk=DIFF[S.diff]||{};state='rcard';
+  let h='<div class="rc"><h2 style="margin:0">'+(m.ic||'')+' '+m.n+'</h2><div class="sub">'+(md.ic||'')+' '+(md.n||'')+' · '+(dk.ic||'')+' '+(dk.n||'')+(G.prv?' · ⭐ เกียรติยศ '+G.prv:'')+'</div>'+
+    '<small>ซอมบี้ที่จะเจอบ่อย</small><div class="zs">'+zs.map(z=>'<span>'+z+'</span>').join('')+'</div>'+
+    '<small>💡 '+TIPS[Math.floor(Math.random()*TIPS.length)]+'</small><br><b style="color:#ffd75a">แตะเพื่อเริ่ม</b></div>';
+  page(h);ov.style.display='block';const end=()=>{if(state!=='rcard')return;clearTimeout(G.rcT);ov.removeEventListener('pointerdown',end);ov.style.display='none';state='play';last=performance.now()};
+  ov.addEventListener('pointerdown',end);G.rcT=setTimeout(end,1600)}
 function updV44(dt){
   for(let i=REL.length-1;i>=0;i--){const r=REL[i];if(Math.hypot(P.x-r.x,P.y-r.y)<P.r+24){REL.splice(i,1);gainRelic(r.x,r.y)}}
   const c=G.comp;
@@ -3491,7 +3539,9 @@ else if(a==='delimp'){if(confirm('ลบด่านและตัวละค�
   else if(a==='autopk'){S.apk=((S.apk||0)+1)%3;save();showSet()}
   else if(a==='story'){showStory()}
   else if(a==='stg'){if(stageOpen(i))showStageIntro(i);else sfx('ui_err')}
-  else if(a==='stggo'){startStory(i)}
+  else if(a==='stggo'){clearInterval(VN&&VN.iv);startStory(i)}
+  else if(a==='vnnext')vnNext();
+  else if(a==='vnskip'){if(VN){VN.i=STAGES[VN.id].dlg.length-1;vnShow();VN.full=true;clearInterval(VN.iv);VN.el.textContent=VN.tx}}
   else if(a==='quest'){showQuests()}
   else if(a==='qclaim'){const[dq,wq]=questsNow(),q=(i[0]==='d'?dq:wq).l[+i.slice(1)];if(q&&q.c>=q.n&&!q.ok){q.ok=1;S.coins+=q.r;save();sfx('buy')}showQuests()}
   else if(a==='qbonus'){const[dq]=questsNow();if(dq.l.every(q=>q.ok)&&!dq.bn){dq.bn=1;S.coins+=250;save();sfx('chest')}showQuests()}
@@ -3601,7 +3651,7 @@ function gameOver(win,how){
      '<button class="big sec sm" data-a="lb">'+BI('lb')+'อันดับ</button><button class="big sec sm" data-a="menu">เมนูหลัก</button></div>';
   page(h);
 }
-function start(){warmI=0;warmImgs(true);applyAimUI();AIM.on=false;aimT=null;ac();if(!muted&&bgmOn)startBGM();lockLand();joy.on=false;joy.dx=joy.dy=0;reset();v57Init();perfStart();lowQ=S.q==='low';applyDPR();fpsAcc=0;fpsN=0;lowCnt=0;try{draw()}catch(e){}ov.style.display='none';state='play';last=performance.now();if(G.pend>0)setTimeout(openNext,400)}
+function start(){warmI=0;warmImgs(true);applyAimUI();AIM.on=false;aimT=null;ac();if(!muted&&bgmOn)startBGM();lockLand();joy.on=false;joy.dx=joy.dy=0;reset();v57Init();perfStart();lowQ=S.q==='low';applyDPR();fpsAcc=0;fpsN=0;lowCnt=0;try{draw()}catch(e){}ov.style.display='none';state='play';last=performance.now();if(!STORY_RUN&&!G.inDun)runCard();if(G.pend>0)setTimeout(openNext,400)}
 
 // ---------- Draw ----------
 function draw(){
@@ -4099,7 +4149,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v57 (เกม v57) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v58 (เกม v58) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
@@ -4155,6 +4205,7 @@ if(!CHARS[S.sel])S.sel='soldier';
 if(!MAPS[S.map]||!S.maps.includes(S.map))S.map='forest';
 reset();
 showMenu();
+bootStart();
 requestAnimationFrame(loop);
 </script>
 </body>
