@@ -237,7 +237,7 @@ const STAGES={
   '1-4':{ch:0,n:'ผู้พิทักษ์ป่ามรณะ',k:'boss',bt:15,bhp:1.6,bv:[0],sk:['sboss1'],s3:{k:'time',v:150},diff:'normal',
     dlg:[['📻 วิทยุ','เฮลิคอปเตอร์จะลงที่ลานกลางป่า แต่...'],['🧑 คุณ','มีอะไรตัวใหญ่กำลังมา... ต้องล้มมันก่อน!']]},
   // ---------- บทที่ 2 ----------
-  '2-1':{ch:1,n:'พาเด็กหญิงไปขึ้นรถบัส',k:'escort',npc:'👧',npcn:'มิว',nhp:420,dist:1700,goal:'🚌',tl:300,s3:{k:'npc',v:.6},diff:'normal',hpM:1.25,
+  '2-1':{ch:1,n:'พาเด็กหญิงไปขึ้นรถบัส',k:'escort',npc:'👧',npcn:'มิว',nhp:600,dist:2600,nsp:55,nim:'mew',cpt:8,cph:9,goal:'🚌',tl:300,s3:{k:'npc',v:.6},diff:'normal',hpM:1.25,
     dlg:[['👧 มิว','พี่คะ... หนูหาพ่อไม่เจอ รถบัสอพยพจอดอยู่ปลายถนนค่ะ'],['🧑 คุณ','อยู่ใกล้พี่ไว้นะ ถ้าพี่ห่างเกินไปหนูจะหยุดเดิน']]},
   '2-2':{ch:1,n:'เปิดเสาสัญญาณ',k:'hold',tw:3,hold:10,ti:'📡',tl:300,s3:{k:'time',v:210},diff:'normal',hpM:1.3,
     dlg:[['📻 ศูนย์อพยพ','เราต้องการสัญญาณจากเสา 3 ต้นในเมือง ถึงจะนำทางเฮลิคอปเตอร์มาได้'],['🧑 คุณ','ยืนเฝ้าเสาแต่ละต้นจนเปิดติด... เสียงจะเรียกพวกมันมาแน่']]},
@@ -255,7 +255,7 @@ const STAGES={
   '3-4':{ch:2,n:'หมอผีแห่งวอร์ดมืด',k:'boss',bt:12,bhp:2.2,bv:[2],sk:['sboss3'],s3:{k:'time',v:150},diff:'hell',
     dlg:[['👩‍⚕️ หมอนารา','มันคือผู้อำนวยการโรงพยาบาล... มันเรียกคนไข้ทั้งตึกให้ลุกขึ้นมา!'],['🧑 คุณ','จบเรื่องนี้ที่นี่']]},
   // ---------- บทที่ 4 ----------
-  '4-1':{ch:3,n:'คุ้มกันช่างเรือ',k:'escort',npc:'🧔',npcn:'ลุงชาญ',nhp:520,dist:2000,goal:'🚤',tl:330,s3:{k:'npc',v:.6},diff:'hell',hpM:1.2,
+  '4-1':{ch:3,n:'คุ้มกันช่างเรือ',k:'escort',npc:'🧔',npcn:'ลุงชาญ',nhp:520,dist:2800,nsp:50,nim:'chan',cpt:10,fight:1,goal:'🚤',tl:330,s3:{k:'npc',v:.6},diff:'hell',hpM:1.2,
     dlg:[['🧔 ลุงชาญ','เรือข้ามฟากยังใช้ได้ แต่ข้าต้องไปถึงห้องเครื่องให้ได้'],['🧑 คุณ','ลุงเดินตามผมมา ผมเปิดทางเอง']]},
   '4-2':{ch:3,n:'สตาร์ทเครื่องยนต์',k:'hold',tw:3,hold:14,ti:'⚙️',tl:330,s3:{k:'time',v:240},diff:'hell',hpM:1.25,
     dlg:[['🧔 ลุงชาญ','ต้องเปิดวาล์วเชื้อเพลิง 3 จุดรอบท่า เสียงเครื่องจะดังมาก...'],['🧑 คุณ','งั้นก็ให้มันมาเลย']]},
@@ -290,7 +290,7 @@ function storyReset(){
   if(st.hpM)D.hp*=st.hpM;
   if(st.k==='collect'){const a0=Math.random()*6.28;for(let i=0;i<st.n2;i++){const a=a0+i*6.2832/st.n2+(Math.random()-.5)*.5,d=480+Math.random()*420,c={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,p:0};pushOut(c,30);G.sItems.push(c)}G.sHome={x:P.x,y:P.y}}
   if(st.k==='defend'){const c={x:P.x+70,y:P.y};pushOut(c,30);G.gen={x:c.x,y:c.y,hp:st.ghp,max:st.ghp};G.spm*=1.25}
-  if(st.k==='escort'){const g=farPoint(st.dist);G.sExit=g;G.npc={x:P.x+40,y:P.y+20,hp:st.nhp,max:st.nhp,wait:0}}
+  if(st.k==='escort'){const g=farPoint(st.dist);G.sExit=g;G.npc={x:P.x+40,y:P.y+20,hp:st.nhp,max:st.nhp,wait:0,sx:P.x+40,sy:P.y+20,cpi:0,cp:0,sc:0,clr:0,d8:2,wk:0,mv:0,swing:0}}
   if(st.k==='hold'){for(let i=0;i<st.tw;i++){const c=farPoint(420+i*180);G.sTw.push({x:c.x,y:c.y,c:0})}}
   if(st.k==='escape'){G.sExit=farPoint(st.dist);G.spm*=1.3}
   if(st.k==='boss'&&st.dun){G.bossAt=1e9;G.dunBossAt=st.bt}
@@ -311,12 +311,27 @@ function updStory(dt){
   if(st.k==='defend'&&G.gen){const g=G.gen;let n=0;const q=near(g.x,g.y,70);for(const z of q){if(z.hp>0&&z.T.kind!=='boss'&&Math.hypot(z.x-g.x,z.y-g.y)<z.T.r+34)n++}
     if(n){g.hp-=n*5*D.dm*dt;g.hit=.15}g.hit=Math.max(0,(g.hit||0)-dt);if(g.hp<=0){G.ban={s:'💥 '+st.gn+'พังแล้ว!',t:3};gameOver(false,'story');return}}
   if(st.k==='escort'&&G.npc){const n=G.npc,e=G.sExit,dp=Math.hypot(P.x-n.x,P.y-n.y);
-    if(dp<240){const dx=e.x-n.x,dy=e.y-n.y,d=Math.hypot(dx,dy);if(d>4){n.x+=dx/d*62*dt;n.y+=dy/d*62*dt;pushOut(n,14)}n.wait=0}else{n.wait+=dt;if(n.wait>3){n.wait=-6;G.ban={s:st.npc+' '+st.npcn+': รอด้วย! อย่าทิ้งกันนะ!',t:2}}}
+    if(n.done){n.done-=dt;if(n.done<=0){gameOver(true,'story')}return}
+    const tot=Math.hypot(e.x-n.sx,e.y-n.sy)||1,prog=1-Math.hypot(e.x-n.x,e.y-n.y)/tot;
+    // จุดซุ่ม 2 จุด (1/3, 2/3): หยุด ป้องกันจนครบเวลา (นับเฉพาะตอนเราอยู่ใกล้)
+    if(!n.cp&&n.cpi<2&&prog>=(n.cpi+1)/3){n.cpi++;n.cp=st.cpt||8;n.cpm=n.cp;storyHorde(st.cph||12,330);sfx('event');
+      G.ban={s:st.fight?st.npc+' '+st.npcn+': ทางถูกขวาง! คุ้มกันข้าระหว่างซ่อม '+n.cp+' วิ!':st.npc+' '+st.npcn+': มันมาเยอะมาก! หนูจะหลบตรงนี้ (คุ้มกัน '+n.cp+' วิ)',t:3}}
+    let near0=0;{const q=near(n.x,n.y,140);for(const z of q){if(z.hp>0&&Math.hypot(z.x-n.x,z.y-n.y)<85+z.T.r){near0=1;break}}}
+    n.sc=Math.max(0,n.sc-dt);n.swing=Math.max(0,n.swing-dt);n.mv=0;
+    if(n.cp>0){if(dp<260)n.cp-=dt;G.sHT-=dt*.5;if(n.cp<=0){n.cp=0;sfx('misok');G.ban={s:st.npc+' '+st.npcn+(st.fight?': ซ่อมเสร็จ! ไปต่อ!':': ไปต่อได้แล้ว!'),t:2}}}
+    else if(n.brave>0){n.brave-=dt;n.clr=0}
+    else if(near0){if(!n.clr){n.sc=.5;n.kt=0}n.clr=.6;n.kt=(n.kt||0)+dt;if(n.kt>2.5){n.brave=2.5;n.clr=0;n.kt=0;G.ban={s:st.npc+' '+st.npcn+(st.fight?': หลบไป! ข้าจะฝ่าไปเอง!':': หนูจะวิ่งฝ่าไปนะ!'),t:1.5}}}  // ตกใจแล้วหยุดหลบ (สูงสุด 2.5 วิ แล้ววิ่งฝ่า 2.5 วิ)
+    else if(n.clr>0)n.clr-=dt;
+    if(!n.cp&&n.clr<=0){
+      if(dp<240){const dx=e.x-n.x,dy=e.y-n.y,d=Math.hypot(dx,dy);if(d>4){const sp=(st.nsp||62)*(n.brave>0?1.35:1)*dt;n.x+=dx/d*sp;n.y+=dy/d*sp;pushOut(n,14);n.mv=1;n.wk+=dt*9;n.d8=Math.round(((Math.atan2(dy,dx)/(Math.PI/4))%8+8)%8)%8}n.wait=0}
+      else{n.wait+=dt;if(n.wait>3){n.wait=-6;G.ban={s:st.npc+' '+st.npcn+': รอด้วย! อย่าทิ้งกันนะ!',t:2}}}}
+    // ลุงชาญเหวี่ยงประแจผลักซอมบี้ใกล้ตัว (ดาเมจน้อย)
+    if(st.fight){n.ft=(n.ft||0)-dt;if(n.ft<=0){const q=near(n.x,n.y,70);for(const z of q){if(z.hp>0&&z.T.kind!=='boss'&&Math.hypot(z.x-n.x,z.y-n.y)<52+z.T.r){n.ft=1.3;n.swing=.45;hitZ(z,8+G.t*.05);knock(z,Math.atan2(z.y-n.y,z.x-n.x),70);sfx('hit',n.x,n.y);n.d8=Math.round(((Math.atan2(z.y-n.y,z.x-n.x)/(Math.PI/4))%8+8)%8)%8;break}}}}
     let k=0;const q=near(n.x,n.y,60);for(const z of q){if(z.hp>0&&Math.hypot(z.x-n.x,z.y-n.y)<z.T.r+18)k++}
-    if(k){n.hp-=k*6*D.dm*dt;n.hit=.15}n.hit=Math.max(0,(n.hit||0)-dt);
-    G.sHT-=dt;if(G.sHT<=0){G.sHT=14;storyHorde(8)}
+    if(k){n.hp-=Math.min(k,4)*4.5*D.dm*dt*(n.clr>0||n.cp>0?.55:1);n.hit=.15;if(!n.sc&&Math.random()<dt*2)n.sc=.4}n.hit=Math.max(0,(n.hit||0)-dt);
+    G.sHT-=dt;if(G.sHT<=0){G.sHT=11;storyHorde(8)}
     if(n.hp<=0){G.ban={s:'💔 '+st.npcn+'ไม่รอด...',t:3};gameOver(false,'story');return}
-    if(Math.hypot(n.x-e.x,n.y-e.y)<50){gameOver(true,'story');return}}
+    if(Math.hypot(n.x-e.x,n.y-e.y)<50){n.done=1.1;G.ban={s:st.npc+' '+st.npcn+(st.fight?': เยี่ยม! ขึ้นเรือได้!':': ถึงแล้ว! ขอบคุณนะคะ!'),t:2};sfx('misok')}}
   if(st.k==='hold'){const t=G.sTw.find(w=>w.c<st.hold);if(t){if(Math.hypot(P.x-t.x,P.y-t.y)<85){t.c+=dt;G.sHT-=dt;if(G.sHT<=0){G.sHT=4;storyHorde(7)}
       if(t.c>=st.hold){sfx('misok');const left=G.sTw.filter(w=>w.c<st.hold).length;G.ban={s:st.ti+' เปิดแล้ว! เหลือ '+left+' จุด',t:2.5};storyHorde(12);if(!left){gameOver(true,'story');return}}}}}
   if(st.k==='escape'&&G.sExit){const e=G.sExit;G.sHT-=dt;if(G.sHT<=0){G.sHT=6;const a=Math.atan2(P.y-e.y,P.x-e.x),R=Math.max(W_,H_)/2+60,n=Math.min(10,MAX_Z-Z.length);
@@ -327,6 +342,17 @@ function updStory(dt){
 const PROPK={'💊':'medkit','🧪':'serum','🔮':'seal','🔋':'generator','🏥':'surgery','🕯️':'altar','📡':'antenna','🚌':'bus','🚑':'ambulance','🚤':'boat','🌀':'portal','👧':'girl','🧔':'mechanic','⚙️':'valve','🪶':'feather','⛺':'healcircle'},PROPI={};
 Object.values(PROPK).forEach(k=>{const im=new Image();im.onload=()=>{PROPI[k]=im};im.src='img/props/'+k+'.png'});
 function propE(e,x,y,sz,fs){const im=PROPI[PROPK[e]];if(im){ctx.drawImage(im,x-sz/2,y-sz/2,sz,sz);return}ctx.font=(fs||Math.round(sz*.42))+'px sans-serif';ctx.fillText(e,x,y+sz*.15)}
+const NPCI={};['mew','chan'].forEach(k=>{const im=new Image();im.onload=()=>{NPCI[k]=im};im.src='img/npc_'+k+'.png'});
+function drawNPC(n,st){const im=NPCI[st.nim];if(!im)return false;const cs=im.width/7,t=PA8D2[n.d8||2];let cx=t[0],cy=0,fl=t[1];
+  if(n.done){cx=6;cy=1;fl=0}
+  else if(n.swing>0){cy=1;cx=n.d8>=5&&n.d8<=7?2:(n.d8===2||n.d8===1||n.d8===3)?0:1;fl=n.d8>=3&&n.d8<=5?1:0}
+  else if(n.sc>0){cy=1;cx=n.d8>=5&&n.d8<=7?2:(n.d8===2||n.d8===1||n.d8===3)?0:1;fl=n.d8>=3&&n.d8<=5?1:0}
+  else if(n.cp>0||n.clr>0||(!n.mv&&n.wait>1.2)){cy=1;cx=n.d8>=5&&n.d8<=7?5:(n.d8===2||n.d8===1||n.d8===3)?3:4;fl=n.d8>=3&&n.d8<=5?1:0}
+  else if(n.mv){const ph=Math.floor((n.wk%6.2832)/1.5708);if(ph===1){cx=t[2];cy=2}else if(ph===3){cx=t[3];cy=2}else{cx=t[0];cy=0}}
+  const k=st.nim==='mew'?.86:1,sz=74.7*k,bob=n.mv?Math.abs(Math.sin(n.wk))*2:0;
+  ctx.save();ctx.translate(n.x,n.y-bob);if(n.hit>0&&Math.sin(G.t*40)>0)ctx.globalAlpha=.55;if(fl)ctx.scale(-1,1);
+  ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(0,24+bob,16*k,6,0,0,6.28);ctx.fill();
+  ctx.drawImage(im,cx*cs,cy*cs,cs,cs,-sz/2,25-69.3*k,sz,sz);ctx.restore();return true}
 function drawStory(){
   const st=G.stg;if(!st)return;ctx.save();ctx.textAlign='center';
   for(const c of G.sItems){const b=Math.sin(G.t*4)*3;ctx.fillStyle='rgba(90,255,120,.18)';ctx.beginPath();ctx.arc(c.x,c.y,30,0,6.28);ctx.fill();
@@ -338,7 +364,8 @@ function drawStory(){
   if(G.gen){const g=G.gen;ctx.fillStyle=g.hit>0?'rgba(255,80,80,.25)':'rgba(255,220,80,.15)';ctx.beginPath();ctx.arc(g.x,g.y,40,0,6.28);ctx.fill();propE(st.gi||'🔋',g.x,g.y-8,108,38);
     ctx.fillStyle='#300';ctx.fillRect(g.x-32,g.y-64,64,7);ctx.fillStyle=g.hp/g.max>.5?'#5f5':g.hp/g.max>.25?'#fd4':'#f44';ctx.fillRect(g.x-32,g.y-64,64*Math.max(0,g.hp/g.max),7)}
   if(G.sExit){const e=G.sExit;ring(e.x,e.y,60,0,'255,220,90',st.goal,130)}
-  if(G.npc){const n=G.npc;propE(st.npc,n.x,n.y-10,74,34);ctx.fillStyle='#300';ctx.fillRect(n.x-24,n.y-52,48,6);ctx.fillStyle=n.hit>0?'#f66':'#5f5';ctx.fillRect(n.x-24,n.y-52,48*Math.max(0,n.hp/n.max),6);
+  if(G.npc){const n=G.npc;if(!drawNPC(n,st))propE(st.npc,n.x,n.y-10,74,34);
+    if(n.cp>0){ctx.strokeStyle='rgba(255,210,90,.8)';ctx.lineWidth=4;ctx.setLineDash([10,8]);ctx.lineDashOffset=-G.t*30;ctx.beginPath();ctx.arc(n.x,n.y,260,0,6.28);ctx.stroke();ctx.setLineDash([]);ctx.strokeStyle='#ffd25a';ctx.lineWidth=6;ctx.beginPath();ctx.arc(n.x,n.y-14,46,-Math.PI/2,-Math.PI/2+6.2832*(1-n.cp/n.cpm));ctx.stroke()}ctx.fillStyle='#300';ctx.fillRect(n.x-24,n.y-52,48,6);ctx.fillStyle=n.hit>0?'#f66':'#5f5';ctx.fillRect(n.x-24,n.y-52,48*Math.max(0,n.hp/n.max),6);
     if(Math.hypot(P.x-n.x,P.y-n.y)>=240){ctx.font='bold 12px sans-serif';ctx.fillStyle='#ff8';ctx.fillText('รอด้วย!',n.x,n.y-58)}}
   for(const t of G.sTw){const cur=G.sTw.find(w=>w.c<st.hold)===t;if(t.c>=st.hold){ctx.globalAlpha=.6;propE(st.ti,t.x,t.y-4,70,30);ctx.globalAlpha=1;continue}if(cur)ring(t.x,t.y,85,t.c/st.hold,'120,200,255',st.ti,80);else{ctx.globalAlpha=.85;propE(st.ti,t.x,t.y-4,70,30);ctx.globalAlpha=1}}
   ctx.restore();
@@ -2993,6 +3020,7 @@ function update(dt){
         const a=Math.atan2(P.y-z.y,P.x-z.x),d=Math.hypot(P.x-z.x,P.y-z.y);
     z.ph+=dt*5;
     let spd=fr?0:T.spd*(1+(D.sp-1)*.4)*G.zsm*(G.ev==='blood'?1.12:1),ang=a;
+    if(G.npc){if(z.tgN===undefined)z.tgN=T.kind!=='boss'&&Math.random()<.22?1:0;if(z.tgN){const nd=Math.hypot(G.npc.x-z.x,G.npc.y-z.y);if(nd<280&&nd<d*1.6)ang=Math.atan2(G.npc.y-z.y,G.npc.x-z.x)}}
     if(z.cxT>0)z.cxT-=dt;if(z.shk>0)z.shk-=dt;
     if(z.pst>0){z.pstT-=dt;z.hp-=z.max*(T.kind==='boss'?.0013:.009)*z.pst*(1+.3*((z.pstL||1)-1))*dt;if(z.pstT<=0)z.pst=0}
     if(z.brn>0){z.brn-=dt;z.hp-=(5+G.dmg*1.2)*(z.brnM||1)*dt;if(Math.random()<dt*4)burst(z.x,z.y,'#f83',1)}
@@ -4042,7 +4070,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v54 (เกม v54) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v55 (เกม v55) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
