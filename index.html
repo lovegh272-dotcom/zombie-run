@@ -151,9 +151,16 @@ function warmImgs(all){let n=0;for(;warmI<ALLIMG.length;warmI++){const im=ALLIMG
 setInterval(()=>{if(typeof state==='undefined'||state!=='play')warmImgs(false)},60);
 const cv=document.getElementById('c'),ctx=cv.getContext('2d'),ov=document.getElementById('ov');
 const DPR0=Math.min(devicePixelRatio||1,2);let W_,H_,DPR=DPR0;
-function resize(){W_=innerWidth;H_=innerHeight;cv.width=W_*DPR;cv.height=H_*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}
+function resize(){W_=innerWidth;H_=innerHeight;cv.width=Math.round(W_*DPR);cv.height=Math.round(H_*DPR);ctx.setTransform(DPR,0,0,DPR,0,0)}
 function applyDPR(){const n=lowQ?Math.min(DPR0,1.25):DPR0;if(n!==DPR){DPR=n;resize()}}
 addEventListener('resize',()=>{resize();if(innerHeight>innerWidth&&state==='play')togglePause()});resize();
+// v59: iPhone บางครั้งรายงานขนาดจอผิดตอนเปิดแอป/หมุนจอ แล้วไม่แจ้งซ้ำ → ภาพยืด จึงวัดซ้ำหลายจังหวะ + เช็กเป็นระยะ
+function fixSize(){const w=innerWidth,h=innerHeight;if(w&&h&&(w!==W_||h!==H_||cv.width!==Math.round(w*DPR)||cv.height!==Math.round(h*DPR)))resize()}
+function fixSizeSoon(){fixSize();setTimeout(fixSize,150);setTimeout(fixSize,350);setTimeout(fixSize,800)}
+addEventListener('orientationchange',fixSizeSoon);addEventListener('pageshow',fixSizeSoon);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)fixSizeSoon()});
+if(window.visualViewport)visualViewport.addEventListener('resize',fixSizeSoon);
+setInterval(fixSize,500);
 function lockLand(){try{if(screen.orientation&&screen.orientation.lock)screen.orientation.lock('landscape').catch(()=>{})}catch(e){}}
 
 const BOSS_EVERY=120;
@@ -2245,7 +2252,7 @@ function bootStart(){const b=document.getElementById('boot');if(!b)return;let ti
   const iv=setInterval(()=>{const tot=ALLIMG.length||1,ok=ALLIMG.filter(i=>i.complete).length,f=ok/tot,el=performance.now()-t0;
     document.getElementById('btBar').style.width=Math.round(f*100)+'%';document.getElementById('btSt').textContent='กำลังโหลด... '+Math.round(f*100)+'%';
     if((f>=1&&el>700)||el>15000){clearInterval(iv);warmI=0;warmImgs(true);b.classList.add('ready');document.getElementById('btBar').style.width='100%';document.getElementById('btSt').textContent='แตะเพื่อเริ่ม';
-      const go=()=>{b.removeEventListener('pointerdown',go);clearInterval(tipI);bootDone=true;try{ac();if(!muted&&bgmOn)startBGM()}catch(e){}sfx('ui');b.classList.add('hide');setTimeout(()=>b.remove(),500)};
+      const go=()=>{b.removeEventListener('pointerdown',go);fixSizeSoon();clearInterval(tipI);bootDone=true;try{ac();if(!muted&&bgmOn)startBGM()}catch(e){}sfx('ui');b.classList.add('hide');setTimeout(()=>b.remove(),500)};
       b.addEventListener('pointerdown',go)}},120)}
 function runCard(){const m=M,zs=[];const nm={normal:'ซอมบี้ปกติ',fast:'ตัวเร็ว',tank:'ตัวถึก',boom:'ตัวระเบิด',spit:'คายกรด',split:'แบ่งร่าง',screamer:'กรีดร้อง',shield:'โล่',healer:'ตัวรักษา',necromancer:'เนโครแมนเซอร์',
   root:'🌿 รากไม้',hazmat:'☣️ ชุดกันสารพิษ',faceless:'👻 คนไข้ไร้เงา',fisher:'🕸️ ชาวประมง',wraith:'💀 วิญญาณอาฆาต',mini:'ลูกสมุน'};
@@ -3651,7 +3658,7 @@ function gameOver(win,how){
      '<button class="big sec sm" data-a="lb">'+BI('lb')+'อันดับ</button><button class="big sec sm" data-a="menu">เมนูหลัก</button></div>';
   page(h);
 }
-function start(){warmI=0;warmImgs(true);applyAimUI();AIM.on=false;aimT=null;ac();if(!muted&&bgmOn)startBGM();lockLand();joy.on=false;joy.dx=joy.dy=0;reset();v57Init();perfStart();lowQ=S.q==='low';applyDPR();fpsAcc=0;fpsN=0;lowCnt=0;try{draw()}catch(e){}ov.style.display='none';state='play';last=performance.now();if(!STORY_RUN&&!G.inDun)runCard();if(G.pend>0)setTimeout(openNext,400)}
+function start(){fixSize();warmI=0;warmImgs(true);applyAimUI();AIM.on=false;aimT=null;ac();if(!muted&&bgmOn)startBGM();lockLand();joy.on=false;joy.dx=joy.dy=0;reset();v57Init();perfStart();lowQ=S.q==='low';applyDPR();fpsAcc=0;fpsN=0;lowCnt=0;try{draw()}catch(e){}ov.style.display='none';state='play';last=performance.now();if(!STORY_RUN&&!G.inDun)runCard();if(G.pend>0)setTimeout(openNext,400)}
 
 // ---------- Draw ----------
 function draw(){
@@ -4149,7 +4156,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v58 (เกม v58) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v59 (เกม v59) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
