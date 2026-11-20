@@ -1431,7 +1431,7 @@ function addTxt(x,y,s,c){if(TXT.length<(lowQ?10:(MOB?22:36)))TXT.push({x:x+(Math
 function hitZ(z,d){
   let c=false;
   if(z.shk>0)d*=1.2;
-  if(G.crit&&Math.random()<G.crit*.08){d*=2;c=true;G.hstop=0.04;}
+  if(G.crit&&Math.random()<G.crit*.08){d*=2;c=true;hStop(.03);}
   z.hp-=d;z.flash=.08;if(c)addTxtB(z.x,z.y-z.T.r-6,'💥'+Math.round(d),'#ffcf3a');else addTxt(z.x,z.y-z.T.r,Math.round(d),null);
   if(G.el&&!elBusy&&z.hp>0)elApply(z);
 }
@@ -1455,8 +1455,7 @@ function hurt(a,big){
   if(G.mis&&G.mis.k==='nohit')misDone(false);
 }
 function explode(x,y,r,dmgP,dmgZ,col){
-  G.hstop=0.06;
-    G.hstop=0.06;
+  hStop(.05);
   FX.push({x,y,r:0,max:r,t:0,c:col||'255,140,40'});G.shake=Math.max(G.shake,6);sfx('boom');burst(x,y,'#fa3',14);
   addDecal({x:x,y:y,r:Math.min(r*0.9,120),c:'#111111',t:10});
 
@@ -2438,9 +2437,10 @@ function drawV37Arrows(){
   if(G.sup)edgeArrow(G.sup.x,G.sup.y,'📦','#6cf');
   if(G.elite&&Z.indexOf(G.elite)>=0)edgeArrow(G.elite.x,G.elite.y,'👑','#fd4');
 }
+function hStop(t){const n=performance.now();if(n-(G.hsT||0)<700)return;G.hsT=n;G.hstop=Math.max(G.hstop||0,t)}
 function burst(x,y,col,n){
   if(lowQ)n=(n+1)>>1;
-  const cap=lowQ?60:(MOB?150:260);
+  const cap=lowQ?60:(MOB?110:260);if(MOB&&PART.length>60)n=(n+1)>>1;
   for(let i=0;i<n&&PART.length<cap;i++){
     const a=Math.random()*6.28,s=60+Math.random()*120,p=POOL.pop()||{};
     p.x=x;p.y=y;p.vx=Math.cos(a)*s;p.vy=Math.sin(a)*s;p.l=.4;p.col=col;PART.push(p);
@@ -3572,7 +3572,7 @@ function gameOver(win,how){
      '<button class="big sec sm" data-a="lb">'+BI('lb')+'อันดับ</button><button class="big sec sm" data-a="menu">เมนูหลัก</button></div>';
   page(h);
 }
-function start(){warmI=0;warmImgs(true);applyAimUI();AIM.on=false;aimT=null;ac();if(!muted&&bgmOn)startBGM();lockLand();joy.on=false;joy.dx=joy.dy=0;reset();perfStart();lowQ=S.q==='low';applyDPR();fpsAcc=0;fpsN=0;lowCnt=0;ov.style.display='none';state='play';last=performance.now();if(G.pend>0)setTimeout(openNext,400)}
+function start(){warmI=0;warmImgs(true);applyAimUI();AIM.on=false;aimT=null;ac();if(!muted&&bgmOn)startBGM();lockLand();joy.on=false;joy.dx=joy.dy=0;reset();perfStart();lowQ=S.q==='low';applyDPR();fpsAcc=0;fpsN=0;lowCnt=0;try{draw()}catch(e){}ov.style.display='none';state='play';last=performance.now();if(G.pend>0)setTimeout(openNext,400)}
 
 // ---------- Draw ----------
 function draw(){
@@ -4070,7 +4070,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v55 (เกม v55) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v56 (เกม v56) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
