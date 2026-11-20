@@ -2471,7 +2471,7 @@ function drawV61Screen(){
   ctx.textAlign='left';ctx.font='bold '+Math.round(h*.3)+'px sans-serif';ctx.lineWidth=6;ctx.strokeStyle='#000';const tx=W_*.45+(1-sx)*200,nm=ULTN[c.id]||'';ctx.strokeText(nm,tx,h*.1);ctx.fillStyle='#fff';ctx.fillText(nm,tx,h*.1);
   ctx.font='bold '+Math.round(h*.13)+'px sans-serif';ctx.fillStyle='#ffd75a';ctx.fillText('ULTIMATE',tx,-h*.22);ctx.restore()}
 // ================= v64: ขอบแผนที่ + กันวิ่งหนีทางเดียว =================
-const WALLI={};['forest','city','hosp','deadport','darkgrave'].forEach(k=>{const im=new Image();im.onload=()=>{WALLI[k]=im};im.src='img/walls/'+k+'.png'});
+const WALLI={},WALLX={};['forest','city','hosp','deadport','darkgrave'].forEach(k=>{const im=new Image();im.onload=()=>{WALLI[k]=im};im.src='img/walls/'+k+'.png';const ix=new Image();ix.onload=()=>{WALLX[k]=ix};ix.src='img/walls/'+k+'_x.png'});
 const WALLM={crypt:'darkgrave'};
 function arenaSet(){let hw=3000;const st=STORY_RUN&&STAGES[STORY_RUN];if(st&&st.dist)hw=Math.max(hw,st.dist+380);G.ac={x:P.x,y:P.y,hw};G.kT=0;G.kvx=0;G.kvy=0}
 function arenaIn(o,m){const A=G.ac;if(!A||G.inDun)return o;const L=A.hw-(m||60);o.x=Math.max(A.x-L,Math.min(A.x+L,o.x));o.y=Math.max(A.y-L,Math.min(A.y+L,o.y));return o}
@@ -2495,9 +2495,37 @@ function drawArena(){const A=G.ac,im=WALLI[WALLM[M.id]||M.id];if(!A||G.inDun||!i
   for(const side of [-1,1]){const yb=side<0?A.y-hw:A.y+hw;const y=side<0?yb-DH+14:yb-26;if(y>vy1||y+DH<vy0)continue;
     for(let k=-Math.ceil(hw/(DW-16))-1;k<=Math.ceil(hw/(DW-16))+1;k++){const x=A.x+k*(DW-16)-DW/2;if(x>vx1||x+DW<vx0)continue;seg(hash(k*3+side),x,y,DW,DH)}}
   // ด้านซ้าย/ขวา: เรียงซ้อนแนวตั้ง
-  const SW=200,SH=SW*sh/sw;for(const side of [-1,1]){const xc=A.x+side*hw;if(xc+SW<vx0-200||xc-SW>vx1+200)continue;
-    for(let k=-Math.ceil(hw/58)-2;k<=Math.ceil(hw/58)+2;k++){const y=A.y+k*58-SH*.75;if(y>vy1||y+SH<vy0)continue;seg(hash(k*7+side*13),side>0?xc-12:xc-SW+12,y,SW,SH)}}}
-function drawArenaHint(){const A=G.ac;if(!A||G.inDun||state!=='play')return;const L=A.hw,d=[P.x-(A.x-L),(A.x+L)-P.x,P.y-(A.y-L),(A.y+L)-P.y],th=220;
+  const SW=150,SH=SW*sh/sw*.8;for(const side of [-1,1]){const xc=A.x+side*hw;if(xc+SW<vx0-200||xc-SW>vx1+200)continue;
+    for(let k=-Math.ceil(hw/58)-2;k<=Math.ceil(hw/58)+2;k++){const y=A.y+k*58-SH*.75;if(y>vy1||y+SH<vy0)continue;seg(hash(k*7+side*13),side>0?xc-12:xc-SW+12,y,SW,SH)}}
+  drawArenaTop(A,hw,DW,DH);}
+function drawArenaTop(A,hw,DW,DH){const k=WALLM[M.id]||M.id,ix=WALLX[k];
+  // มุมกำแพง + ของตกแต่ง
+  if(ix){const cs=ix.width/3,CW=240;for(const sx of [-1,1])for(const sy of [-1,1]){const x=A.x+sx*hw,y=A.y+sy*hw;if(Math.abs(x-P.x)>W_/2+CW||Math.abs(y-P.y)>H_/2+CW)continue;
+      ctx.save();ctx.translate(x,sy<0?y+14:y+DH-26);if(sx>0)ctx.scale(-1,1);ctx.drawImage(ix,0,0,cs,cs,-CW/2,-CW,CW,CW);ctx.restore()}
+    const step=620;for(let j=-Math.floor(hw/step);j<=Math.floor(hw/step);j++){const x=A.x+j*step+((j*97)%120),y=A.y+hw-34;if(Math.abs(x-P.x)>W_/2+150||Math.abs(y-P.y)>H_/2+150)continue;
+      const f=1+((j%2)+2)%2,sz=k==='forest'||k==='darkgrave'?120:0;if(sz)ctx.drawImage(ix,f*cs,0,cs,cs,x-sz/2,y-sz*.85,sz,sz)}}
+  // หมอกทับครึ่งบนของกำแพง + ขอบข้าง
+  const vx0=P.x-W_/2-60,vw=W_+120,vy0=P.y-H_/2-60,vh=H_+120,F='6,6,12';
+  const gr=(x0,y0,x1,y1,a0)=>{const g=ctx.createLinearGradient(x0,y0,x1,y1);g.addColorStop(0,'rgba('+F+','+a0+')');g.addColorStop(1,'rgba('+F+',0)');return g};
+  let yt=A.y-hw;if(yt>vy0-DH&&yt<vy0+vh+DH){ctx.fillStyle=gr(0,yt-DH*.95,0,yt-DH*.15,.97);ctx.fillRect(vx0,yt-DH*1.05,vw,DH*.9)}
+  let yb=A.y+hw;if(yb>vy0-DH&&yb<vy0+vh+DH){ctx.fillStyle=gr(0,yb+DH*.95,0,yb+DH*.35,.95);ctx.fillRect(vx0,yb+DH*.3,vw,DH*.75)}
+  for(const sd of [-1,1]){const xc=A.x+sd*hw;if(xc<vx0-200||xc>vx0+vw+200)continue;ctx.fillStyle=gr(xc+sd*150,0,xc+sd*30,0,.95);ctx.fillRect(sd>0?xc+30:xc-150,vy0,120,vh)}
+  // ตาเรืองแสงในหมอก
+  if(!lowQ){const t=G.t;for(let i=0;i<14;i++){const seed=Math.sin(i*91.7)*1e4,fr=seed-Math.floor(seed),side=i%4,u=(fr*2-1)*hw,off=170+((i*53)%140);
+      let x,y;if(side===0){x=A.x+u;y=A.y-hw-off}else if(side===1){x=A.x+u;y=A.y+hw+off}else if(side===2){x=A.x-hw-off;y=A.y+u}else{x=A.x+hw+off;y=A.y+u}
+      if(Math.abs(x-P.x)>W_/2+30||Math.abs(y-P.y)>H_/2+30)continue;const bl=Math.sin(t*1.3+i*2.1),on=bl>-.2&&(Math.sin(t*7+i)>-.92);if(!on)continue;
+      const a=Math.min(1,(bl+.2)*1.5)*.9,c=i%3===0?'255,60,40':i%3===1?'255,220,60':'180,90,255';ctx.fillStyle='rgba('+c+','+a+')';ctx.shadowColor='rgba('+c+',1)';ctx.shadowBlur=8;
+      ctx.beginPath();ctx.ellipse(x-7,y,3.2,1.8,0,0,6.28);ctx.ellipse(x+7,y,3.2,1.8,0,0,6.28);ctx.fill();ctx.shadowBlur=0}
+    if(G.t>(G.grlT||0)){G.grlT=G.t+9+Math.random()*8;const L=A.hw;if(Math.min(P.x-(A.x-L),(A.x+L)-P.x,P.y-(A.y-L),(A.y+L)-P.y)<500)sfx('zgroan_big')}}}
+function drawMinimap(){const A=G.ac;if(!A||G.inDun||state!=='play')return;ctx.globalCompositeOperation='source-over';const S2=Math.min(96,H_*.24),x0=W_-S2-12,y0=Math.max(58,H_*.16),k=S2/(A.hw*2);
+  ctx.save();ctx.globalAlpha=.85;ctx.fillStyle='rgba(6,10,8,.82)';ctx.strokeStyle='rgba(170,220,150,.9)';ctx.lineWidth=2;ctx.fillRect(x0,y0,S2,S2);ctx.strokeRect(x0,y0,S2,S2);
+  const mp=(x,y)=>[x0+(x-A.x+A.hw)*k,y0+(y-A.y+A.hw)*k];const dot=(x,y,r,c)=>{const q=mp(x,y);ctx.fillStyle=c;ctx.beginPath();ctx.arc(q[0],q[1],r,0,6.28);ctx.fill()};
+  ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=1;const v1=mp(P.x-W_/2,P.y-H_/2);ctx.strokeRect(v1[0],v1[1],W_*k,H_*k);
+  for(const c of CH)dot(c.x,c.y,2.2,'#ffcf3a');for(const p of G.ptl)dot(p.x,p.y,3.2,'#c08cff');if(G.dptl)dot(G.dptl.x,G.dptl.y,3.2,'#ff5af0');
+  for(const z of Z){if(z.hp<=0)continue;if(z.T.kind==='boss')dot(z.x,z.y,4,'#ff3a3a');else if(z.T.kind==='goblin'||z.elite)dot(z.x,z.y,2.6,'#ffaa00')}
+  if(G.sExit)dot(G.sExit.x,G.sExit.y,3.4,'#5aff9a');if(G.npc)dot(G.npc.x,G.npc.y,2.6,'#9ff');if(G.gen)dot(G.gen.x,G.gen.y,3,'#9ff');if(G.sItems)for(const it of G.sItems)if(!it.got)dot(it.x,it.y,2.2,'#9ff');
+  const q=mp(P.x,P.y);ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(q[0],q[1],3,0,6.28);ctx.fill();ctx.strokeStyle='#3af';ctx.lineWidth=1.5;ctx.stroke();ctx.restore()}
+function drawArenaHint(){drawMinimap();const A=G.ac;if(!A||G.inDun||state!=='play')return;const L=A.hw,d=[P.x-(A.x-L),(A.x+L)-P.x,P.y-(A.y-L),(A.y+L)-P.y],th=220;
   ctx.save();for(let i=0;i<4;i++){if(d[i]>th)continue;const a=(1-d[i]/th)*.35,g=i<2?ctx.createLinearGradient(i?W_:0,0,i?W_-60:60,0):ctx.createLinearGradient(0,i===3?H_:0,0,i===3?H_-60:60);
     g.addColorStop(0,'rgba(255,60,40,'+a+')');g.addColorStop(1,'rgba(255,60,40,0)');ctx.fillStyle=g;if(i===0)ctx.fillRect(0,0,60,H_);else if(i===1)ctx.fillRect(W_-60,0,60,H_);else if(i===2)ctx.fillRect(0,0,W_,60);else ctx.fillRect(0,H_-60,W_,60)}ctx.restore()}
 function updV64(dt){if(G.inDun||state!=='play')return;const k=G.stg&&(G.stg.k==='escort'||G.stg.k==='escape');
@@ -3353,7 +3381,7 @@ function update(dt){
     if(z.brn>0){z.brn-=dt;z.hp-=(5+G.dmg*1.2)*(z.brnM||1)*dt;if(Math.random()<dt*4)burst(z.x,z.y,'#f83',1)}
     if(z.psn>0){z.psn-=dt;z.hp-=z.max*(T.kind==='boss'?.003:.02)*dt}
     if(z.stun>0){z.stun-=dt;spd=0}else if(z.slow>0){z.slow-=dt;spd*=(z.slf||.6)}
-    if(T.kind==='goblin'){ang=a+Math.PI;if(d>1200){if(z.elite){G.elite=null;G.ban={s:'👑 หัวหน้าซอมบี้หนีไปได้...',t:2};sfx('misfail');if(G.ev==='elite'){G.ev=null;G.evAt=G.t+(50+Math.random()*40)*G.evMul}}Z[i]=Z[Z.length-1];Z.pop();continue}}
+    if(T.kind==='goblin'){ang=a+Math.PI;if(G.ac&&!G.inDun){const A=G.ac,L=A.hw-220;if(Math.abs(z.x-A.x)>L*.8||Math.abs(z.y-A.y)>L*.8){let best=ang,bs=-1e9;for(let k=0;k<16;k++){const q=k*Math.PI/8,tx=z.x+Math.cos(q)*160,ty=z.y+Math.sin(q)*160;let sc=Math.hypot(tx-P.x,ty-P.y);const ox=Math.max(0,Math.abs(tx-A.x)-L),oy=Math.max(0,Math.abs(ty-A.y)-L);sc-=(ox+oy)*6;sc-=Math.abs(Math.atan2(Math.sin(q-(z.gq||ang)),Math.cos(q-(z.gq||ang))))*25;if(sc>bs){bs=sc;best=q}}z.gq=best;ang=best}}if(d>1200){if(z.elite){G.elite=null;G.ban={s:'👑 หัวหน้าซอมบี้หนีไปได้...',t:2};sfx('misfail');if(G.ev==='elite'){G.ev=null;G.evAt=G.t+(50+Math.random()*40)*G.evMul}}Z[i]=Z[Z.length-1];Z.pop();continue}}
     if(z.aura==='spd'){spd=0;}else if(auraN>0){const qq=near(z.x,z.y,220);let bfd=false;for(let k=0;k<qq.length;k++)if(qq[k].aura==='spd'){bfd=true;break;}if(bfd)spd*=1.6;}
     // [เพิ่มใหม่] ระบบบอสคลั่งเมื่อเลือดต่ำกว่า 30%
     if (T.kind === 'boss') {
@@ -4411,7 +4439,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v65 (เกม v65) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v66 (เกม v66) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
