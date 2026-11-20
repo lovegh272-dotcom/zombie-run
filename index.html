@@ -2473,12 +2473,22 @@ function drawV61Screen(){
 // ================= v64: ขอบแผนที่ + กันวิ่งหนีทางเดียว =================
 const WALLI={};['forest','city','hosp','deadport','darkgrave'].forEach(k=>{const im=new Image();im.onload=()=>{WALLI[k]=im};im.src='img/walls/'+k+'.png'});
 const WALLM={crypt:'darkgrave'};
-function arenaSet(){let hw=1450;const st=STORY_RUN&&STAGES[STORY_RUN];if(st&&st.dist)hw=Math.max(hw,st.dist+380);G.ac={x:P.x,y:P.y,hw};G.kT=0;G.kvx=0;G.kvy=0}
+function arenaSet(){let hw=3000;const st=STORY_RUN&&STAGES[STORY_RUN];if(st&&st.dist)hw=Math.max(hw,st.dist+380);G.ac={x:P.x,y:P.y,hw};G.kT=0;G.kvx=0;G.kvy=0}
 function arenaIn(o,m){const A=G.ac;if(!A||G.inDun)return o;const L=A.hw-(m||60);o.x=Math.max(A.x-L,Math.min(A.x+L,o.x));o.y=Math.max(A.y-L,Math.min(A.y+L,o.y));return o}
 function arenaClampP(){const A=G.ac;if(!A||G.inDun)return;const L=A.hw-34;
   if(P.x<A.x-L)P.x=A.x-L;else if(P.x>A.x+L)P.x=A.x+L;if(P.y<A.y-L+8)P.y=A.y-L+8;else if(P.y>A.y+L-10)P.y=A.y+L-10}
 function drawArena(){const A=G.ac,im=WALLI[WALLM[M.id]||M.id];if(!A||G.inDun||!im)return;const hw=A.hw,sw=im.width/5,sh=im.height,DW=260,DH=DW*sh/sw;
   const vx0=P.x-W_/2-DW,vx1=P.x+W_/2+DW,vy0=P.y-H_/2-DH,vy1=P.y+H_/2+DH;
+  // หมอกมืดนอกขอบ (วาดก่อนกำแพง กำแพงจะทับรอยต่อ)
+  {const ox=P.x-W_/2-100,oy=P.y-H_/2-100,ow=W_+200,oh=H_+200;if(P.x-W_/2<A.x-hw+260||P.x+W_/2>A.x+hw-260||P.y-H_/2<A.y-hw+260||P.y+H_/2>A.y+hw-260){
+    ctx.save();ctx.fillStyle='rgba(6,6,12,.96)';ctx.beginPath();ctx.rect(ox,oy,ow,oh);ctx.rect(A.x-hw-40,A.y-hw-40,hw*2+80,hw*2+80);ctx.fill('evenodd');
+    const band=170,mk=(x0,y0,x1,y1)=>{const g=ctx.createLinearGradient(x0,y0,x1,y1);g.addColorStop(0,'rgba(6,6,12,0)');g.addColorStop(1,'rgba(6,6,12,.96)');return g};
+    ctx.fillStyle=mk(0,A.y-hw+band-40,0,A.y-hw-40);ctx.fillRect(A.x-hw-40,A.y-hw-40,hw*2+80,band);
+    ctx.fillStyle=mk(0,A.y+hw-band+40,0,A.y+hw+40);ctx.fillRect(A.x-hw-40,A.y+hw+40-band,hw*2+80,band);
+    ctx.fillStyle=mk(A.x-hw+band-40,0,A.x-hw-40,0);ctx.fillRect(A.x-hw-40,A.y-hw-40,band,hw*2+80);
+    ctx.fillStyle=mk(A.x+hw-band+40,0,A.x+hw+40,0);ctx.fillRect(A.x+hw+40-band,A.y-hw-40,band,hw*2+80);
+    if(!lowQ){ctx.globalAlpha=.18;ctx.fillStyle='#3a2a55';for(let k=0;k<6;k++){const t=G.t*.15+k*1.7,fx=A.x+Math.cos(t)*hw*1.08,fy=A.y+Math.sin(t*1.3)*hw*1.08;ctx.beginPath();ctx.arc(fx,fy,220,0,6.28);ctx.fill()}}
+    ctx.restore()}}
   const seg=(i,x,y,w,h)=>ctx.drawImage(im,(i%5)*sw,0,sw,sh,x,y,w,h);
   const hash=n=>{n=Math.sin(n*127.1+A.hw)*43758.5;return Math.floor((n-Math.floor(n))*5)};
   // ด้านบน/ล่าง
@@ -3920,6 +3930,7 @@ function draw(){
     ctx.textAlign='center';
     for(let cx=c0;cx<=c1;cx++)for(let cy=r0;cy<=r1;cy++){
       for(const o of chunk(cx,cy)){
+        if(G.ac&&!G.inDun&&(Math.abs(o.x-G.ac.x)>G.ac.hw+40||Math.abs(o.y-G.ac.y)>G.ac.hw+40))continue;
         const oi=OBIMG[M.id+'_'+o.e];
         if(oi){const os=o.r*2.3;ctx.drawImage(oi,o.x-os/2,o.y-os/2,os,os)}
         else{
@@ -4400,7 +4411,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v64 (เกม v64) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v65 (เกม v65) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
