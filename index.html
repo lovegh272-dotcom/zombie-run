@@ -823,15 +823,42 @@ function musicKick(when,vol){
 }
 // v43: เพลงจากไฟล์ (ไม่บังคับ) bgm_menu / bgm_play / bgm_boss / bgm_dungeon ใน sounds.json -> เล่นวนแทนเพลงสังเคราะห์ ครอสเฟด 1.5 วิ
 let bgmCur=null;
-function bgmKind(){try{if(state!=='play')return'bgm_menu';if(G.inDun)return SND.buf.bgm_dungeon?'bgm_dungeon':'bgm_boss';return G.boss?'bgm_boss':'bgm_play'}catch(e){return'bgm_menu'}}
-function bgmSample(){
-  const k=bgmKind(),bl=SND.buf[k]||(k!=='bgm_play'&&SND.buf.bgm_play);
-  if(!bl||!bl.length){if(bgmCur){const c=bgmCur;bgmCur=null;try{c.g.gain.setTargetAtTime(0,AC.currentTime,.4);setTimeout(()=>{try{c.src.stop()}catch(e){}},2000)}catch(e){}}return false}
-  if(bgmCur&&bgmCur.k===k)return true;
-  if(bgmCur){const c=bgmCur;try{c.g.gain.setTargetAtTime(0,AC.currentTime,.5);setTimeout(()=>{try{c.src.stop()}catch(e){}},2500)}catch(e){}}
-  const src=AC.createBufferSource(),g=AC.createGain();src.buffer=bl[0];src.loop=true;g.gain.value=0;g.gain.setTargetAtTime(.9,AC.currentTime,.5);
-  src.connect(g);g.connect(musicBus);src.start();bgmCur={k,src,g};return true;
+function bgmKind(){try{if(state!=='play')return'bgm_menu';if(G.inDun)return SND.bgm.bgm_dungeon?'bgm_dungeon':'bgm_boss';return G.boss?'bgm_boss':'bgm_play'}catch(e){return'bgm_menu'}}
+// v68: เพลงไฟล์จริง: สุ่ม 1 เพลงต่อฉาก (ไม่ซ้ำเพลงล่าสุด) เล่นวนจนเปลี่ยนฉาก | ล็อกเพลงได้ในตั้งค่า (S.bgmSel)
+//      โหลด/ถอดรหัสเฉพาะเพลงที่จะเล่น เก็บไว้ไม่เกิน 3 เพลง (ประหยัดแรมบน iPhone) | ต่อรอยวนด้วยครอสเฟด
+const BGM_X=.9,BGM_KEEP=3;let bgmLast={},bgmForce=null,bgmWant=null;
+const BGM_CAT=[['bgm_menu','เพลงเมนู'],['bgm_play','เพลงในเกม'],['bgm_boss','เพลงบอส'],['bgm_dungeon','เพลงดันเจี้ยน']];
+function bgmFiles(k){return SND.bgm[k]||(k!=='bgm_play'&&SND.bgm.bgm_play)||null}
+function bgmLoad(f,cb){const c=SND.bc[f];if(c){c.t=performance.now();if(c.b){cb&&cb(c.b)}else if(cb)c.cb.push(cb);return}
+  const e=SND.bc[f]={b:null,cb:cb?[cb]:[],t:performance.now()};
+  fetch('snd/'+f).then(r=>r.ok?r.arrayBuffer():Promise.reject()).then(ab=>new Promise((res,rej)=>AC.decodeAudioData(ab,res,rej))).then(b=>{e.b=b;
+    const ks=Object.keys(SND.bc).filter(x=>SND.bc[x].b&&x!==f&&!(bgmCur&&bgmCur.f===x)).sort((a,b)=>SND.bc[a].t-SND.bc[b].t);
+    while(Object.values(SND.bc).filter(x=>x.b).length>BGM_KEEP&&ks.length)delete SND.bc[ks.shift()];
+    e.cb.forEach(fn=>{try{fn(b)}catch(_){}});e.cb=[]}).catch(()=>{delete SND.bc[f]});
 }
+function bgmBounds(b){if(b._bd)return b._bd;const d=b.getChannelData(0),n=d.length,th=.003;let a=0,e=n-1;while(a<n&&Math.abs(d[a])<th)a++;while(e>a&&Math.abs(d[e])<th)e--;
+  return b._bd={o:a/b.sampleRate,d:Math.max(2,(e-a)/b.sampleRate)}}
+const BGM_IN=new Float32Array(33).map((_,i)=>Math.sin(i/32*Math.PI/2)),BGM_OUT=BGM_IN.slice().reverse();
+function bgmSeg(c,t){const bd=bgmBounds(c.b),src=AC.createBufferSource(),g=AC.createGain(),x=Math.min(BGM_X,bd.d/4);t=Math.max(t,AC.currentTime+.02);
+  src.buffer=c.b;g.gain.setValueAtTime(0,t);
+  try{g.gain.setValueCurveAtTime(BGM_IN,t,x);g.gain.setValueCurveAtTime(BGM_OUT,t+bd.d-x,x)}catch(e){g.gain.setValueAtTime(1,t+.01)}
+  src.connect(g);g.connect(c.g);src.start(t,bd.o,bd.d);src.onended=()=>{try{g.disconnect()}catch(e){}};c.segs.push(src);if(c.segs.length>3)c.segs.shift();c.next=t+bd.d-x}
+function bgmPick(k,n){if(bgmForce&&bgmForce.k===k)return Math.min(bgmForce.i,n-1);const sel=(S.bgmSel||{})[k];if(sel>0&&sel<=n)return sel-1;
+  if(n<2)return 0;let i;do i=Math.floor(Math.random()*n);while(i===bgmLast[k]);return i}
+function bgmFade(){if(!bgmCur)return;const c=bgmCur;bgmCur=null;try{c.g.gain.setTargetAtTime(0,AC.currentTime,.5);setTimeout(()=>{c.segs.forEach(x=>{try{x.stop()}catch(e){}});try{c.g.disconnect()}catch(e){}},2600)}catch(e){}}
+function bgmSample(){
+  const k=bgmForce?bgmForce.k:bgmKind(),fl=bgmFiles(k);
+  if(!fl||!fl.length){bgmFade();bgmWant=null;return false}
+  const fk=bgmForce?'F'+bgmForce.i:'';
+  if(bgmCur&&bgmCur.k===k&&bgmCur.fk===fk){if(bgmCur.next-AC.currentTime<4.4)bgmSeg(bgmCur,bgmCur.next);return true}
+  if(!bgmWant||bgmWant.k!==k||bgmWant.fk!==fk){const i=bgmPick(k,fl.length);bgmWant={k,fk,i,f:fl[i]}}
+  const w=bgmWant,c=SND.bc[w.f];
+  if(!c||!c.b){bgmLoad(w.f,()=>{if(bgmWant===w&&musicBus&&!muted&&bgmOn)bgmSample()});return true} // รอโหลด: เล่นเพลงเดิมต่อไป
+  bgmFade();bgmWant=null;bgmLast[k]=w.i;c.t=performance.now();
+  const g=AC.createGain();g.gain.value=0;g.gain.setTargetAtTime(.9,AC.currentTime,.4);g.connect(musicBus);
+  bgmCur={k,fk,i:w.i,f:w.f,b:c.b,g,segs:[],next:0};bgmSeg(bgmCur,AC.currentTime+.05);return true;
+}
+function bgmNow(){if(musicBus&&AC&&AC.state==='running'&&!muted&&bgmOn)try{bgmSample()}catch(e){}}
 function musicBar(){
   if(!AC||!musicBus||muted||!bgmOn||AC.state!=='running')return;
   if(bgmSample()){barAt=AC.currentTime+3.2;return}
@@ -863,7 +890,7 @@ function startBGM(){
   musicBus=a.createGain();musicBus.gain.value=.62*bgmVol*(ducked?.35:1);musicBus.connect(a.destination);barAt=0;musicBar();musicTimer=setInterval(musicBar,3200);
 }
 function stopBGM(){
-  if(bgmCur){try{bgmCur.src.stop()}catch(e){}bgmCur=null}
+  if(bgmCur){bgmCur.segs.forEach(x=>{try{x.stop()}catch(e){}});try{bgmCur.g.disconnect()}catch(e){}bgmCur=null}bgmWant=null;
   if(musicTimer){clearInterval(musicTimer);musicTimer=null}
   if(musicBus&&AC){const b=musicBus;musicBus=null;try{b.gain.setTargetAtTime(.0001,AC.currentTime,.12);setTimeout(()=>{try{b.disconnect()}catch(e){}},650)}catch(e){}}
 }
@@ -936,14 +963,16 @@ const sfxLast={};
 //    มีไฟล์ = ใช้ไฟล์ | ไม่มี = ใช้เสียงสังเคราะห์ในตาราง SFX ด้านบนแทนอัตโนมัติ
 // 2) sfx(ชื่อ, x, y) ใส่ตำแหน่งในโลกได้ -> เบาลงตามระยะ + แพนซ้าย/ขวา
 // 3) shoot -> shoot_<ตัวละคร> อัตโนมัติ | สุ่ม pitch เล็กน้อยกันเสียงซ้ำน่าเบื่อ
-const SND={buf:{},list:null,req:0};
+const SND={buf:{},list:null,req:0,bgm:{},bc:{}};
 const SMETA={ // ค่าต่อเสียงสำหรับไฟล์จริง: v=ความดัง pv=สุ่ม pitch th=เว้นระยะขั้นต่ำ(ms)
-  ui:{v:.6,pv:.04},ui_back:{v:.6},step:{v:.35,pv:.12,th:150},zgroan:{v:.55,pv:.1},zgroan_big:{v:.7},hit:{v:.5,pv:.12},die:{v:.6,pv:.12},gem:{v:.45,pv:.15}};
+  ui:{v:.6,pv:.04},ui_back:{v:.6},step:{v:.35,pv:.12,th:150},zgroan:{v:.55,pv:.1},zgroan_big:{v:.7},hit:{v:.5,pv:.12},die:{v:.6,pv:.12},gem:{v:.45,pv:.15},ult_cutin:{v:.85},plane:{v:.8},die_big:{v:.75},boss_step:{v:.6,th:180},zscreech:{v:.6},hurt:{v:.7},camera:{v:.7},daily:{v:.8}};
 const NOPV={evo:1,lvl:1,over:1,extract:1,misok:1,mis:1,warp:1,ui:1,ui_back:1,ui_err:1,ui_toggle:1,chest:1,pact:1,event:1,heli:1};
 function loadSounds(){
   if(SND.req||!AC)return;SND.req=1;
   fetch('snd/sounds.json').then(r=>r.ok?r.json():null).then(j=>{if(!j)return;SND.list=j;
-    for(const k in j)(j[k]||[]).forEach(f=>fetch('snd/'+f).then(r=>r.ok?r.arrayBuffer():Promise.reject()).then(ab=>new Promise((res,rej)=>AC.decodeAudioData(ab,res,rej)))
+    for(const k in j)if(k.indexOf('bgm_')===0)SND.bgm[k]=(j[k]||[]).slice();
+    bgmNow();
+    for(const k in j)if(k.indexOf('bgm_')!==0)(j[k]||[]).forEach(f=>fetch('snd/'+f).then(r=>r.ok?r.arrayBuffer():Promise.reject()).then(ab=>new Promise((res,rej)=>AC.decodeAudioData(ab,res,rej)))
       .then(b=>{(SND.buf[k]=SND.buf[k]||[]).push(b)}).catch(()=>{}))}).catch(()=>{});
 }
 function playSample(b,vol,rate,pan){
@@ -2358,12 +2387,12 @@ function vfxSkill(i){const id=S.sel,a=faceA(),c=Math.cos(a),sn=Math.sin(a);
     else vfx(1,P.x,P.y,id==='soldier'?290:330,{d:.85});return}
   if(i===2){vfx(2,0,0,id==='berserk'?230:215,{att:'P',loop:1,d:3,a:id==='shot'?a:undefined})}}
 function sigUlt(id){const U=(40+G.dmg*2.2)*G.ulm,a=faceA(),c=Math.cos(a),sn=Math.sin(a),px=P.x,py=P.y;
-  G.cut={id,t:0,d:1.2};P.inv=Math.max(P.inv,1.2);G.ban={s:'',t:0};
+  G.cut={id,t:0,d:1.2};P.inv=Math.max(P.inv,1.2);G.ban={s:'',t:0};sfx('ult_cutin');
   const Q=(t,fn)=>G.gq.push({t,fn});sfx('skill');G.ghT=.6;
   if(ULT2[id]){ULT2[id](U,a,c,sn,px,py,Q);return true}
-  if(id==='soldier'){G.plane={x:px-c*700,y:py-sn*700,a,t:0,d:1.9};const pe=[-sn,c];
+  if(id==='soldier'){G.plane={x:px-c*700,y:py-sn*700,a,t:0,d:1.9};setTimeout(()=>sfx('plane'),250);const pe=[-sn,c];
     for(let j=0;j<5;j++)for(let r=-1;r<=1;r++){const x=px+c*(-300+150*j)+pe[0]*r*95,y=py+sn*(-300+150*j)+pe[1]*r*95;Q(.55+j*.16+Math.abs(r)*.06,()=>{vfx(3,x,y,240,{d:1.15});ultBoom(x,y,90,U*1,'255,140,50');G.shake=Math.max(G.shake,9)})}
-    const b2=a+Math.PI/2,c2=Math.cos(b2),s2=Math.sin(b2);Q(1.1,()=>{G.plane2={x:px-c2*700,y:py-s2*700,a:b2,t:0,d:1.9}});
+    const b2=a+Math.PI/2,c2=Math.cos(b2),s2=Math.sin(b2);Q(1.1,()=>{G.plane2={x:px-c2*700,y:py-s2*700,a:b2,t:0,d:1.9};sfx('plane')});
     for(let j=0;j<5;j++)for(let r=-1;r<=1;r+=2){const x=px+c2*(-300+150*j)+(-s2)*r*80,y=py+s2*(-300+150*j)+c2*r*80;Q(1.65+j*.16,()=>{vfx(3,x,y,230,{d:1.1});ultBoom(x,y,85,U*.9,'255,140,50')})}
     Q(2.6,()=>{vfx(3,px,py,460,{d:1.5});ultBoom(px,py,240,U*2.2,'255,120,40');ultHit('#ffb060')})}
   else if(id==='blader'){for(let k=0;k<12;k++)Q(.2+k*.08,()=>{const q=Math.random()*6.28,dd=Math.random()*200,x=P.x+Math.cos(q)*dd,y=P.y+Math.sin(q)*dd,ang=Math.random()*3.14;vfx(3,x,y,320,{a:ang,d:.65});sfx('hit');
@@ -3734,6 +3763,16 @@ ov.addEventListener('pointerup',endVol);
 ov.addEventListener('click',e=>{const c=e.target.closest('.card.btn');if(c&&!c.closest('[data-a]')&&!c.dataset.a&&S.uis!==0)sfx('ui')},true);ov.addEventListener('pointercancel',endVol);
 function devOn(){try{return localStorage.zdev==='1'}catch(e){return false}}
 let devTap=0,devT=0;
+function showMusic(){S.bgmSel=S.bgmSel||{};
+  const rows=BGM_CAT.map(([k,t])=>{const n=(SND.bgm[k]||[]).length,v=S.bgmSel[k]||0,pl=bgmForce&&bgmForce.k===k;
+    if(!n)return '<div class="card"><div class="row"><div class="rl">'+MI('bgm')+'<div><b>'+t+'</b><small>ยังไม่มีไฟล์เพลง (ใช้เพลงสังเคราะห์)</small></div></div></div></div>';
+    const chips='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">'+['🎲 สุ่ม'].concat(Array.from({length:n},(_,i)=>'เพลง '+(i+1))).map((l,i)=>
+      '<button class="tag" data-a="musc" data-i="'+k+':'+i+'" style="border:0;padding:6px 10px;font:inherit;'+(i===v?'background:#e7c34a;color:#111;font-weight:700':'background:#1d2b25;color:#dfe;box-shadow:inset 0 0 0 1px #4a6a5a')+'">'+l+'</button>').join('')+'</div>';
+    const pv='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">'+Array.from({length:n},(_,i)=>{const on=pl&&bgmForce.i===i;
+      return '<button class="tag" data-a="musp" data-i="'+k+':'+i+'" style="border:0;padding:6px 10px;font:inherit;'+(on?'background:#4ac06a;color:#111;font-weight:700':'background:#1d2b25;color:#dfe;box-shadow:inset 0 0 0 1px #4a6a5a')+'">'+(on?'⏸':'▶')+' '+(i+1)+'</button>'}).join('')+'</div>';
+    return '<div class="card"><div class="rl">'+MI('bgm')+'<div style="flex:1"><b>'+t+'</b><small>'+(v?'ล็อก: เพลง '+v:'สุ่มทุกครั้งที่เข้าฉาก (ไม่ซ้ำเพลงก่อนหน้า)')+'</small>'+chips+'<small style="display:block;margin-top:8px;opacity:.75">ฟังตัวอย่าง</small>'+pv+'</div></div></div>'}).join('');
+  page('<h2 style="margin:0">🎵 เลือกเพลง</h2>'+(bgmOn&&!muted?'':'<div class="card"><small>เพลงพื้นหลังปิดอยู่ — เปิดในหน้าตั้งค่าเพื่อฟัง</small></div>')+rows+'<button class="big" data-a="musx">← กลับ</button>');
+}
 function showSet(){
   if(PSET){const ql=({auto:'อัตโนมัติ',high:'สูง',low:'ต่ำ (ลื่นสุด)'})[S.q];
     page('<h2 style="margin:0">⚙️ ตั้งค่า (ระหว่างเล่น)</h2>'+setCard('q','gfx','คุณภาพกราฟิก','อัตโนมัติ: ลดเองเมื่อเฟรมเรตตก','<span class="tag">'+ql+'</span>')+setCard('fps','fps','แสดง FPS','',tgl(S.fps))+setCard('autopk','guide','เลือกการ์ดอัปเกรดอัตโนมัติ',['ปิด: เลือกเองทุกครั้ง','เลือกการ์ด ⭐ แนะนำให้ทันที (ไม่หยุดเกม)','หยุดรอ 2 วิ แล้วเลือก ⭐ แนะนำให้ (กดเปลี่ยนได้)'][S.apk||0],'<span class="tag">'+['ปิด','ทันที','รอ 2 วิ'][S.apk||0]+'</span>')+setCard('am','aim','โหมดยิงปืน','ออโต้ / ยิงเอง',S.am==='man'?'<span class="tag">ยิงเอง</span>':'<span class="tag">ออโต้</span>')+setCard('snd','snd','เอฟเฟกต์เสียง (SFX)','',tgl(sfxOn))+setCard('bgm','bgm','เพลงพื้นหลัง (BGM)','',tgl(bgmOn))+volCard('b','ความดังเพลง (BGM)','bgm')+volCard('s','ความดังเอฟเฟกต์ (SFX)','snd')+'<button class="big" data-a="pback">← กลับ</button>');return}
@@ -3747,6 +3786,7 @@ function showSet(){
     setCard('snd','snd','เอฟเฟกต์เสียง (SFX)','เสียงปืน สกิล ระเบิด เก็บไอเทม และบอส',tgl(sfxOn))+
     setCard('bgm','bgm','เพลงพื้นหลัง (BGM)','เพลงบรรยากาศเอาตัวรอด เล่นตั้งแต่หน้าเมนู',tgl(bgmOn))+
     volCard('b','ความดังเพลง (BGM)','bgm')+
+    setCard('mus','bgm','🎵 เลือกเพลง','สุ่มเพลงทุกครั้งที่เข้าฉาก หรือล็อกเพลงที่ชอบ แยกตามหมวด','<span class="tag">›</span>')+
     volCard('s','ความดังเอฟเฟกต์ (SFX)','snd')+
     setCard('uis','audio','เสียงปุ่มเมนู',S.uis===0?'ปิดอยู่':'เปิดอยู่ (คลิก/ย้อนกลับ/สลับหน้า)')+
     '<div class="sech">ช่วยเหลือ</div>'+
@@ -3802,8 +3842,14 @@ ov.addEventListener('click',e=>{
   if(S.uis!==0){if(b.classList.contains('off'))sfx('ui_err');else if(a==='menu'||a==='pback'||a==='back'||a==='resume')sfx('ui_back');
     else if(['mode','chars','shop','miss','evo','lb','stats','set','guide','pset','story','quest'].includes(a))sfx('ui_tab');
     else if(['q','sfx','bgm','mute','uis','fps','aim','vib'].includes(a))sfx('ui_toggle');else if(a!=='buy'&&a!=='devtap'&&a!=='wslot'&&a!=='qclaim'&&a!=='qbonus')sfx('ui')}
+  if(bgmForce&&a!=='musp'&&a!=='musc'){bgmForce=null;bgmNow()}
   if(a==='start')start();
   else if(a==='menu')showMenu();
+  else if(a==='mus')showMusic();
+  else if(a==='musx')showSet();
+  else if(a==='musc'){const [k,v]=(i||'').split(':');S.bgmSel=S.bgmSel||{};S.bgmSel[k]=+v||0;save();
+    if(!bgmForce&&bgmCur&&bgmCur.k===k&&+v&&bgmCur.i!==+v-1){bgmCur.k='';}bgmNow();showMusic()}
+  else if(a==='musp'){const [k,v]=(i||'').split(':');if(bgmForce&&bgmForce.k===k&&bgmForce.i===+v)bgmForce=null;else{bgmForce={k,i:+v};if(muted)setMute(false);if(!bgmOn)setBGM(true);unlockAudio();startBGM()}bgmNow();showMusic()}
   else if(a==='guide')showGuide();
   else if(a==='shop')showShop();
   else if(a==='chars')showChars();
@@ -4440,7 +4486,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v67 (เกม v67) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v68 (เกม v68) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});

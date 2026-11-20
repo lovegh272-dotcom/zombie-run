@@ -1,1 +1,204 @@
-{}
+{
+"boss": [
+"boss.mp3"
+],
+"boss_step": [
+"boss_step.mp3"
+],
+"roar": [
+"roar.mp3"
+],
+"step": [
+"step_1.mp3",
+"step_2.mp3",
+"step_3.mp3"
+],
+"zgroan": [
+"zgroan_1.mp3",
+"zgroan_2.mp3",
+"zgroan_3.mp3"
+],
+"zgroan_big": [
+"zgroan_big.mp3"
+],
+"zscreech": [
+"zscreech.mp3"
+],
+"shoot": [
+"shoot.mp3"
+],
+"shoot_berserk": [
+"shoot_berserk.mp3"
+],
+"shoot_blader": [
+"shoot_blader.mp3"
+],
+"shoot_gren": [
+"shoot_gren.mp3"
+],
+"shoot_nara": [
+"shoot_nara.mp3"
+],
+"shoot_priest": [
+"shoot_priest.mp3"
+],
+"shoot_shot": [
+"shoot_shot.mp3"
+],
+"shoot_sniper": [
+"shoot_sniper.mp3"
+],
+"shoot_soldier": [
+"shoot_soldier.mp3"
+],
+"shoot_storm": [
+"shoot_storm.mp3"
+],
+"shoot_wizard": [
+"shoot_wizard.mp3"
+],
+"bgm_boss": [
+"bgm_boss_1.mp3",
+"bgm_boss_2.mp3",
+"bgm_boss_3.mp3",
+"bgm_boss_4.mp3"
+],
+"bgm_defense": [
+"bgm_defense_1.mp3",
+"bgm_defense_2.mp3",
+"bgm_defense_3.mp3",
+"bgm_defense_4.mp3"
+],
+"bgm_dungeon": [
+"bgm_dungeon_1.mp3",
+"bgm_dungeon_2.mp3",
+"bgm_dungeon_3.mp3",
+"bgm_dungeon_4.mp3"
+],
+"bgm_menu": [
+"bgm_menu_1.mp3",
+"bgm_menu_2.mp3",
+"bgm_menu_3.mp3",
+"bgm_menu_4.mp3"
+],
+"bgm_play": [
+"bgm_play_1.mp3",
+"bgm_play_2.mp3",
+"bgm_play_3.mp3",
+"bgm_play_4.mp3"
+],
+"boom": [
+"boom.mp3"
+],
+"buy": [
+"buy.mp3"
+],
+"chest": [
+"chest.mp3"
+],
+"crate": [
+"crate.mp3"
+],
+"die": [
+"die.mp3"
+],
+"die_big": [
+"die_big.mp3"
+],
+"evo": [
+"evo.mp3"
+],
+"gem": [
+"gem.mp3"
+],
+"hit": [
+"hit.mp3"
+],
+"hurt": [
+"hurt.mp3"
+],
+"lvl": [
+"lvl.mp3"
+],
+"pickup": [
+"pickup.mp3"
+],
+"skill": [
+"skill.mp3"
+],
+"zap": [
+"zap.mp3"
+],
+"chop": [
+"chop.mp3"
+],
+"event": [
+"event.mp3"
+],
+"extract": [
+"extract.mp3"
+],
+"heli": [
+"heli.mp3"
+],
+"mis": [
+"mis.mp3"
+],
+"misfail": [
+"misfail.mp3"
+],
+"misok": [
+"misok.mp3"
+],
+"over": [
+"over.mp3"
+],
+"pact": [
+"pact.mp3"
+],
+"warp": [
+"warp.mp3"
+],
+"camera": [
+"camera.mp3"
+],
+"daily": [
+"daily.mp3"
+],
+"plane": [
+"plane.mp3"
+],
+"rain": [
+"rain.mp3"
+],
+"thunder": [
+"thunder.mp3"
+],
+"trap": [
+"trap.mp3"
+],
+"turret": [
+"turret.mp3"
+],
+"ult_cutin": [
+"ult_cutin.mp3"
+],
+"wall_break": [
+"wall_break.mp3"
+],
+"ui": [
+"ui.mp3"
+],
+"ui_back": [
+"ui_back.mp3"
+],
+"ui_err": [
+"ui_err.mp3"
+],
+"ui_tab": [
+"ui_tab.mp3"
+],
+"ui_toggle": [
+"ui_toggle.mp3"
+]
+}
