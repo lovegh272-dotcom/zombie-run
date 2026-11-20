@@ -323,20 +323,24 @@ function updStory(dt){
       for(let i=0;i<n;i++){const q=a+(i/(n-1||1)-.5)*1.4;mkZ(Math.random()<.5?'fast':'normal',P.x+Math.cos(q)*R,P.y+Math.sin(q)*R,1.2+G.t/80)}}
     if(Math.hypot(P.x-e.x,P.y-e.y)<60){gameOver(true,'story');return}}
 }
+// v54: ภาพของในด่าน (img/props) แทนอีโมจิ ถ้ายังโหลดไม่เสร็จจะใช้อีโมจิแทน
+const PROPK={'💊':'medkit','🧪':'serum','🔮':'seal','🔋':'generator','🏥':'surgery','🕯️':'altar','📡':'antenna','🚌':'bus','🚑':'ambulance','🚤':'boat','🌀':'portal','👧':'girl','🧔':'mechanic','⚙️':'valve','🪶':'feather','⛺':'healcircle'},PROPI={};
+Object.values(PROPK).forEach(k=>{const im=new Image();im.onload=()=>{PROPI[k]=im};im.src='img/props/'+k+'.png'});
+function propE(e,x,y,sz,fs){const im=PROPI[PROPK[e]];if(im){ctx.drawImage(im,x-sz/2,y-sz/2,sz,sz);return}ctx.font=(fs||Math.round(sz*.42))+'px sans-serif';ctx.fillText(e,x,y+sz*.15)}
 function drawStory(){
   const st=G.stg;if(!st)return;ctx.save();ctx.textAlign='center';
   for(const c of G.sItems){const b=Math.sin(G.t*4)*3;ctx.fillStyle='rgba(90,255,120,.18)';ctx.beginPath();ctx.arc(c.x,c.y,30,0,6.28);ctx.fill();
     if(c.p>0){ctx.strokeStyle='#7f7';ctx.lineWidth=5;ctx.beginPath();ctx.arc(c.x,c.y,34,-Math.PI/2,-Math.PI/2+6.2832*c.p/st.ch2);ctx.stroke()}
-    ctx.font='26px sans-serif';ctx.fillText(st.it,c.x,c.y+9+b)}
-  const ring=(x,y,r,f,col,ic)=>{ctx.fillStyle='rgba('+col+',.14)';ctx.beginPath();ctx.arc(x,y,r,0,6.28);ctx.fill();ctx.strokeStyle='rgba('+col+',.9)';ctx.lineWidth=3;ctx.setLineDash([12,9]);ctx.lineDashOffset=-G.t*30;ctx.beginPath();ctx.arc(x,y,r,0,6.28);ctx.stroke();ctx.setLineDash([]);
-    if(f>0){ctx.strokeStyle='rgba('+col+',1)';ctx.lineWidth=7;ctx.beginPath();ctx.arc(x,y,r-8,-Math.PI/2,-Math.PI/2+6.2832*Math.min(1,f));ctx.stroke()}if(ic){ctx.font='34px sans-serif';ctx.fillText(ic,x,y+12)}};
-  if(G.sHeal)ring(G.sHeal.x,G.sHeal.y,95,G.sHeal.c/st.heal,'110,255,160','⛺');
-  if(G.gen){const g=G.gen;ctx.fillStyle=g.hit>0?'rgba(255,80,80,.25)':'rgba(255,220,80,.15)';ctx.beginPath();ctx.arc(g.x,g.y,40,0,6.28);ctx.fill();ctx.font='38px sans-serif';ctx.fillText(st.gi||'🔋',g.x,g.y+13);
-    ctx.fillStyle='#300';ctx.fillRect(g.x-32,g.y-40,64,7);ctx.fillStyle=g.hp/g.max>.5?'#5f5':g.hp/g.max>.25?'#fd4':'#f44';ctx.fillRect(g.x-32,g.y-40,64*Math.max(0,g.hp/g.max),7)}
-  if(G.sExit){const e=G.sExit;ring(e.x,e.y,60,0,'255,220,90',st.goal)}
-  if(G.npc){const n=G.npc;ctx.font='34px sans-serif';ctx.fillText(st.npc,n.x,n.y+12);ctx.fillStyle='#300';ctx.fillRect(n.x-24,n.y-32,48,6);ctx.fillStyle=n.hit>0?'#f66':'#5f5';ctx.fillRect(n.x-24,n.y-32,48*Math.max(0,n.hp/n.max),6);
-    if(Math.hypot(P.x-n.x,P.y-n.y)>=240){ctx.font='bold 12px sans-serif';ctx.fillStyle='#ff8';ctx.fillText('รอด้วย!',n.x,n.y-38)}}
-  for(const t of G.sTw){const cur=G.sTw.find(w=>w.c<st.hold)===t;if(t.c>=st.hold){ctx.font='30px sans-serif';ctx.globalAlpha=.6;ctx.fillText(st.ti,t.x,t.y+10);ctx.globalAlpha=1;continue}if(cur)ring(t.x,t.y,85,t.c/st.hold,'120,200,255',st.ti)}
+    propE(st.it,c.x,c.y+b-4,58,26)}
+  const ring=(x,y,r,f,col,ic,sz)=>{ctx.fillStyle='rgba('+col+',.14)';ctx.beginPath();ctx.arc(x,y,r,0,6.28);ctx.fill();ctx.strokeStyle='rgba('+col+',.9)';ctx.lineWidth=3;ctx.setLineDash([12,9]);ctx.lineDashOffset=-G.t*30;ctx.beginPath();ctx.arc(x,y,r,0,6.28);ctx.stroke();ctx.setLineDash([]);
+    if(f>0){ctx.strokeStyle='rgba('+col+',1)';ctx.lineWidth=7;ctx.beginPath();ctx.arc(x,y,r-8,-Math.PI/2,-Math.PI/2+6.2832*Math.min(1,f));ctx.stroke()}if(ic)propE(ic,x,y-4,sz||84,34)};
+  if(G.sHeal){const h=G.sHeal;if(PROPI.healcircle){ctx.globalAlpha=.85+.15*Math.sin(G.t*3);ctx.drawImage(PROPI.healcircle,h.x-110,h.y-100,220,220);ctx.globalAlpha=1;ring(h.x,h.y,95,h.c/st.heal,'110,255,160')}else ring(h.x,h.y,95,h.c/st.heal,'110,255,160','⛺')}
+  if(G.gen){const g=G.gen;ctx.fillStyle=g.hit>0?'rgba(255,80,80,.25)':'rgba(255,220,80,.15)';ctx.beginPath();ctx.arc(g.x,g.y,40,0,6.28);ctx.fill();propE(st.gi||'🔋',g.x,g.y-8,108,38);
+    ctx.fillStyle='#300';ctx.fillRect(g.x-32,g.y-64,64,7);ctx.fillStyle=g.hp/g.max>.5?'#5f5':g.hp/g.max>.25?'#fd4':'#f44';ctx.fillRect(g.x-32,g.y-64,64*Math.max(0,g.hp/g.max),7)}
+  if(G.sExit){const e=G.sExit;ring(e.x,e.y,60,0,'255,220,90',st.goal,130)}
+  if(G.npc){const n=G.npc;propE(st.npc,n.x,n.y-10,74,34);ctx.fillStyle='#300';ctx.fillRect(n.x-24,n.y-52,48,6);ctx.fillStyle=n.hit>0?'#f66':'#5f5';ctx.fillRect(n.x-24,n.y-52,48*Math.max(0,n.hp/n.max),6);
+    if(Math.hypot(P.x-n.x,P.y-n.y)>=240){ctx.font='bold 12px sans-serif';ctx.fillStyle='#ff8';ctx.fillText('รอด้วย!',n.x,n.y-58)}}
+  for(const t of G.sTw){const cur=G.sTw.find(w=>w.c<st.hold)===t;if(t.c>=st.hold){ctx.globalAlpha=.6;propE(st.ti,t.x,t.y-4,70,30);ctx.globalAlpha=1;continue}if(cur)ring(t.x,t.y,85,t.c/st.hold,'120,200,255',st.ti,80);else{ctx.globalAlpha=.85;propE(st.ti,t.x,t.y-4,70,30);ctx.globalAlpha=1}}
   ctx.restore();
 }
 function drawStoryArrows(){const st=G.stg;if(!st)return;for(const c of G.sItems)edgeArrow(c.x,c.y,st.it,'#6f6');if(G.gen)edgeArrow(G.gen.x,G.gen.y,st.gi,'#fd4');if(G.sHeal)edgeArrow(G.sHeal.x,G.sHeal.y,'⛺','#7fa');
@@ -3168,7 +3172,7 @@ let pgSig='';
 const EJM=[['🦴','','w_blade'],['🏺','','w_nade'],['🔱','','w_ltn'],['☠️','','w_sg'],['🖐️','','w_mine'],['🌙','','w_drn'],['🦷','','w_bmr'],['👻','','w_flm'],['🌀','ดาบหมุน','blade'],['💣','ระเบิดมือ','nade'],['⚡','ไฟฟ้า','ltn'],['🔫','ลูกซอง','sg'],['🧨','','mine'],['🚁','','drn'],['🪃','','bmr'],['🔥','พ่นไฟ','flm'],
  ['👟','','boots'],['🛡️','เกราะ','armor'],['🎲','','crit'],['💚','ฟื้นเลือด','regen'],['⏱️','นาฬิกา','clk'],['🔋','','bat'],['💪','','str'],['⛽','','fuel'],['🧲','','magnet'],
  ['🌪️','','ev_blade'],['🔥','ระเบิดนาปาล์ม','ev_nade'],['🌩️','','ev_ltn'],['☄️','ลูกซองเพลิงนรก','ev_sg'],['☢️','','ev_mine'],['🛸','','ev_drn'],['🩸','','ev_bmr'],['🐉','','ev_flm'],
- ['🪖','','me_soldier'],['🌠','','me_blader'],['☄️','ระเบิดสะเทือนฟ้า','me_gren'],['🎯','กระสุนทะลวงเป้า','me_sniper'],['⚡','เทพีสายฟ้า','me_storm'],['🔫','ลูกซองรถถัง','me_shot'],['💊','','me_fieldmed'],['👹','','me_berserk'],['❄️','หน้าไม้ธารน้ำแข็ง','me_nara'],['🌞','คทาสุริยะ','me_priest']]
+ ['🪖','','me_soldier'],['🌠','','me_blader'],['☄️','ระเบิดสะเทือนฟ้า','me_gren'],['🎯','กระสุนทะลวงเป้า','me_sniper'],['⚡','เทพีสายฟ้า','me_storm'],['🔫','ลูกซองรถถัง','me_shot'],['💊','','me_fieldmed'],['👹','','me_berserk'],['❄️','หน้าไม้ธารน้ำแข็ง','me_nara'],['🌞','คทาสุริยะ','me_priest'],['🪶','','feather']]
 .sort((a,b)=>(b[1].length-a[1].length));
 function EJ(h){for(const [e,t,n] of EJM){const k=t?e+' '+t:e;if(h.indexOf(k)<0)continue;h=h.split(k).join('<i class="ei" style="--ic:url(img/ui/e_'+n+'.png)"></i>'+(t?' '+t:''))}return h}
 function page(html){  // v18: เลือก/ซื้อ/สลับรายการในหน้าเดิม = อยู่ตำแหน่งเลื่อนเดิม; เปลี่ยนหน้า = กลับบนสุด
@@ -4038,7 +4042,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v53 (เกม v53) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v54 (เกม v54) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
