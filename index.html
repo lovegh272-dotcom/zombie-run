@@ -41,6 +41,8 @@ canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none}
 #boot.go .bt-tip,#boot.go .bt-bar,#boot.go .bt-st{opacity:0;transition:opacity .25s}
 #boot.go::after{content:'';position:absolute;inset:0;background:#cfffb0;animation:btFlash .5s ease-out forwards;pointer-events:none}
 @keyframes btFlash{0%{opacity:.55}100%{opacity:0}}
+#ctl .sk.tutHi,.sk.tutHi{animation:tutP .9s infinite;z-index:13}
+@keyframes tutP{0%,100%{box-shadow:0 0 0 3px #ffd75a,0 0 14px 4px #ffd75acc;transform:scale(1)}50%{box-shadow:0 0 0 6px #fff6,0 0 28px 10px #ffd75a;transform:scale(1.1)}}
 #mbg{position:fixed;inset:0;z-index:9;display:none;background:linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.45)),#0a0f0a url(img/ui/cover.jpg) center/cover no-repeat;overflow:hidden;pointer-events:none}
 #mbg i{position:absolute;width:70vmax;height:40vmax;border-radius:50%;background:radial-gradient(rgba(120,200,110,.16),transparent 70%);animation:mbgF 26s linear infinite}
 #mbg i:nth-child(2){animation-duration:34s;animation-delay:-12s;top:45%}
@@ -474,11 +476,11 @@ function mkQuest(type,w,rnd){const q=QT[type],o={type,n:q.n[w],c:0,r:q.r[w],ok:0
   if(type==='map'){const ms=(S.maps||['forest']).filter(m=>MAPS[m]&&!MAPS[m].hidden);o.m=ms[Math.floor(rnd()*ms.length)]||'forest'}
   if(type==='surv')o.m2=w?10:5;return o}
 function genQuests(key,w){const rnd=seedRnd(key),pool=Object.keys(QT).filter(k=>QT[k].n[w]>0&&!(k==='story'&&!w&&!stageOpen('1-1'))),out=[];
-  while(out.length<3&&pool.length){const i=Math.floor(rnd()*pool.length);out.push(mkQuest(pool.splice(i,1)[0],w,rnd))}return out}
+  while(out.length<(w?5:3)&&pool.length){const i=Math.floor(rnd()*pool.length);out.push(mkQuest(pool.splice(i,1)[0],w,rnd))}return out}
 function questsNow(){
   const dk=dayKey(),wk=weekKey();
   if(!S.qd||S.qd.k!==dk)S.qd={k:dk,l:genQuests('d'+dk,0),rr:0,bn:0};
-  if(!S.qw||S.qw.k!==wk)S.qw={k:wk,l:genQuests(wk,1)};
+  if(!S.qw||S.qw.k!==wk||S.qw.l.length<5)S.qw={k:wk,l:genQuests(wk,1).map((q,i)=>(S.qw&&S.qw.k===wk&&S.qw.l[i]&&S.qw.l[i].type===q.type)?S.qw.l[i]:q)};
   return[S.qd,S.qw];
 }
 function qText(q){return QT[q.type].t.replace('{n}',q.n).replace('{c}',q.ch?CHARS[q.ch].ic+' '+CHARS[q.ch].n:'').replace('{m}',q.m&&MAPS[q.m]?MAPS[q.m].ic+' '+MAPS[q.m].n:'').replace('{m2}',q.m2||'')}
@@ -2301,7 +2303,7 @@ function bootStart(){const b=document.getElementById('boot');if(!b)return;let ti
         // v72: กันการแตะทะลุไปโดนปุ่มเมนูด้านหลัง + ฉากเปิด (โลโก้ซูม/แฟลช/เสียง) ~0.8 วิ แล้วค่อยเฟดเข้าเมนู
         const blk=ev=>{ev.stopPropagation();ev.preventDefault()};['click','pointerup','touchend','mouseup'].forEach(t=>document.addEventListener(t,blk,true));
         try{ac();if(!muted&&bgmOn)startBGM()}catch(e2){}sfx('roar');b.classList.add('go');
-        setTimeout(()=>{b.classList.add('hide');setTimeout(()=>{['click','pointerup','touchend','mouseup'].forEach(t=>document.removeEventListener(t,blk,true));b.remove()},480)},780)};
+        setTimeout(()=>{b.classList.add('hide');setTimeout(()=>{['click','pointerup','touchend','mouseup'].forEach(t=>document.removeEventListener(t,blk,true));b.remove();afterBoot()},480)},780)};
       b.addEventListener('pointerdown',go)}},120)}
 function runCard(){const m=M,zs=[];const nm={normal:'ซอมบี้ปกติ',fast:'ตัวเร็ว',tank:'ตัวถึก',boom:'ตัวระเบิด',spit:'คายกรด',split:'แบ่งร่าง',screamer:'กรีดร้อง',shield:'โล่',healer:'ตัวรักษา',necromancer:'เนโครแมนเซอร์',
   root:'🌿 รากไม้',hazmat:'☣️ ชุดกันสารพิษ',faceless:'👻 คนไข้ไร้เงา',fisher:'🕸️ ชาวประมง',wraith:'💀 วิญญาณอาฆาต',mini:'ลูกสมุน'};
@@ -3062,7 +3064,7 @@ function updFlame(dt){
 
 // ---------- Update ----------
 function update(dt){
-  if(G.cut){G.cut.t+=dt;if(G.cut.t<.45)dt*=.3;if(G.cut.t>G.cut.d)G.cut=null}if(G.rico&&!(G.rico.w>0))dt*=.5;  // v70: สโลว์โมระหว่างกระสุนเด้ง
+  if(G.tut)updTut(dt);if(G.cut){G.cut.t+=dt;if(G.cut.t<.45)dt*=.3;if(G.cut.t>G.cut.d)G.cut=null}if(G.rico&&!(G.rico.w>0))dt*=.5;  // v70: สโลว์โมระหว่างกระสุนเด้ง
   G.t+=dt;G.fr++;
   gridBuild();
   G.achT-=dt;if(G.achT<=0){G.achT=1;checkAch()}
@@ -3650,6 +3652,71 @@ const EJM=[['🦴','','w_blade'],['🏺','','w_nade'],['🔱','','w_ltn'],['☠�
  ['🪖','','me_soldier'],['🌠','','me_blader'],['☄️','ระเบิดสะเทือนฟ้า','me_gren'],['🎯','กระสุนทะลวงเป้า','me_sniper'],['⚡','เทพีสายฟ้า','me_storm'],['🔫','ลูกซองรถถัง','me_shot'],['💊','','me_fieldmed'],['👹','','me_berserk'],['❄️','หน้าไม้ธารน้ำแข็ง','me_nara'],['🌞','คทาสุริยะ','me_priest'],['🪶','','feather']]
 .sort((a,b)=>(b[1].length-a[1].length));
 function EJ(h){for(const [e,t,n] of EJM){const k=t?e+' '+t:e;if(h.indexOf(k)<0)continue;h=h.split(k).join('<i class="ei" style="--ic:url(img/ui/e_'+n+'.png)"></i>'+(t?' '+t:''))}return h}
+// ================= v73: บทสอน + ล็อกอินรายวัน 7 วัน =================
+let TUTN=0,LG_SEEN=0;
+function afterBoot(){if(state!=='menu')return;if(S.tut===undefined){showTutAsk();return}if(lgCan())showLogin()}
+function showTutAsk(){const nw=!(S.st&&S.st.games>0);
+  page('<h2 style="margin:0">'+(nw?'👋 ยินดีต้อนรับสู่ Zombie Run!':'📘 มีบทสอนเล่นใหม่')+'</h2><div class="card"><div style="text-align:left;line-height:1.6">'+
+    (nw?'อยากลองบทสอนสั้นๆ ไหม? ประมาณ 2 นาที จะได้รู้วิธีเดิน ยิง เก็บคริสตัล และใช้สกิล':'บทสอนนี้สอนพื้นฐานการเล่นทีละขั้น ถ้าเล่นเป็นแล้วกดข้ามได้เลย (ถามแค่ครั้งนี้ครั้งเดียว)')+
+    '<br>ทำครบรับ <b>+300 🪙</b> · เล่นใหม่ได้ภายหลังที่ ⚙️ ตั้งค่า</div></div>'+
+    '<button class="big" data-a="tuty">▶ เริ่มบทสอน</button><button class="big sec" data-a="tutn">ข้าม</button>')}
+const LGR=[{c:200},{c:300},{f:1},{c:500},{p:1},{c:800},{c:1500,p:2}];
+function lgText(r){return [r.c?'🪙 '+r.c:'',r.f?'🪶 ขนนกฟีนิกซ์':'',r.p?'🧩 ชิ้นส่วนสกิน ×'+r.p:''].filter(Boolean).join('<br>')}
+function lgCan(){S.lg=S.lg||{last:'',n:0};return S.lg.last!==dayKey()}
+function showLogin(){LG_SEEN=1;const lg=S.lg||{last:'',n:0},can=lgCan(),cur=lg.n%7;let h='<h2 style="margin:0">🎁 ล็อกอินรายวัน</h2><div class="sub">เข้าเกมวันละครั้งรับของ · ขาดวันไหนไม่เป็นไร นับต่อจากเดิม · ครบ 7 วันเริ่มรอบใหม่</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;max-width:720px;margin:8px auto">';
+  LGR.forEach((r,i)=>{const today=can&&i===cur,done=can?i<cur:i<((lg.n-1)%7+1);
+    h+='<div style="margin:0;padding:8px 4px;text-align:center;border-radius:12px;background:'+(i===6?'linear-gradient(#5a4a12cc,#2a2208cc)':'#0b1a10cc')+';border:2px solid '+(today?'#ffd75a':done?'#4a6a4a':'#5c7c5c')+';'+(today?'box-shadow:0 0 18px #ffd75a88;':'')+(done?'opacity:.55;':'')+'"><b style="font-size:13px">วันที่ '+(i+1)+'</b><div style="font-size:12px;line-height:1.4;margin-top:4px">'+lgText(r)+'</div>'+(done?'<div style="font-size:18px">✅</div>':'')+(i===6?'<small style="color:#ffd75a">รางวัลใหญ่</small>':'')+'</div>'});
+  h+='</div>'+(can?'<button class="big" data-a="lgc">🎁 รับรางวัลวันที่ '+(cur+1)+'</button>':'<div class="card">✅ วันนี้รับแล้ว — มาใหม่พรุ่งนี้นะ (วันถัดไป: วันที่ '+(lg.n%7+1)+')</div>')+
+    '<div class="sub">🪶 ขนนกฟีนิกซ์: ใช้ชุบชีวิตฟรีอัตโนมัติในรอบถัดไป (มี '+(S.fthV||0)+') · 🧩 ชิ้นส่วนสกิน: '+(S.skp||0)+' (ใช้แลกสกินทอง)</div>'+
+    '<button class="big sec" data-a="lgx">← กลับ</button>';page(h)}
+function lgClaim(){if(!lgCan())return showLogin();const lg=S.lg,r=LGR[lg.n%7];if(r.c){S.coins+=r.c;S.st.coins=(S.st.coins||0)+r.c}if(r.f)S.fthV=(S.fthV||0)+1;if(r.p)S.skp=(S.skp||0)+r.p;
+  lg.n=lg.n%7+1;lg.last=dayKey();save();sfx('daily');showLogin()}
+// ---- บทสอน ----
+const TUTS=[
+  {t:'ลากนิ้วฝั่งซ้ายของจอเพื่อเดิน (คอม: WASD)',hint:'joy'},
+  {t:'ตัวละครยิงเองอัตโนมัติ — กำจัดซอมบี้ให้ได้ 5 ตัว',tm:'กดค้างปุ่ม FIRE หรือจอฝั่งขวาเพื่อยิง — กำจัดซอมบี้ 5 ตัว'},
+  {t:'เก็บคริสตัลสีฟ้าที่ซอมบี้ทิ้งไว้ เพื่ออัปเลเวลแล้วเลือกการ์ดเสริมพลัง'},
+  {t:'กดปุ่ม DASH เพื่อพุ่งหลบ',el:'s0'},
+  {t:'กดปุ่ม BLAST สกิลโจมตีแรงๆ',el:'s1'},
+  {t:'กดปุ่ม SHIELD โล่ป้องกันชั่วคราว',el:'s2'},
+  {t:'ท่าไม้ตายพร้อมแล้ว! กดปุ่ม ULT',el:'s3'},
+  {t:'เยี่ยมมาก! พร้อมลุยแล้ว 🎉 รับ +300 🪙'}];
+function tutStart(){TUTN=1;STORY_RUN=null;try{start()}finally{TUTN=0}
+  G.tut={s:0,t:0,ox:P.x,oy:P.y,k0:0,lv0:0,hi:null};G.spm=0;G.thrOn=false;G.evAt=1e9;Z.length=0;
+  let b=document.getElementById('tutSk');if(!b){b=document.createElement('button');b.id='tutSk';b.textContent='ข้ามบทสอน ⏭';
+    b.style.cssText='position:fixed;z-index:12;bottom:max(10px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#000a;color:#fff;border:1px solid #9c6;border-radius:16px;padding:5px 14px;font:inherit;font-size:13px';
+    b.addEventListener('click',e=>{e.stopPropagation();tutEnd(false)});document.body.appendChild(b)}b.style.display='block';tutStep(0)}
+function tutHi(id){document.querySelectorAll('.tutHi').forEach(e=>e.classList.remove('tutHi'));if(id){const e=document.getElementById(id);if(e)e.classList.add('tutHi')}}
+function tutZ(n,type){for(let k=0;k<n;k++){const a=k/n*6.2832+Math.random()*.4;mkZ(type||'normal',P.x+Math.cos(a)*380,P.y+Math.sin(a)*250,1);const z=Z[Z.length-1];if(z){z.spd=(z.spd||1)*.55}}}
+function tutStep(i){const T=G.tut;T.s=i;T.t=0;tutHi(TUTS[i].el||null);sfx(i?'misok':'mis');
+  if(i===1){T.k0=G.kills;tutZ(5)}
+  if(i===2){T.lv0=G.lv;G.xp=Math.max(G.xp,G.need-1);if(!GEM.length)for(let k=0;k<4;k++)GEM.push({x:P.x+Math.cos(k*1.57)*130,y:P.y+Math.sin(k*1.57)*130,v:3})}
+  if(i>=3&&i<=6){const s2=SK[i-3];if(s2)s2.t=0;if(i===4)tutZ(6)}
+  if(i===7){S.coins+=300;S.tut=1;save();tutHi(null)}}
+function updTut(dt){const T=G.tut;T.t+=dt;P.hp=P.max;G.t=Math.min(G.t,20);
+  const nx=()=>tutStep(T.s+1);
+  if(T.s===0&&Math.hypot(P.x-T.ox,P.y-T.oy)>220)nx();
+  else if(T.s===1){if(G.kills-T.k0>=5)nx();else if(!Z.some(z=>z.hp>0))tutZ(5-(G.kills-T.k0))}
+  else if(T.s===2){if(G.lv>T.lv0&&state==='play')nx();else{if(T.t>1.5&&!GEM.length){G.xp=Math.max(G.xp,G.need-1);GEM.push({x:P.x+120,y:P.y,v:3});T.t=0}if(T.t>3.5)for(const g of GEM){const dx=P.x-g.x,dy=P.y-g.y,d=Math.hypot(dx,dy)||1;g.x+=dx/d*Math.min(d,260*dt);g.y+=dy/d*Math.min(d,260*dt)}}}
+  else if(T.s===3&&P.dash>0)nx();
+  else if(T.s===4&&SK[1]&&SK[1].t>0)nx();
+  else if(T.s===5&&SK[2]&&SK[2].t>0)nx();
+  else if(T.s===6&&(G.cut||(SK[3]&&SK[3].t>0)))nx();
+  else if(T.s===7&&T.t>2.6)tutEnd(true)}
+function tutEnd(done){if(!G.tut)return;G.tut=null;tutHi(null);const b=document.getElementById('tutSk');if(b)b.style.display='none';
+  if(!done){S.tut=S.tut||0;save()}state='menu';
+  page('<h2 style="margin:0">'+(done?'🎉 จบบทสอน!':'⏭ ข้ามบทสอนแล้ว')+'</h2><div class="card">'+(done?'ได้รับ <b>+300 🪙</b> · ':'')+'เล่นบทสอนใหม่ได้ที่ ⚙️ ตั้งค่า</div><button class="big" data-a="tutdone">ไปหน้าหลัก</button>')}
+function drawTut(){const T=G.tut,st=TUTS[T.s];if(!st)return;const tx=(T.s===1&&manual()&&st.tm)?st.tm:st.t;ctx.save();
+  const fs=Math.round(Math.min(19,H_*.048)),w=Math.min(W_*.8,ctx.measureText?620:620),y=Math.min(132,H_*.3);ctx.font='bold '+fs+'px sans-serif';const tw=Math.min(W_*.86,ctx.measureText(tx).width+40);
+  const pul=.85+.15*Math.sin(G.t*6+T.t*6);ctx.fillStyle='rgba(0,0,0,.72)';ctx.strokeStyle='rgba(255,215,90,'+pul+')';ctx.lineWidth=2;
+  const x0=W_/2-tw/2;ctx.beginPath();ctx.roundRect?ctx.roundRect(x0,y-fs*1.2,tw,fs*2.4,12):ctx.rect(x0,y-fs*1.2,tw,fs*2.4);ctx.fill();ctx.stroke();
+  ctx.textAlign='center';ctx.fillStyle='#ffd75a';ctx.font='bold '+Math.round(fs*.62)+'px sans-serif';ctx.fillText('บทสอน '+(Math.min(T.s+1,7))+'/7',W_/2,y-fs*.35);
+  ctx.fillStyle='#fff';ctx.font='bold '+fs+'px sans-serif';ctx.fillText(tx,W_/2,y+fs*.75);
+  if(st.hint==='joy'&&!joy.on){const jx=W_*.17,jy=H_*.72,o=Math.sin(T.t*3)*40;ctx.globalAlpha=.75;ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(jx,jy,46,0,6.2832);ctx.stroke();
+    ctx.fillStyle='#ffd75a';ctx.beginPath();ctx.arc(jx+o,jy,20,0,6.2832);ctx.fill();ctx.font='28px sans-serif';ctx.fillText('👆',jx+o+6,jy+38)}
+  if(T.s===1){ctx.globalAlpha=1;ctx.font='bold '+Math.round(fs*.8)+'px sans-serif';ctx.fillStyle='#9f6';ctx.fillText(Math.min(5,G.kills-T.k0)+' / 5',W_/2,y+fs*2.1)}
+  ctx.restore()}
 function syncMbg(){const m=document.getElementById('mbg');if(m)m.style.display=(ov.style.display==='block'&&state==='menu')?'block':'none'}
 function page(html){  // v18: เลือก/ซื้อ/สลับรายการในหน้าเดิม = อยู่ตำแหน่งเลื่อนเดิม; เปลี่ยนหน้า = กลับบนสุด
   const was=ov.style.display==='block',st=ov.scrollTop,sig=(html.match(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/)||[])[1]||'';
@@ -3672,7 +3739,7 @@ function showMenu(){
   state='menu';STORY_RUN=null;pickCfg();
   const C=CHARS[S.sel];
   page('<h1 style="margin:0"><img src="img/ui/logo.png" alt="ZOMBIE RUN" style="height:min(120px,26vh);filter:drop-shadow(0 4px 8px #000)"></h1>'+
-    '<div class="coin">🪙 '+S.coins+'</div>'+
+    '<div class="coin">🪙 '+S.coins+' <span class="tag" data-a="login" style="font-size:14px;vertical-align:middle">🎁 รายวัน'+(lgCan()?' <span style="color:#f66">●</span>':'')+'</span></div>'+
     '<div>ตัวละคร: '+C.ic+' '+C.n+' | สถิติ: '+fmt(S.st.best)+'</div>'+
     '<div style="font-size:14px;color:#8cf">'+EI('map',M.id,M.ic)+M.n+' | '+EI('diff',keyOf(DIFF,D),D.ic)+D.n+' | '+EI('mode',keyOf(MODES,MO),MO.ic)+MO.n+'</div>'+
     '<button class="big" data-a="start">'+BI('play')+'เริ่มเกม</button>'+
@@ -3852,6 +3919,7 @@ function showSet(){
     '<div class="sech">ช่วยเหลือ</div>'+
     setCard('audio','audio','ทดลองเพลง / เปิดเสียงก่อนเล่น','กดเพื่อปลดล็อกเสียงบนมือถือ แล้วฟังเพลงเอฟเฟกต์ตัวอย่าง','')+
     setCard('guide','guide','วิธีเล่น / คู่มือ','การควบคุม สกิล เลเวล วิวัฒนาการ','')+
+    setCard('tutr','guide','📘 เล่นบทสอนอีกครั้ง','ฝึกเดิน ยิง เก็บคริสตัล และใช้สกิลทีละขั้น (ประมาณ 2 นาที)','')+
     '<div class="sech" id="devh">ข้อมูล / นักพัฒนา</div>'+
     (devOn()?setCard('imp','import','นำเข้าด่าน/ตัวละคร (AI)','วาง JSON ที่ได้จาก AI',''):'')+
     (devOn()?setCard('perf','perf','บันทึกประสิทธิภาพ','ค่า FPS/ซอมบี้/เฟรมสะดุดของแต่ละรอบ คัดลอกส่งให้ผู้พัฒนา'):'')+
@@ -3906,6 +3974,12 @@ ov.addEventListener('click',e=>{
   if(a==='start')start();
   else if(a==='menu')showMenu();
   else if(a==='mus')showMusic();
+  else if(a==='login')showLogin();
+  else if(a==='lgc')lgClaim();
+  else if(a==='lgx'){LG_SEEN=1;showMenu()}
+  else if(a==='tuty'||a==='tutr')tutStart();
+  else if(a==='tutn'){S.tut=0;save();showMenu();if(lgCan())setTimeout(showLogin,250)}
+  else if(a==='tutdone'){showMenu();if(lgCan()&&!LG_SEEN)setTimeout(showLogin,250)}
   else if(a==='musx')showSet();
   else if(a==='musc'){const [k,v]=(i||'').split(':');S.bgmSel=S.bgmSel||{};S.bgmSel[k]=+v||0;save();
     if(!bgmForce&&bgmCur&&bgmCur.k===k&&+v&&bgmCur.i!==+v-1){bgmCur.k='';}bgmNow();showMusic()}
@@ -4045,7 +4119,7 @@ function gameOver(win,how){
      '<button class="big sec sm" data-a="lb">'+BI('lb')+'อันดับ</button><button class="big sec sm" data-a="menu">เมนูหลัก</button></div>';
   page(h);
 }
-function start(){fixSize();warmI=0;warmImgs(true);applyAimUI();AIM.on=false;aimT=null;ac();if(!muted&&bgmOn)startBGM();lockLand();joy.on=false;joy.dx=joy.dy=0;reset();v57Init();arenaSet();perfStart();lowQ=S.q==='low';applyDPR();fpsAcc=0;fpsN=0;lowCnt=0;try{draw()}catch(e){}ov.style.display='none';state='play';last=performance.now();if(!STORY_RUN&&!G.inDun)runCard();if(G.pend>0)setTimeout(openNext,400)}
+function start(){fixSize();warmI=0;warmImgs(true);applyAimUI();AIM.on=false;aimT=null;ac();if(!muted&&bgmOn)startBGM();lockLand();joy.on=false;joy.dx=joy.dy=0;reset();v57Init();arenaSet();perfStart();lowQ=S.q==='low';applyDPR();fpsAcc=0;fpsN=0;lowCnt=0;try{draw()}catch(e){}ov.style.display='none';state='play';last=performance.now();if(!STORY_RUN&&!G.inDun&&!TUTN)runCard();if(S.fthV>0&&!G.fth&&!TUTN){G.fth=1;S.fthV--;save();G.ban={s:'🪶 ใช้ขนนกฟีนิกซ์จากของรางวัล',t:2}}if(G.pend>0)setTimeout(openNext,400)}
 
 // ---------- Draw ----------
 function draw(){
@@ -4386,7 +4460,7 @@ function draw(){
     g.addColorStop(0,'rgba(10,12,14,0)');g.addColorStop(1,'rgba(10,12,14,.93)');
     ctx.globalAlpha=Math.min(1,G.evt);ctx.fillStyle=g;ctx.fillRect(0,0,W_,H_);ctx.globalAlpha=1;
   }
-  drawV53Screen();drawV57Screen();drawV61Screen();drawArenaHint();
+  drawV53Screen();drawV57Screen();drawV61Screen();drawArenaHint();if(G.tut)drawTut();
   drawV37Overlay();
   if(M.fx==='dark'&&G.lit<=0){
     const g=ctx.createRadialGradient(W_/2,H_/2,180,W_/2,H_/2,360);
@@ -4546,7 +4620,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v72 (เกม v72) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v73 (เกม v73) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
