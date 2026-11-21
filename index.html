@@ -225,6 +225,7 @@ const MODES={
   m15:{n:'รอด 15 นาที',ic:'⏱️',goal:900,bonus:300,d:'รอดครบเวลา = ชนะ โบนัส +300 🪙'},
   m30:{n:'รอด 30 นาที',ic:'🏆',goal:1800,bonus:800,d:'รอดครบเวลา = ชนะ โบนัส +800 🪙'},
   extract:{n:'อพยพ',ic:'📡',goal:480,bonus:500,d:'รับสัญญาณอะไหล่ 3 ชิ้น กลับฐาน และป้องกันจุดอพยพ 45 วินาที (เป้าหมาย 6–8 นาที)'},
+  rush:{n:'บอสรัช',ic:'👹',goal:0,bonus:0,d:'บอสมาเรียงตัว: บอสปกติ → บอสเนื้อเรื่อง → บอสภัยพิบัติ แล้ววนใหม่แรงขึ้น · ระหว่างบอสฟื้นเลือด 20% · ล้มบอสได้เหรียญ',lock:1},
   daily:{n:'ท้าทายรายวัน',ic:'📅',goal:600,bonus:400,d:'แผนที่และกฎพิเศษเปลี่ยนทุกวัน ทุกเครื่องได้ชุดเดียวกัน รอด 10 นาที = ชนะ (ความยากปกติ)'}
 };
 // ---------- v38: ท้าทายรายวัน ----------
@@ -2287,7 +2288,7 @@ function drawV53Screen(){if(!STORY_RUN)return;const n=+String(STORY_RUN).split('
   ctx.restore()}
 // ================= v57: ระดับภัย / ด่านถล่ม / เกียรติยศ =================
 const THRM={2:'ซอมบี้เกราะเริ่มออก (วงสีเทา รับดาเมจน้อยลง)',4:'ฝูงตัวเร็วบุกทุก 30 วิ',6:'ระลอกใหญ่ทุก 45 วิ',8:'ซอมบี้เร็วขึ้น 15%',10:'ซอมบี้เกราะออกบ่อยขึ้น'};
-function v57Init(){G.zkb=zbBonusMap();G.thr=0;G.thrOn=!STORY_RUN&&['endless','m15','m30'].includes(S.mode);G.prv=G.thrOn?Math.min(S.prSel||0,S.prMax||0):0;G.clp=null;G.ovr=-1;
+function v57Init(){G.zkb=zbBonusMap();if(S.mode==='rush'&&!rushOpen())S.mode='endless';G.thr=0;G.thrOn=!STORY_RUN&&['endless','m15','m30'].includes(S.mode);G.prv=G.thrOn?Math.min(S.prSel||0,S.prMax||0):0;G.clp=null;G.ovr=-1;
   if(G.prv){const k=G.prv;D.hp*=1+.15*k;D.dm*=1+.08*k;D.sp*=1+.04*k;D.coin*=1+.12*k;G.xpm*=1+.1*k}}
 function endClp(){if(G.clp&&G.ovr>=0)G.zsm/=1.3;G.clp=null;G.ovr=-1}
 function updV57(dt){
@@ -3298,7 +3299,7 @@ function update(dt){
 
   G.spawn+=dt*Math.min(9.5,1.2+G.t/55+Math.pow(G.t/120,1.15))*(1+.08*(G.thr||0))*(G.ovr>=0&&G.clp?2.5+G.ovr*.05:1)*(1+.06*(G.prv||0))*(1+(G.prs||0))*Math.max(.3,1.35-Z.length/MAX_Z)*(MOB?.9:1)*D.sp*G.spm*(G.ev==='blood'?1.6:1)*(G.inDun?.5:1);
   while(G.spawn>=1){G.spawn--;if(Z.length<MAX_Z)spawnZ()}
-  if(G.t>=G.bossAt){G.bossAt+=G.bossEv||BOSS_EVERY;spawnBoss()}
+  if(G.rush)updRush(dt);else if(G.t>=G.bossAt){G.bossAt+=G.bossEv||BOSS_EVERY;spawnBoss()}
 
   // อาวุธหลักประจำตัว (MAINATK): ทุกตัวใช้ G.dmg/G.rate/G.multi/G.pierce/G.range ร่วมกัน
   // v18: ปืนหันไปทางที่เล็งตลอด (ไม่ใช่แค่ตอนยิง): โหมดยิงเอง=ทิศ AIM.a / ออโต้=ซอมบี้ใกล้สุดในระยะ ไม่มีเป้า=ทิศที่เดิน
@@ -3803,6 +3804,40 @@ function showLbChar(){let h='<h2 style="margin:0">🏆 อันดับสู�
   ids.forEach((id,i)=>{const e=L[id],c=CHARS[id];h+='<div class="card'+(i===0?' done':'')+'"><div class="row"><b>'+(['🥇','🥈','🥉'][i]||'#'+(i+1))+' '+c.ic+' '+c.n+'</b><span class="tag">'+e.s.toLocaleString()+'</span></div><small>รอด '+fmt(e.t)+' | ฆ่า '+e.k+' | บอส '+e.b+' | '+e.m+' | '+e.dt+'</small></div>'});
   Object.keys(CHARS).filter(id=>!L[id]&&(S.chars||[]).includes(id)).forEach(id=>{h+='<div class="card" style="opacity:.6"><div class="row"><b>'+CHARS[id].ic+' '+CHARS[id].n+'</b><span class="tag no">ยังไม่เคยเล่น</span></div></div>'});
   h+='<button class="big sec" data-a="menu">← กลับ</button>';page(h)}
+// ================= v75: บอสรัช + แชร์ผล =================
+function rushOpen(){return ((S.story||{})['5-4']||0)>0||!!S.stgAll}
+const RUSH_L=['b0','b1','b2','sboss1','sboss2','sboss3','twin','dtitan','dhive','dstorm'];
+const RUSH_N={b0:'บอสยักษ์',b1:'บอสพิษ',b2:'บอสเกราะ',twin:'ฝาแฝดอเวจี'};
+function rushInit(){G.rush={i:0,n:0,cy:0,wait:3,alive:0};G.bossAt=1e9;G.bossEv=1e9;G.evAt=1e9;G.misAt=1e9;G.thrOn=false;G.spm=.35;G.ban={s:'👹 บอสรัช! บอสตัวแรกกำลังมา...',t:2.5}}
+function rushSpawn(){const R=G.rush,k=RUSH_L[R.i%RUSH_L.length],hm=(1+R.cy*.6)*(1+R.i*.12);let zs=[];
+  if(k.startsWith('dt')||k==='dhive'||k==='dstorm'){spawnDis(k);if(G.boss)zs=[G.boss]}
+  else{spawnBoss();const z=G.boss;if(!z)return;zs=[z];
+    if(k[0]==='b'&&k.length===2){z.bv=+k[1];z.col=BOSS_COL[z.bv]}
+    else if(k==='twin'){z.sk='sboss4a';z.bv=1;const a2=Math.random()*6.28,z2=mkZ('boss',P.x+Math.cos(a2)*420,P.y+Math.sin(a2)*420,1+G.bossN*.85);if(z2){z2.sk='sboss4b';z2.bv=2;z2.col=BOSS_COL[2];z2.cd=1.5;z2.bs='walk';z2.bt=2;zs.push(z2)}}
+    else{z.sk=k}
+    G.ban={s:'👹 บอสที่ '+(R.n+1)+': '+((z.sk&&SBN[z.sk])||RUSH_N[k]||BOSS_BAN[z.bv]),t:2.5}}
+  zs.forEach(z=>{z.hp*=hm;z.max=z.hp;z.rush=1});R.alive=zs.length;R.i++;if(R.i%RUSH_L.length===0)R.cy++}
+function updRush(dt){const R=G.rush;const live=Z.some(z=>z.hp>0&&z.rush);
+  if(R.alive&&!live){R.alive=0;R.n++;const rw=Math.round(80*(1+R.n*.25));G.mcoin+=rw;P.hp=Math.min(P.max,P.hp+P.max*.2);healP(0);
+    G.ban={s:'✅ ล้มบอสตัวที่ '+R.n+'! +'+rw+' 🪙 · ฟื้นเลือด 20%',t:2.5};sfx('misok');R.wait=4}
+  if(!R.alive){R.wait-=dt;if(R.wait<=0)rushSpawn()}}
+function drawRushHUD(){if(!G.rush)return;ctx.save();ctx.textAlign='center';ctx.font='bold '+Math.round(Math.min(16,H_*.04))+'px sans-serif';ctx.lineWidth=4;ctx.strokeStyle='#000';
+  const t='👹 บอสรัช · ล้มแล้ว '+G.rush.n+(G.rush.alive?'':' · บอสถัดไปใน '+Math.max(0,Math.ceil(G.rush.wait)));ctx.strokeText(t,W_/2,H_-14);ctx.fillStyle='#ffd75a';ctx.fillText(t,W_/2,H_-14);ctx.restore()}
+function shareResult(){const r=G.res;if(!r)return;const W=1200,H=630,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  const cv=new Image();cv.src='img/ui/cover.jpg';const lg=new Image();lg.src='img/ui/logo.png';
+  const go=()=>{try{x.fillStyle='#0b0f0b';x.fillRect(0,0,W,H);if(cv.complete&&cv.naturalWidth){x.globalAlpha=.55;x.drawImage(cv,0,0,W,H);x.globalAlpha=1}
+    const g=x.createLinearGradient(0,0,W,0);g.addColorStop(0,'rgba(0,0,0,.2)');g.addColorStop(.45,'rgba(0,0,0,.65)');g.addColorStop(1,'rgba(0,0,0,.85)');x.fillStyle=g;x.fillRect(0,0,W,H);
+    if(lg.complete&&lg.naturalWidth){const lw=420,lh=lw*lg.height/lg.width;x.drawImage(lg,30,24,lw,lh)}
+    const pa=pskin(r.ch);if(pa){const cs=pa.width/7;x.drawImage(pa,6*cs,0,cs,cs,60,250,360,360)}
+    x.textAlign='left';x.fillStyle='#ffd75a';x.font='bold 30px sans-serif';x.fillText(r.win?'🏆 ชนะ!':'💀 จบรอบ',520,90);
+    x.fillStyle='#fff';x.font='900 84px sans-serif';x.fillText(r.score.toLocaleString(),520,180);x.font='bold 24px sans-serif';x.fillStyle='#bcd';x.fillText('คะแนน',520,215);
+    const rows=[['⏱ รอด',fmt(r.t)],['🧟 ฆ่า',r.k.toLocaleString()],['👹 บอส',String(r.b)],['⬆ เลเวล',String(r.lv)]];if(r.rush!==null)rows.push(['👹 บอสรัช','ล้ม '+r.rush+' ตัว']);
+    rows.forEach((q,i)=>{const yy=275+i*56;x.fillStyle='#9fc';x.font='bold 30px sans-serif';x.fillText(q[0],520,yy);x.fillStyle='#fff';x.fillText(q[1],760,yy)});
+    x.fillStyle='#dfe';x.font='22px sans-serif';x.fillText(CHARS[r.ch].ic+' '+CHARS[r.ch].n+' · '+r.m+' · '+r.mo+' · '+r.d,520,H-60);x.fillStyle='#8a8';x.fillText('ZOMBIE RUN · '+new Date().toLocaleDateString('th-TH'),520,H-28);
+    c.toBlob(b=>{if(!b)return;const f=new File([b],'zombie-run-result.png',{type:'image/png'});
+      if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],title:'Zombie Run',text:(typeof LAST==='string'&&LAST)||('ได้ '+r.score.toLocaleString()+' คะแนนใน Zombie Run! 🧟')}).catch(()=>{})}
+      else{const u=URL.createObjectURL(b);page('<h2 style="margin:0">📤 ภาพผลการเล่น</h2><img src="'+u+'" style="width:min(92vw,720px);border-radius:12px;box-shadow:0 6px 20px #000"><div class="sub">กดค้างที่ภาพเพื่อบันทึก/แชร์ หรือ <a href="'+u+'" download="zombie-run-result.png" style="color:#ffd75a">ดาวน์โหลด</a></div><button class="big sec" data-a="menu">← เมนูหลัก</button>')}},'image/png')}catch(e){}};
+  let n=0;const done=()=>{if(++n>=2)go()};[cv,lg].forEach(im=>{if(im.complete)done();else{im.onload=done;im.onerror=done}})}
 function syncMbg(){const m=document.getElementById('mbg');if(m)m.style.display=(ov.style.display==='block'&&state==='menu')?'block':'none'}
 function page(html){  // v18: เลือก/ซื้อ/สลับรายการในหน้าเดิม = อยู่ตำแหน่งเลื่อนเดิม; เปลี่ยนหน้า = กลับบนสุด
   const was=ov.style.display==='block',st=ov.scrollTop,sig=(html.match(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/)||[])[1]||'';
@@ -3872,6 +3907,8 @@ function showMode(){
   h+='<div class="sub">โหมดเกม</div>';
   for(const id in MODES){
     const d=MODES[id],sel=S.mode===id;let dd=d.d;
+    if(id==='rush'&&!rushOpen()){h+='<div class="card" style="opacity:.6"><div class="row"><div><b>👹 บอสรัช 🔒</b><small>ปลดล็อกเมื่อผ่านบทที่ 5 (ด่าน 5-4)</small></div></div></div>';continue}
+    if(id==='rush')dd+='<br><b style="color:#fd4">สถิติดีสุด: ล้มบอส '+(S.rushBest||0)+' ตัว</b>';
     if(id==='daily'){const c=dailyCfg(),r=dailyRec(),mm=MAPS[c.map];dd+='<br><b style="color:#fd4">วันนี้ '+c.date+': '+mm.ic+' '+mm.n+'</b><br>'+c.bad.n+'<br>'+c.good.n+
       '<br>ดีสุดวันนี้ '+(r.best?r.best.toLocaleString():'-')+(r.clr?' ✅':' | ชนะครั้งแรกของวัน +200 🪙')+((S.dstreak&&S.dstreak.n&&(S.dstreak.last===r.d||S.dstreak.last===dayKey(1)))?' | 🔥 ต่อเนื่อง '+S.dstreak.n+' วัน':'')}
     h+='<div class="card btn'+(sel?' done':'')+'" data-a="mod" data-i="'+id+'"><div class="row"><div><b>'+EI('mode',id,d.ic)+d.n+'</b><small>'+dd+'</small></div>'+(sel?'<span class="tag ok">ใช้อยู่</span>':'')+'</div></div>';
@@ -4141,6 +4178,7 @@ else if(a==='delimp'){if(confirm('ลบด่านและตัวละค�
   else if(a==='rs')showRestore();
   else if(a==='dors'){const t=document.getElementById('rst');if(!confirm('เขียนทับเซฟปัจจุบันทั้งหมด?'))return;const r=restoreSave(t?t.value:'');if(r)showRestore(r);else location.reload()}
   else if(a==='share'){
+    if(G&&G.res){shareResult();return}  // v75: แชร์เป็นภาพผลการเล่น
     if(navigator.share)navigator.share({text:LAST}).catch(()=>{});
     else if(navigator.clipboard)navigator.clipboard.writeText(LAST).then(()=>{b.textContent='✓ คัดลอกแล้ว'}).catch(()=>{});
   }
@@ -4161,7 +4199,7 @@ else if(a==='delimp'){if(confirm('ลบด่านและตัวละค�
     showMode();
   }else if(a==='diff'){S.diff=i;save();showMode()}
   else if(a==='prs'){const k=+i;if(k<=(S.prMax||0)){S.prSel=k;save();showMode()}else sfx('ui_err')}
-  else if(a==='mod'){S.mode=i;save();showMode()}
+  else if(a==='mod'){if(i==='rush'&&!rushOpen())return;S.mode=i;save();showMode()}
 });
 
 function gameOver(win,how){
@@ -4174,6 +4212,8 @@ function gameOver(win,how){
   const hx=how==='heli'?(G.extM||1):1;
   let rc=Math.round(base*D.coin*hx*G.cm)+bonus+G.mcoin;
   const score=Math.round((G.kills*10+s*5+G.bossKills*500+G.evoN*200)*D.coin)+(win?1000:0)+(how==='heli'?Math.round(300*hx):0);
+  if(G.rush)S.rushBest=Math.max(S.rushBest||0,G.rush.n);
+  G.res={score,t:s,k:G.kills,b:G.bossKills,lv:G.lv,win:!!win,ch:S.sel,m:(M0.ic||'')+' '+(M0.n||''),mo:STORY_RUN?('📖 '+STORY_RUN):((MO.ic||'')+' '+(MO.n||'')),d:(D.ic||'')+' '+(D.n||''),rush:G.rush?G.rush.n:null};
   let drec=null,dfirst=0;
   if(G.mode==='daily'){drec=dailyRec();drec.tries++;if(score>drec.best)drec.best=score;
     if(win&&!drec.clr){drec.clr=1;dfirst=200}
@@ -4214,7 +4254,7 @@ function gameOver(win,how){
      '<button class="big sec sm" data-a="lb">'+BI('lb')+'อันดับ</button><button class="big sec sm" data-a="menu">เมนูหลัก</button></div>';
   page(h);
 }
-function start(){fixSize();warmI=0;warmImgs(true);applyAimUI();AIM.on=false;aimT=null;ac();if(!muted&&bgmOn)startBGM();lockLand();joy.on=false;joy.dx=joy.dy=0;reset();v57Init();arenaSet();perfStart();lowQ=S.q==='low';applyDPR();fpsAcc=0;fpsN=0;lowCnt=0;try{draw()}catch(e){}ov.style.display='none';state='play';last=performance.now();if(!STORY_RUN&&!G.inDun&&!TUTN)runCard();if(S.fthV>0&&!G.fth&&!TUTN){G.fth=1;S.fthV--;save();G.ban={s:'🪶 ใช้ขนนกฟีนิกซ์จากของรางวัล',t:2}}if(G.pend>0)setTimeout(openNext,400)}
+function start(){fixSize();warmI=0;warmImgs(true);applyAimUI();AIM.on=false;aimT=null;ac();if(!muted&&bgmOn)startBGM();lockLand();joy.on=false;joy.dx=joy.dy=0;reset();v57Init();arenaSet();perfStart();lowQ=S.q==='low';applyDPR();fpsAcc=0;fpsN=0;lowCnt=0;try{draw()}catch(e){}ov.style.display='none';state='play';last=performance.now();if(!STORY_RUN&&S.mode==='rush'&&!TUTN)rushInit();if(!STORY_RUN&&!G.inDun&&!TUTN)runCard();if(S.fthV>0&&!G.fth&&!TUTN){G.fth=1;S.fthV--;save();G.ban={s:'🪶 ใช้ขนนกฟีนิกซ์จากของรางวัล',t:2}}if(G.pend>0)setTimeout(openNext,400)}
 
 // ---------- Draw ----------
 function draw(){
@@ -4555,7 +4595,7 @@ function draw(){
     g.addColorStop(0,'rgba(10,12,14,0)');g.addColorStop(1,'rgba(10,12,14,.93)');
     ctx.globalAlpha=Math.min(1,G.evt);ctx.fillStyle=g;ctx.fillRect(0,0,W_,H_);ctx.globalAlpha=1;
   }
-  drawV53Screen();drawV57Screen();drawV61Screen();drawArenaHint();if(G.tut)drawTut();
+  drawV53Screen();drawV57Screen();drawV61Screen();drawArenaHint();if(G.tut)drawTut();if(G.rush)drawRushHUD();
   drawV37Overlay();
   if(M.fx==='dark'&&G.lit<=0){
     const g=ctx.createRadialGradient(W_/2,H_/2,180,W_/2,H_/2,360);
@@ -4715,7 +4755,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v74 (เกม v74) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v75 (เกม v75) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
