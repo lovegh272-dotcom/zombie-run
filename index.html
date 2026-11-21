@@ -689,7 +689,24 @@ const ACH=[
   {id:'hell5',n:'รอด 5 นาทีในระดับนรก',r:200,chk:()=>G.dk==='hell'&&G.t>=300},
   {id:'w15',n:'ชนะโหมดรอด 15 นาที',r:300,chk:()=>G.win&&G.goal===900},
   {id:'w30',n:'ชนะโหมดรอด 30 นาที',r:800,chk:()=>G.win&&G.goal===1800},
-  {id:'extract',n:'อพยพสำเร็จ',r:250,chk:()=>G.win&&G.mode==='extract'}
+  {id:'extract',n:'อพยพสำเร็จ',r:250,chk:()=>G.win&&G.mode==='extract'},
+  // v74: ความสำเร็จสะสม
+  {id:'k10k',n:'ฆ่าซอมบี้สะสม 10,000 ตัว',r:400,chk:()=>S.st.kills+G.kills>=10000},
+  {id:'k50k',n:'ฆ่าซอมบี้สะสม 50,000 ตัว',r:1200,chk:()=>S.st.kills+G.kills>=50000},
+  {id:'b25',n:'ฆ่าบอสสะสม 25 ตัว',r:300,chk:()=>S.st.boss+G.bossKills>=25},
+  {id:'b100',n:'ฆ่าบอสสะสม 100 ตัว',r:900,chk:()=>S.st.boss+G.bossKills>=100},
+  {id:'g50',n:'เล่นครบ 50 รอบ',r:300,chk:()=>S.st.games>=50},
+  {id:'l30',n:'ถึงเลเวล 30 ในรอบเดียว',r:250,chk:()=>G.lv>=30},
+  {id:'t20',n:'รอดชีวิต 20 นาทีในรอบเดียว',r:500,chk:()=>G.t>=1200},
+  {id:'ss15',n:'สะสมดาวเนื้อเรื่อง 15 ดาว',r:300,chk:()=>storyStars()>=15},
+  {id:'ss45',n:'สะสมดาวเนื้อเรื่อง 45 ดาว',r:1000,chk:()=>storyStars()>=45},
+  {id:'ch6',n:'มีตัวละคร 6 ตัว',r:300,chk:()=>(S.chars||[]).length>=6},
+  {id:'chall',n:'มีตัวละครครบทุกตัว',r:1500,chk:()=>(S.chars||[]).length>=Object.keys(CHARS).length},
+  {id:'dun1',n:'พิชิตดันเจี้ยนอเวจี',r:500,chk:()=>(S.st.dun||0)>=1},
+  {id:'pr3',n:'ปลดระดับเกียรติยศ ⭐3',r:600,chk:()=>(S.prMax||0)>=3},
+  {id:'zb1',n:'สมุดซอมบี้: ได้ 3 ดาว 1 ชนิด',r:300,chk:()=>zbStars().some(x=>x>=3)},
+  {id:'zb5',n:'สมุดซอมบี้: ได้ 3 ดาว 5 ชนิด',r:900,chk:()=>zbStars().filter(x=>x>=3).length>=5},
+  {id:'sk3',n:'มีสกิน 3 ชุด',r:300,chk:()=>skinCount()>=3}
 ];
 function checkAch(){
   for(const a of ACH){
@@ -1506,6 +1523,7 @@ function addDecal(d){if(DECALS.length>=(lowQ?14:(MOB?26:44)))DECALS.shift();DECA
 function addTxt(x,y,s,c){if(TXT.length<(lowQ?10:(MOB?22:36)))TXT.push({x:x+(Math.random()-.5)*10,y,s,c:c||'#fff',l:.6})}
 function hitZ(z,d){
   let c=false;
+  if(G.zkb){const zb=G.zkb[z.T.id];if(zb)d*=zb}
   if(z.shk>0)d*=1.2;if(z.arm)d*=.6;if(z.gdT>0&&z.afx!=='guard')d*=.6;
   if(G.crit&&Math.random()<G.crit*.08){d*=2;c=true;hStop(.03);}
   z.hp-=d;z.flash=.08;if(c||G.uhit)addTxtB(z.x,z.y-z.T.r-6,(c?'💥':'')+Math.round(d),G.uhit?(PCOL[S.sel]||'#ffcf3a'):'#ffcf3a');else addTxt(z.x,z.y-z.T.r,Math.round(d),null);
@@ -2269,7 +2287,7 @@ function drawV53Screen(){if(!STORY_RUN)return;const n=+String(STORY_RUN).split('
   ctx.restore()}
 // ================= v57: ระดับภัย / ด่านถล่ม / เกียรติยศ =================
 const THRM={2:'ซอมบี้เกราะเริ่มออก (วงสีเทา รับดาเมจน้อยลง)',4:'ฝูงตัวเร็วบุกทุก 30 วิ',6:'ระลอกใหญ่ทุก 45 วิ',8:'ซอมบี้เร็วขึ้น 15%',10:'ซอมบี้เกราะออกบ่อยขึ้น'};
-function v57Init(){G.thr=0;G.thrOn=!STORY_RUN&&['endless','m15','m30'].includes(S.mode);G.prv=G.thrOn?Math.min(S.prSel||0,S.prMax||0):0;G.clp=null;G.ovr=-1;
+function v57Init(){G.zkb=zbBonusMap();G.thr=0;G.thrOn=!STORY_RUN&&['endless','m15','m30'].includes(S.mode);G.prv=G.thrOn?Math.min(S.prSel||0,S.prMax||0):0;G.clp=null;G.ovr=-1;
   if(G.prv){const k=G.prv;D.hp*=1+.15*k;D.dm*=1+.08*k;D.sp*=1+.04*k;D.coin*=1+.12*k;G.xpm*=1+.1*k}}
 function endClp(){if(G.clp&&G.ovr>=0)G.zsm/=1.3;G.clp=null;G.ovr=-1}
 function updV57(dt){
@@ -2469,7 +2487,7 @@ function updV63(dt){
     if(w.t>6.8)G.iwall=null}
 }
 function drawV63(){ctx.save();
-  if(G.gh&&PA8[S.sel]){const pa=PA8[S.sel],cs=pa.width/7;for(const g of G.gh){ctx.save();ctx.globalAlpha=g.t/.32*.35;ctx.translate(g.x,g.y);if(g.fl)ctx.scale(-1,1);ctx.drawImage(pa,g.cx*cs,g.cy*cs,cs,cs,-37.3*g.k,25-69.3*g.k,74.7*g.k,74.7*g.k);ctx.restore()}}
+  if(G.gh&&PA8[S.sel]){const pa=pskin(S.sel),cs=pa.width/7;for(const g of G.gh){ctx.save();ctx.globalAlpha=g.t/.32*.35;ctx.translate(g.x,g.y);if(g.fl)ctx.scale(-1,1);ctx.drawImage(pa,g.cx*cs,g.cy*cs,cs,cs,-37.3*g.k,25-69.3*g.k,74.7*g.k,74.7*g.k);ctx.restore()}}
   const w=G.iwall,iu=VFXU.nara;if(w&&iu){const cs=iu.width/6;let row=0,f;if(w.t<.6)f=Math.floor(w.t/.1);else if(w.t<6)f=5;else{row=1;f=Math.min(5,Math.floor((w.t-6)/.13))}
     const A=Math.atan2(w.segs[1].y-w.segs[0].y,w.segs[1].x-w.segs[0].x);for(const s2 of w.segs){ctx.save();ctx.translate(s2.x,s2.y);ctx.drawImage(iu,f*cs,row*cs,cs,cs,-75,-110,150,150);ctx.restore()}}
   const k=G.skk,wu=VFXU.wizard;if(k&&wu&&k.rise<=0){const cs=wu.width/6,f=k.sw>0?Math.min(5,Math.floor((.72-k.sw)/.12)):5;ctx.save();ctx.globalAlpha=k.t<.5?k.t*2:1;ctx.translate(k.x,k.y);if(k.f<0)ctx.scale(-1,1);ctx.drawImage(wu,f*cs,cs,cs,cs,-110,-170,220,220);ctx.restore()}
@@ -2555,7 +2573,7 @@ function drawV61Screen(){
   const nar=1,h=nar?Math.min(64,H_*.16):Math.min(150,H_*.36),y=nar?h/2+10:H_*.42;ctx.translate(0,y);if(!nar)ctx.rotate(-.08);
   ctx.fillStyle='rgba(0,0,0,.75)';ctx.fillRect(-40,-h/2-8,W_+80,h+16);ctx.fillStyle=col;ctx.globalAlpha=al*.85;ctx.fillRect(-40,-h/2,W_+80,h);ctx.globalAlpha=al;
   ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=2;for(let i=0;i<14;i++){const lx=((i*97+t*1400)%(W_+200))-100;ctx.beginPath();ctx.moveTo(lx,-h/2);ctx.lineTo(lx-60,h/2);ctx.stroke()}
-  const pa=PA8[c.id],sx=Math.min(1,t/.18),px=-200+(W_*.28+200)*(1-Math.pow(1-sx,3));if(pa){const cs=pa.width/7,sz=h*(nar?1.25:1.6);ctx.drawImage(pa,6*cs,0,cs,cs,px-sz/2,-sz*(nar?.55:.62),sz,sz)}
+  const pa=pskin(c.id),sx=Math.min(1,t/.18),px=-200+(W_*.28+200)*(1-Math.pow(1-sx,3));if(pa){const cs=pa.width/7,sz=h*(nar?1.25:1.6);ctx.drawImage(pa,6*cs,0,cs,cs,px-sz/2,-sz*(nar?.55:.62),sz,sz)}
   ctx.textAlign='left';ctx.font='bold '+Math.round(h*.3)+'px sans-serif';ctx.lineWidth=6;ctx.strokeStyle='#000';const tx=W_*.45+(1-sx)*200,nm=ULTN[c.id]||'';ctx.strokeText(nm,tx,h*.1);ctx.fillStyle='#fff';ctx.fillText(nm,tx,h*.1);
   ctx.font='bold '+Math.round(h*.13)+'px sans-serif';ctx.fillStyle='#ffd75a';ctx.fillText('ULTIMATE',tx,-h*.22);ctx.restore()}
 // ================= v64: ขอบแผนที่ + กันวิ่งหนีทางเดียว =================
@@ -2905,7 +2923,7 @@ function openChest(){fthDrop(.05,P);
 function killZ(z){
   if(z.own&&z.own.mn>0)z.own.mn--;  // v23: นับลูกสมุนของ Necromancer
 
-      const T=z.T;G.kills++;burst(z.x,z.y,T.col,6);sfx(T.xp>=6||T.kind==='boss'?'die_big':'die',z.x,z.y);misAdd('kill');if(T.xp>=3&&T.kind!=='boss')misAdd('big');
+      const T=z.T;G.kills++;if(ZB_ON[T.id]){S.zk=S.zk||{};S.zk[T.id]=(S.zk[T.id]||0)+1}burst(z.x,z.y,T.col,6);sfx(T.xp>=6||T.kind==='boss'?'die_big':'die',z.x,z.y);misAdd('kill');if(T.xp>=3&&T.kind!=='boss')misAdd('big');
   if(G.bhs>0)P.hp=Math.min(P.max,P.hp+P.max*.03);
   if(S.sel==='fieldmed')P.hp=Math.min(P.max,P.hp+P.max*(G.mevo?.007:.0035));
   addDecal({x:z.x,y:z.y,r:T.r*1.2,c:'#4a0808',t:8});
@@ -3717,6 +3735,74 @@ function drawTut(){const T=G.tut,st=TUTS[T.s];if(!st)return;const tx=(T.s===1&&m
     ctx.fillStyle='#ffd75a';ctx.beginPath();ctx.arc(jx+o,jy,20,0,6.2832);ctx.fill();ctx.font='28px sans-serif';ctx.fillText('👆',jx+o+6,jy+38)}
   if(T.s===1){ctx.globalAlpha=1;ctx.font='bold '+Math.round(fs*.8)+'px sans-serif';ctx.fillStyle='#9f6';ctx.fillText(Math.min(5,G.kills-T.k0)+' / 5',W_/2,y+fs*2.1)}
   ctx.restore()}
+// ================= v74: สกิน / สมุดซอมบี้ / ความสำเร็จเพิ่ม / อันดับตามตัวละคร =================
+const SK_SH=2000,SK_C=2000,SK_GP=5;
+const SKN={c:'🎨 สีพิเศษ',s:'🌑 เงามืด',g:'👑 ทองคำ'};
+const SKHUE={soldier:150,blader:200,gren:120,sniper:250,storm:180,shot:140,fieldmed:300,berserk:200,wizard:110,nara:160,priest:210};
+const SKC={};
+function skinCount(){let n=0;const o=S.skins||{};for(const id in o)for(const k in o[id])if(o[id][k])n++;return n}
+function skOwn(id,k){return !!(S.skins&&S.skins[id]&&S.skins[id][k])}
+function skCan(id,k){if(skOwn(id,k))return 0;if(k==='s')return cqState(id).k>=SK_SH;if(k==='g')return cqState(id).t>=3;return 0}
+function skinClaimable(){return (S.chars||[]).some(id=>skCan(id,'s')||skCan(id,'g'))}
+function pskin(id){const k=S.skin&&S.skin[id],pa=PA8[id];if(!k||!pa)return pa;const key=id+':'+k;return SKC[key]||(SKC[key]=skinBuild(pa,id,k))}
+function skinBuild(im,id,k){try{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const x=c.getContext('2d');x.drawImage(im,0,0);
+  const d=x.getImageData(0,0,c.width,c.height),p=d.data;
+  if(k==='c'){const a=(SKHUE[id]||150)*Math.PI/180,cs=Math.cos(a),sn=Math.sin(a);
+    const m=[.213+cs*.787-sn*.213,.715-cs*.715-sn*.715,.072-cs*.072+sn*.928,.213-cs*.213+sn*.143,.715+cs*.285+sn*.140,.072-cs*.072-sn*.283,.213-cs*.213-sn*.787,.715-cs*.715+sn*.715,.072+cs*.928+sn*.072];
+    for(let i=0;i<p.length;i+=4){if(!p[i+3])continue;const r=p[i],g=p[i+1],b=p[i+2];p[i]=r*m[0]+g*m[1]+b*m[2];p[i+1]=r*m[3]+g*m[4]+b*m[5];p[i+2]=r*m[6]+g*m[7]+b*m[8]}}
+  else if(k==='s'){for(let i=0;i<p.length;i+=4){if(!p[i+3])continue;const l=(p[i]*.3+p[i+1]*.59+p[i+2]*.11)/255,e=Math.pow(l,1.15);
+    p[i]=18+e*120;p[i+1]=8+e*70;p[i+2]=34+e*175;if(l>.82){p[i]=200;p[i+1]=120;p[i+2]=255}}}
+  else if(k==='g'){for(let i=0;i<p.length;i+=4){if(!p[i+3])continue;const l=(p[i]*.3+p[i+1]*.59+p[i+2]*.11)/255;
+    if(l<.5){const t=l/.5;p[i]=58+(230-58)*t;p[i+1]=34+(168-34)*t;p[i+2]=6+(35-6)*t}else{const t=(l-.5)/.5;p[i]=230+(255-230)*t;p[i+1]=168+(248-168)*t;p[i+2]=35+(200-35)*t}}}
+  x.putImageData(d,0,0);return c}catch(e){return im}}
+function skinPrev(id,k,sz){const pa=PA8[id];if(!pa)return '';const src=k?pskinRaw(id,k):pa,cs=src.width/7,c=document.createElement('canvas');c.width=c.height=sz;c.getContext('2d').drawImage(src,6*cs,0,cs,cs,0,0,sz,sz);return c.toDataURL()}
+function pskinRaw(id,k){const key=id+':'+k;return SKC[key]||(SKC[key]=skinBuild(PA8[id],id,k))}
+function skinAct(id,k){S.skins=S.skins||{};S.skin=S.skin||{};const o=S.skins[id]=S.skins[id]||{};
+  if(k==='0'){S.skin[id]='';save();return showSkins()}
+  if(o[k]){S.skin[id]=S.skin[id]===k?'':k;save();sfx('ui');return showSkins()}
+  if(k==='c'){if(S.coins<SK_C){sfx('ui_err');return}S.coins-=SK_C;o.c=1;S.skin[id]='c';sfx('buy')}
+  else if(k==='s'){if(!skCan(id,'s')){sfx('ui_err');return}o.s=1;S.skin[id]='s';sfx('misok')}
+  else if(k==='g'){if(skCan(id,'g')){o.g=1}else if((S.skp||0)>=SK_GP){S.skp-=SK_GP;o.g=1}else{sfx('ui_err');return}S.skin[id]='g';sfx('evo')}
+  save();showSkins()}
+function showSkins(){S.skin=S.skin||{};let h='<h2 style="margin:0">🎨 สกินตัวละคร</h2><div class="coin">🪙 '+S.coins+' · 🧩 '+(S.skp||0)+'</div>'+
+  '<div class="sub">สกินเปลี่ยนแค่หน้าตา ไม่เพิ่มพลัง · 🎨 สีพิเศษ = '+SK_C+' 🪙 · 🌑 เงามืด = ฆ่า '+SK_SH+' ตัวด้วยตัวนั้น · 👑 ทองคำ = ทำเควสตัวละครครบ 3 ขั้น หรือใช้ 🧩 '+SK_GP+' ชิ้น</div>';
+  (S.chars||[]).forEach(id=>{const c=CHARS[id],cur=S.skin[id]||'';
+    const BS={on:'background:#4ac06a;color:#111;font-weight:700',own:'background:#2d4a3a;color:#dfe',buy:'background:#e7c34a;color:#111;font-weight:700',lock:'background:#222;color:#999'};
+    const cell=(k,lab,sub,act,state)=>'<div style="flex:1 1 0;min-width:0;text-align:center;border-radius:12px;padding:6px 4px;background:#0b1a10cc;border:2px solid '+(cur===k?'#ffd75a':'#4a6a4a')+'">'+
+      '<img src="'+skinPrev(id,k,96)+'" style="width:72px;height:72px;'+(state==='lock'?'filter:grayscale(1) brightness(.5)':'')+'"><div style="font-size:12px"><b>'+lab+'</b></div>'+
+      '<button class="tag" data-a="skq" data-i="'+id+':'+(k||'0')+'" style="border:0;font:inherit;font-size:11px;padding:4px 6px;margin-top:4px;white-space:normal;'+BS[state]+'">'+sub+'</button></div>';
+    const st=k=>{if(cur===k)return['✅ ใช้อยู่','on'];if(skOwn(id,k))return['ใส่','own'];if(k==='c')return[SK_C+' 🪙',S.coins>=SK_C?'buy':'lock'];
+      if(k==='s')return skCan(id,'s')?['🎁 รับเลย','buy']:['ฆ่า '+Math.min(cqState(id).k,SK_SH)+'/'+SK_SH,'lock'];
+      return skCan(id,'g')?['🎁 รับเลย','buy']:(S.skp||0)>=SK_GP?['ใช้ 🧩'+SK_GP,'buy']:['เควส '+cqState(id).t+'/3 หรือ 🧩'+(S.skp||0)+'/'+SK_GP,'lock']};
+    h+='<div class="card" style="max-width:640px;margin-left:auto;margin-right:auto"><b>'+c.ic+' '+c.n+'</b><div style="display:flex;gap:6px;margin-top:6px">'+
+      cell('','ปกติ',cur===''?'✅ ใช้อยู่':'ใส่','',cur===''?'on':'own')+['c','s','g'].map(k=>{const q=st(k);return cell(k,SKN[k],q[0],'',q[1])}).join('')+'</div></div>'});
+  h+='<button class="big sec" data-a="menu">← กลับ</button>';page(h)}
+// ---- สมุดซอมบี้ ----
+const ZB_LIST=['normal','fast','tank','boom','spit','split','mini','screamer','shield','healer','necromancer','root','hazmat','faceless','fisher','wraith','goblin','boss'];
+const ZB_ON={};ZB_LIST.forEach(k=>ZB_ON[k]=1);
+const ZB_N={normal:'ซอมบี้ปกติ',fast:'ตัวเร็ว',tank:'ตัวถึก',boom:'ตัวระเบิด',spit:'คายกรด',split:'แบ่งร่าง',mini:'ร่างแยก',screamer:'กรีดร้อง',shield:'ถือโล่',healer:'ตัวรักษา',necromancer:'เนโครแมนเซอร์',root:'รากไม้ (ป่า)',hazmat:'ชุดกันสาร (เมือง)',faceless:'ไร้หน้า (โรงพยาบาล)',fisher:'ชาวประมง (ท่าเรือ)',wraith:'วิญญาณ (สุสาน)',goblin:'ก๊อบลินทอง',boss:'บอส'};
+const ZB_T={goblin:[5,20,60],boss:[3,15,50]},ZB_D=[50,300,1000],ZB_B=[0,.03,.06,.10];
+function zbStar(k){const n=(S.zk||{})[k]||0,t=ZB_T[k]||ZB_D;return n>=t[2]?3:n>=t[1]?2:n>=t[0]?1:0}
+function zbStars(){return ZB_LIST.map(zbStar)}
+function zbBonusMap(){const m={};ZB_LIST.forEach(k=>{const b=ZB_B[zbStar(k)];if(b)m[k]=1+b});if(m.boss){['bclone'].forEach(x=>m[x]=m.boss)}return m}
+function showZBook(){const tot=zbStars().reduce((a,b)=>a+b,0);let h='<h2 style="margin:0">📖 สมุดซอมบี้</h2><div class="sub">ฆ่าซอมบี้แต่ละชนิดเพื่อเก็บดาว · ⭐ ดาเมจใส่ชนิดนั้น +3% · ⭐⭐ +6% · ⭐⭐⭐ +10% (ดาวรวม '+tot+'/'+ZB_LIST.length*3+')</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;max-width:860px;margin:6px auto">';
+  ZB_LIST.forEach(k=>{const n=(S.zk||{})[k]||0,st=zbStar(k),t=ZB_T[k]||ZB_D,nx=t[st]||null,seen=n>0;
+    h+='<div style="border-radius:12px;padding:8px;background:#0b1a10cc;border:2px solid '+(st>=3?'#ffd75a':'#4a6a4a')+'"><canvas data-zb="'+k+'" width="96" height="96" style="position:static;display:block;margin:0 auto;touch-action:auto;width:72px;height:72px;'+(seen?'':'filter:brightness(0) opacity(.6)')+'"></canvas>'+
+      '<div style="font-size:13px"><b>'+(seen?ZB_N[k]:'???')+'</b></div><div style="font-size:15px;letter-spacing:2px">'+'⭐'.repeat(st)+'<span style="opacity:.3">'+'⭐'.repeat(3-st)+'</span></div>'+
+      '<div style="font-size:12px;color:#bcd">ฆ่า '+n.toLocaleString()+(nx?' / '+nx:' · ครบแล้ว')+(st?'<br>ดาเมจ +'+Math.round(ZB_B[st]*100)+'%':'')+'</div></div>'});
+  h+='</div><button class="big sec" data-a="menu">← กลับ</button>';page(h);
+  ov.querySelectorAll('canvas[data-zb]').forEach(cv=>{const k=cv.dataset.zb,x=cv.getContext('2d'),za=ZAT[k==='boss'?'boss0':k];
+    if(za){const cs=za.width/7;x.drawImage(za,0,0,cs,cs,0,0,96,96)}else{const zi=ZIMG[k==='boss'?'boss0':k];if(zi)x.drawImage(zi,0,0,96,96);else{x.fillStyle=(TYPES[k]||{}).col||'#5a8';x.beginPath();x.arc(48,52,30,0,6.28);x.fill()}}})}
+// ---- อันดับ: แท็บ ----
+let LBT=0;
+function lbTabs(){return '<div style="display:flex;gap:6px;justify-content:center;margin:6px 0">'+['🏆 10 อันดับรวม','👤 ดีสุดของแต่ละตัวละคร'].map((t,i)=>'<button class="tag" data-a="lbt" data-i="'+i+'" style="border:0;font:inherit;padding:6px 12px;'+(LBT===i?'background:#e7c34a;color:#111;font-weight:700':'background:#1d2b25;color:#dfe')+'">'+t+'</button>').join('')+'</div>'}
+function showLbChar(){let h='<h2 style="margin:0">🏆 อันดับสูงสุดในเครื่อง</h2>'+lbTabs();const L=S.lbc||{};
+  const ids=Object.keys(CHARS).filter(id=>L[id]).sort((a,b)=>L[b].s-L[a].s);
+  if(!ids.length)h+='<div class="card">ยังไม่มีข้อมูล — เล่นจบรอบแล้วสถิติจะขึ้นที่นี่</div>';
+  ids.forEach((id,i)=>{const e=L[id],c=CHARS[id];h+='<div class="card'+(i===0?' done':'')+'"><div class="row"><b>'+(['🥇','🥈','🥉'][i]||'#'+(i+1))+' '+c.ic+' '+c.n+'</b><span class="tag">'+e.s.toLocaleString()+'</span></div><small>รอด '+fmt(e.t)+' | ฆ่า '+e.k+' | บอส '+e.b+' | '+e.m+' | '+e.dt+'</small></div>'});
+  Object.keys(CHARS).filter(id=>!L[id]&&(S.chars||[]).includes(id)).forEach(id=>{h+='<div class="card" style="opacity:.6"><div class="row"><b>'+CHARS[id].ic+' '+CHARS[id].n+'</b><span class="tag no">ยังไม่เคยเล่น</span></div></div>'});
+  h+='<button class="big sec" data-a="menu">← กลับ</button>';page(h)}
 function syncMbg(){const m=document.getElementById('mbg');if(m)m.style.display=(ov.style.display==='block'&&state==='menu')?'block':'none'}
 function page(html){  // v18: เลือก/ซื้อ/สลับรายการในหน้าเดิม = อยู่ตำแหน่งเลื่อนเดิม; เปลี่ยนหน้า = กลับบนสุด
   const was=ov.style.display==='block',st=ov.scrollTop,sig=(html.match(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/)||[])[1]||'';
@@ -3753,6 +3839,8 @@ function showMenu(){
     '<button class="big sec sm" data-a="evo">'+BI('evo')+'วิวัฒนาการ</button>'+
     '<button class="big sec sm" data-a="lb">'+BI('lb')+'อันดับ</button>'+
     '<button class="big sec sm" data-a="stats">'+BI('stats')+'สถิติ</button>'+
+    '<button class="big sec sm" data-a="skin">🎨 สกิน'+(skinClaimable()?' <span style="color:#f66">●</span>':'')+'</button>'+
+    '<button class="big sec sm" data-a="zbook">📖 สมุดซอมบี้</button>'+
     '<button class="big sec sm" data-a="set">'+BI('set')+'ตั้งค่า</button></div>'+
     '<div style="font-size:13px;color:#bcd;max-width:340px">ลากนิ้วฝั่งซ้ายเพื่อเดิน (WASD บนคอม, P = พัก)<br>ปืนยิงอัตโนมัติ — วิ่งหนีให้นานที่สุด<br>แต่ละตัวละครมีสกิลเฉพาะตัว: 💨 DASH | 💥 BLAST | 🛡️ SHIELD | 🌟 ULT (ปุ่มใหญ่ขวาล่าง)<br>ปุ่มลัดคอม: 1/Space, 2, 3, 4/Q/E</div>');
 }
@@ -3844,11 +3932,14 @@ function showMiss(){
     const ok=S.ach[a.id];
     h+='<div class="card'+(ok?' done':'')+'"><div class="row"><b>'+(ok?'✅ ':'⬜ ')+a.n+'</b><span class="tag'+(ok?' ok':'')+'">+'+a.r+' 🪙</span></div></div>';
   });
+  h+='<div class="sub">🌑 ความสำเร็จตัวละคร — ฆ่าซอมบี้ '+SK_SH+' ตัวด้วยตัวนั้น ปลดสกิน "เงามืด"</div>';
+  (S.chars||[]).forEach(id=>{const k=cqState(id).k,ok=k>=SK_SH;h+='<div class="card'+(ok?' done':'')+'"><div class="row"><b>'+(ok?'✅ ':'⬜ ')+CHARS[id].ic+' '+CHARS[id].n+'</b><span class="tag'+(ok?' ok':'')+'">'+(ok?'ปลดสกินเงามืดแล้ว':Math.min(k,SK_SH)+'/'+SK_SH)+'</span></div></div>'});
   h+='<button class="big sec" data-a="menu">← กลับ</button>';
   page(h);
 }
 function showLb(){
-  let h='<h2 style="margin:0">🏆 อันดับสูงสุดในเครื่อง</h2><div style="font-size:13px;color:#bcd;max-width:340px">คะแนน = ฆ่า x10 + เวลา x5 + บอส x500 + วิวัฒนาการ x200 แล้วคูณตัวคูณความยาก (ชนะโหมดจำกัดเวลา +1000)</div>';
+  if(LBT===1)return showLbChar();
+  let h='<h2 style="margin:0">🏆 อันดับสูงสุดในเครื่อง</h2>'+lbTabs()+'<div style="font-size:13px;color:#bcd;max-width:340px">คะแนน = ฆ่า x10 + เวลา x5 + บอส x500 + วิวัฒนาการ x200 แล้วคูณตัวคูณความยาก (ชนะโหมดจำกัดเวลา +1000)</div>';
   if(!S.lb.length)h+='<div class="card">ยังไม่มีข้อมูล ลองเล่นสักรอบดู</div>';
   S.lb.forEach((e,i)=>{
     const md=['🥇','🥈','🥉'][i]||('#'+(i+1));
@@ -3975,6 +4066,10 @@ ov.addEventListener('click',e=>{
   else if(a==='menu')showMenu();
   else if(a==='mus')showMusic();
   else if(a==='login')showLogin();
+  else if(a==='skin')showSkins();
+  else if(a==='zbook')showZBook();
+  else if(a==='skq'){const [id,k]=(i||'').split(':');skinAct(id,k)}
+  else if(a==='lbt'){LBT=+i||0;showLb()}
   else if(a==='lgc')lgClaim();
   else if(a==='lgx'){LG_SEEN=1;showMenu()}
   else if(a==='tuty'||a==='tutr')tutStart();
@@ -4093,7 +4188,7 @@ function gameOver(win,how){
   if(how==='heli')S.st.ext=(S.st.ext||0)+1;
   if(!G.goal&&s>S.st.best){S.st.best=s;localStorage.zbest=s}
   const en={s:score,t:s,k:G.kills,b:G.bossKills,c:CHARS[S.sel].ic,m:M0.ic,d:D.ic,o:MO.ic,w:win?1:0,dt:new Date().toLocaleDateString('th-TH')};
-  S.lb.push(en);S.lb.sort((x,y)=>y.s-x.s);S.lb=S.lb.slice(0,10);
+  S.lb.push(en);S.lb.sort((x,y)=>y.s-x.s);S.lb=S.lb.slice(0,10);S.lbc=S.lbc||{};{const o=S.lbc[S.sel];if(!o||en.s>o.s)S.lbc[S.sel]={s:en.s,t:en.t,k:en.k,b:en.b,m:en.m,dt:en.dt}}
   const rk=S.lb.indexOf(en);
   LAST=(G.mode==='daily'?'📅 ท้าทายรายวัน '+G.daily.date+' | ':'')+'🧟 Zombie Run | '+M0.n+' '+D.n+' | รอด '+fmt(s)+' ฆ่า '+G.kills+' ตัว | คะแนน '+score.toLocaleString()+(win?' (ชนะ!)':how==='heli'?' (ถอนตัวสำเร็จ 🚁)':'')+' มาท้าสู้กันไหม?';
   checkAch();save();
@@ -4402,7 +4497,7 @@ function draw(){
   }
   if(wm>.02){ctx.translate(0,-wb*3.4*wm);ctx.rotate(wsw*.07*wm);ctx.scale(1+wb*.035*wm,1-wb*.045*wm)}
   let fi=0,vimg=fr,dx0=-33,dy0=-36,ds0=66;
-  const pa=PA8[S.sel];let pcx=0,pcy=0,pfl=0;
+  const pa=pskin(S.sel);let pcx=0,pcy=0,pfl=0;
   if(pa){ // v39: 8 ทิศตามทิศเล็ง มี hysteresis กันภาพสลับรัว
     if(P.mf>0)P.aft=G.t+.16;
     const a8=((P.aim/(Math.PI/4))%8+8)%8;let d8=P.d8;
@@ -4620,7 +4715,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v73 (เกม v73) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v74 (เกม v74) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
