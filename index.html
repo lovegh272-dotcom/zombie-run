@@ -225,6 +225,7 @@ const MODES={
   m15:{n:'รอด 15 นาที',ic:'⏱️',goal:900,bonus:300,d:'รอดครบเวลา = ชนะ โบนัส +300 🪙'},
   m30:{n:'รอด 30 นาที',ic:'🏆',goal:1800,bonus:800,d:'รอดครบเวลา = ชนะ โบนัส +800 🪙'},
   extract:{n:'อพยพ',ic:'📡',goal:480,bonus:500,d:'รับสัญญาณอะไหล่ 3 ชิ้น กลับฐาน และป้องกันจุดอพยพ 45 วินาที (เป้าหมาย 6–8 นาที)'},
+  defense:{n:'ป้องกันรถอพยพ',ic:'🚚',goal:0,bonus:800,d:'ปกป้องรถอพยพให้รอด 10 คลื่น · เก็บเศษเหล็ก ⚙️ จากซอมบี้ แล้วกด 🔧 สร้างป้อมปืน แนวกั้น กับดัก (สร้างตรงจุดที่ยืน) · ชนะ +800 🪙'},
   rush:{n:'บอสรัช',ic:'👹',goal:0,bonus:0,d:'บอสมาเรียงตัว: บอสปกติ → บอสเนื้อเรื่อง → บอสภัยพิบัติ แล้ววนใหม่แรงขึ้น · ระหว่างบอสฟื้นเลือด 20% · ล้มบอสได้เหรียญ',lock:1},
   daily:{n:'ท้าทายรายวัน',ic:'📅',goal:600,bonus:400,d:'แผนที่และกฎพิเศษเปลี่ยนทุกวัน ทุกเครื่องได้ชุดเดียวกัน รอด 10 นาที = ชนะ (ความยากปกติ)'}
 };
@@ -852,7 +853,7 @@ function musicKick(when,vol){
 }
 // v43: เพลงจากไฟล์ (ไม่บังคับ) bgm_menu / bgm_play / bgm_boss / bgm_dungeon ใน sounds.json -> เล่นวนแทนเพลงสังเคราะห์ ครอสเฟด 1.5 วิ
 let bgmCur=null;
-function bgmKind(){try{if(state!=='play')return'bgm_menu';if(G.inDun)return SND.bgm.bgm_dungeon?'bgm_dungeon':'bgm_boss';return G.boss?'bgm_boss':'bgm_play'}catch(e){return'bgm_menu'}}
+function bgmKind(){try{if(state!=='play'&&state!=='build')return'bgm_menu';if(G.def&&SND.bgm.bgm_defense)return G.boss?'bgm_boss':'bgm_defense';if(G.inDun)return SND.bgm.bgm_dungeon?'bgm_dungeon':'bgm_boss';return G.boss?'bgm_boss':'bgm_play'}catch(e){return'bgm_menu'}}
 // v68: เพลงไฟล์จริง: สุ่ม 1 เพลงต่อฉาก (ไม่ซ้ำเพลงล่าสุด) เล่นวนจนเปลี่ยนฉาก | ล็อกเพลงได้ในตั้งค่า (S.bgmSel)
 //      โหลด/ถอดรหัสเฉพาะเพลงที่จะเล่น เก็บไว้ไม่เกิน 3 เพลง (ประหยัดแรมบน iPhone) | ต่อรอยวนด้วยครอสเฟด
 const BGM_X=.9,BGM_KEEP=3;let bgmLast={},bgmForce=null,bgmWant=null;
@@ -2631,7 +2632,7 @@ function drawMinimap(){const A=G.ac;if(!A||G.inDun||state!=='play')return;ctx.gl
   ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=1;const v1=mp(P.x-W_/2,P.y-H_/2);ctx.strokeRect(v1[0],v1[1],W_*k,H_*k);
   for(const c of CH)dot(c.x,c.y,2.2,'#ffcf3a');for(const p of G.ptl)dot(p.x,p.y,3.2,'#c08cff');if(G.dptl)dot(G.dptl.x,G.dptl.y,3.2,'#ff5af0');
   for(const z of Z){if(z.hp<=0)continue;if(z.T.kind==='boss')dot(z.x,z.y,4,'#ff3a3a');else if(z.T.kind==='goblin'||z.elite)dot(z.x,z.y,2.6,'#ffaa00')}
-  if(G.sExit)dot(G.sExit.x,G.sExit.y,3.4,'#5aff9a');if(G.npc)dot(G.npc.x,G.npc.y,2.6,'#9ff');if(G.gen)dot(G.gen.x,G.gen.y,3,'#9ff');if(G.sItems)for(const it of G.sItems)if(!it.got)dot(it.x,it.y,2.2,'#9ff');
+  if(G.sExit)dot(G.sExit.x,G.sExit.y,3.4,'#5aff9a');if(G.npc)dot(G.npc.x,G.npc.y,2.6,'#9ff');if(G.def)dot(G.def.x,G.def.y,3.6,'#ffd75a');if(G.gen)dot(G.gen.x,G.gen.y,3,'#9ff');if(G.sItems)for(const it of G.sItems)if(!it.got)dot(it.x,it.y,2.2,'#9ff');
   const q=mp(P.x,P.y);ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(q[0],q[1],3,0,6.28);ctx.fill();ctx.strokeStyle='#3af';ctx.lineWidth=1.5;ctx.stroke();ctx.restore()}
 function drawArenaHint(){drawMinimap();const A=G.ac;if(!A||G.inDun||state!=='play')return;const L=A.hw,d=[P.x-(A.x-L),(A.x+L)-P.x,P.y-(A.y-L),(A.y+L)-P.y],th=220;
   ctx.save();for(let i=0;i<4;i++){if(d[i]>th)continue;const a=(1-d[i]/th)*.35,g=i<2?ctx.createLinearGradient(i?W_:0,0,i?W_-60:60,0):ctx.createLinearGradient(0,i===3?H_:0,0,i===3?H_-60:60);
@@ -2924,7 +2925,7 @@ function openChest(){fthDrop(.05,P);
 function killZ(z){
   if(z.own&&z.own.mn>0)z.own.mn--;  // v23: นับลูกสมุนของ Necromancer
 
-      const T=z.T;G.kills++;if(ZB_ON[T.id]){S.zk=S.zk||{};S.zk[T.id]=(S.zk[T.id]||0)+1}burst(z.x,z.y,T.col,6);sfx(T.xp>=6||T.kind==='boss'?'die_big':'die',z.x,z.y);misAdd('kill');if(T.xp>=3&&T.kind!=='boss')misAdd('big');
+      const T=z.T;G.kills++;if(G.def)G.def.scrap+=T.kind==='boss'?40:T.xp>=3?4:2;if(ZB_ON[T.id]){S.zk=S.zk||{};S.zk[T.id]=(S.zk[T.id]||0)+1}burst(z.x,z.y,T.col,6);sfx(T.xp>=6||T.kind==='boss'?'die_big':'die',z.x,z.y);misAdd('kill');if(T.xp>=3&&T.kind!=='boss')misAdd('big');
   if(G.bhs>0)P.hp=Math.min(P.max,P.hp+P.max*.03);
   if(S.sel==='fieldmed')P.hp=Math.min(P.max,P.hp+P.max*(G.mevo?.007:.0035));
   addDecal({x:z.x,y:z.y,r:T.r*1.2,c:'#4a0808',t:8});
@@ -3299,7 +3300,7 @@ function update(dt){
 
   G.spawn+=dt*Math.min(9.5,1.2+G.t/55+Math.pow(G.t/120,1.15))*(1+.08*(G.thr||0))*(G.ovr>=0&&G.clp?2.5+G.ovr*.05:1)*(1+.06*(G.prv||0))*(1+(G.prs||0))*Math.max(.3,1.35-Z.length/MAX_Z)*(MOB?.9:1)*D.sp*G.spm*(G.ev==='blood'?1.6:1)*(G.inDun?.5:1);
   while(G.spawn>=1){G.spawn--;if(Z.length<MAX_Z)spawnZ()}
-  if(G.wx)updWx(dt);if(G.dcr&&!G.inDun)updDcr(dt);if(G.rush)updRush(dt);else if(G.t>=G.bossAt){G.bossAt+=G.bossEv||BOSS_EVERY;spawnBoss()}
+  if(G.wx)updWx(dt);if(G.dcr&&!G.inDun)updDcr(dt);if(G.def){updDef(dt);if(state!=='play')return}if(G.rush)updRush(dt);else if(G.def){}else if(G.t>=G.bossAt){G.bossAt+=G.bossEv||BOSS_EVERY;spawnBoss()}
 
   // อาวุธหลักประจำตัว (MAINATK): ทุกตัวใช้ G.dmg/G.rate/G.multi/G.pierce/G.range ร่วมกัน
   // v18: ปืนหันไปทางที่เล็งตลอด (ไม่ใช่แค่ตอนยิง): โหมดยิงเอง=ทิศ AIM.a / ออโต้=ซอมบี้ใกล้สุดในระยะ ไม่มีเป้า=ทิศที่เดิน
@@ -3485,6 +3486,7 @@ function update(dt){
     let spd=fr?0:T.spd*(1+(D.sp-1)*.4)*G.zsm*(G.ev==='blood'?1.12:1),ang=a;
     if(T.cust){spd=0;if(T.kind==='egg'){z.ht-=dt;if(z.ht<=0){z.hp=0;burst(z.x,z.y,'#cf6',10);for(let k=0;k<3&&Z.length<MAX_Z;k++)mkZ(k?'fast':'spit',z.x+(Math.random()-.5)*40,z.y+(Math.random()-.5)*40,zScale())}}else{z.lt-=dt;if(z.lt<=0)z.hp=0}}
     if(z.gdT>0)z.gdT-=dt;if(z.afx){if(z.afx=='rage')spd*=1.5;afxAI(z,d,dt)}
+    if(G.def&&G.def.hp>0){if(z.tgD===undefined)z.tgD=T.kind!=='boss'&&!T.cust&&Math.random()<.65?1:0;if(z.tgD||T.kind==='boss'&&d>380){const dx2=G.def.x-z.x,dy2=G.def.y-z.y;ang=Math.atan2(dy2,dx2);if(Math.hypot(dx2,dy2)<62+T.r)spd=0}const bl=defBlock(z);if(bl){spd=0}}
     if(G.npc){if(z.tgN===undefined)z.tgN=T.kind!=='boss'&&Math.random()<.22?1:0;if(z.tgN){const nd=Math.hypot(G.npc.x-z.x,G.npc.y-z.y);if(nd<280&&nd<d*1.6)ang=Math.atan2(G.npc.y-z.y,G.npc.x-z.x)}}
     if(z.cxT>0)z.cxT-=dt;if(z.shk>0)z.shk-=dt;
     if(z.pst>0){z.pstT-=dt;z.hp-=z.max*(T.kind==='boss'?.0013:.009)*z.pst*(1+.3*((z.pstL||1)-1))*dt;if(z.pstT<=0)z.pst=0}
@@ -3861,18 +3863,75 @@ function drawWx(){const W=G.wx,k=W.k;if(k==='clear')return;const fi=Math.min(1,W
 const DEFI={};['truck','mg','cannon','barricade','spikes','flame','tesla','ice','crate'].forEach(k=>{const im=new Image();im.onload=()=>{DEFI[k]=im};im.src='img/def/'+k+'.png'});
 function updDcr(dt){G.dcrT-=dt;if(G.dcrT>0)return;G.dcrT=18+Math.random()*10;if(G.dcr.length>=5)return;
   for(let t=0;t<8;t++){const a=Math.random()*6.28,d=380+Math.random()*260,c={x:P.x+Math.cos(a)*d,y:P.y+Math.sin(a)*d,r:20,hp:3,fl:0};arenaIn(c,120);if(typeof pushOut==='function')pushOut(c,24);if(Math.hypot(c.x-P.x,c.y-P.y)>300){G.dcr.push(c);break}}}
-function dcrHit(j,d){const c=G.dcr[j];c.hp-=d;c.fl=.12;burst(c.x,c.y,'#b8864a',3);if(c.hp>0)return;G.dcr.splice(j,1);sfx('crate',c.x,c.y);burst(c.x,c.y,'#b8864a',14);FX.push({x:c.x,y:c.y,r:0,max:60,t:0,c:'220,170,90'});
+function dcrHit(j,d){const c=G.dcr[j];c.hp-=d;c.fl=.12;burst(c.x,c.y,'#b8864a',3);if(c.hp>0)return;G.dcr.splice(j,1);sfx('crate',c.x,c.y);if(G.def){G.def.scrap+=15;addTxt(c.x,c.y-36,'+15 ⚙️','#cde')}burst(c.x,c.y,'#b8864a',14);FX.push({x:c.x,y:c.y,r:0,max:60,t:0,c:'220,170,90'});
   const r=Math.random();if(r<.45){for(let i=0;i<6;i++)GEM.push({x:c.x+(Math.random()-.5)*50,y:c.y+(Math.random()-.5)*50,v:2});addTxt(c.x,c.y-20,'💎','#6cf')}
   else if(r<.7){healP(.18)}else if(r<.85){G.mcoin+=20;addTxt(c.x,c.y-20,'+20 🪙','#fd4')}else{G.magAll=Math.max(G.magAll,3);addTxt(c.x,c.y-20,'🧲 ดูดของ!','#9cf')}}
 function drawDcr(){const im=DEFI.crate;for(const c of G.dcr){if(c.fl>0)c.fl-=1/60;ctx.save();if(c.fl>0)ctx.filter&&(ctx.globalAlpha=.75);
   if(im){const w=c.r*2.6,h=w*im.height/im.width;ctx.drawImage(im,c.x-w/2,c.y-h*.62,w,h)}else{ctx.fillStyle='#8a5a2a';ctx.fillRect(c.x-c.r,c.y-c.r,c.r*2,c.r*2)}ctx.restore()}}
-function syncMbg(){const m=document.getElementById('mbg');if(m)m.style.display=(ov.style.display==='block'&&state==='menu')?'block':'none'}
+// ================= v77: โหมดป้องกันรถอพยพ =================
+const DEFB={mg:{n:'ป้อมปืนกล',c:60,hp:300,r:28,rng:330,cd:.16,ic:'🔫',d:'ยิงรัวใส่ตัวใกล้สุด'},cannon:{n:'ปืนใหญ่',c:120,hp:380,r:30,rng:420,cd:1.3,ic:'💣',d:'ยิงระเบิดวงกว้าง'},
+  barricade:{n:'แนวกั้น',c:40,hp:700,r:34,ic:'🧱',d:'ขวางทาง ซอมบี้ต้องทุบ'},spikes:{n:'กับดักหนาม',c:50,hp:9e9,r:34,rng:46,cd:.35,ic:'📌',d:'ทิ่มซอมบี้ที่เหยียบ'},
+  flame:{n:'กับดักไฟ',c:90,hp:9e9,r:32,rng:85,cd:.3,ic:'🔥',d:'พ่นไฟเผาวงรอบ'},tesla:{n:'เสาเทสลา',c:110,hp:320,r:28,rng:300,cd:1.1,ic:'⚡',d:'ฟ้าผ่าชิ่ง 4 ตัว'},
+  ice:{n:'กับดักน้ำแข็ง',c:80,hp:9e9,r:34,rng:110,cd:.25,ic:'❄️',d:'ทำให้ซอมบี้ช้าลงมาก'},crate:{n:'ลังอัปเกรด',c:150,ic:'⬆️',d:'สิ่งก่อสร้างทั้งหมดแรงขึ้น +30% และซ่อมรถ 15%',up:1}};
+function defInit(){const d={x:P.x,y:P.y-10,hp:2400,max:2400,wave:0,ph:'build',t:25,scrap:150,blds:[],q:0,st:0,lv:1,hit:0};G.def=d;P.y+=110;
+  G.spm=0;G.bossAt=1e9;G.bossEv=1e9;G.evAt=1e9;G.misAt=1e9;G.thrOn=false;G.ban={s:'🚚 ปกป้องรถอพยพ 10 คลื่น! เตรียมตัว — กด 🔧 สร้างป้อมปืน',t:4};
+  let b=document.getElementById('defB');if(!b){b=document.createElement('button');b.id='defB';b.innerHTML='🔧 สร้าง';
+    b.style.cssText='position:fixed;z-index:6;left:max(12px,env(safe-area-inset-left));top:118px;background:linear-gradient(#4a6a2a,#2a3a18);color:#fff;border:2px solid #9c6;border-radius:14px;padding:8px 14px;font:inherit;font-size:16px;font-weight:700;box-shadow:0 3px 8px #000a';
+    b.addEventListener('click',e=>{e.stopPropagation();defMenu()});document.body.appendChild(b)}}
+function defMenu(){if(!G.def||state!=='play')return;state='build';const d=G.def;let h='<h2 style="margin:0">🔧 สร้างป้องกัน</h2><div class="coin">⚙️ '+d.scrap+' เศษเหล็ก</div><div class="sub">สร้างตรงจุดที่ตัวละครยืนอยู่ · สูงสุด 14 ชิ้น ('+d.blds.length+'/14)</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;max-width:820px;margin:0 auto">';
+  for(const k in DEFB){const b=DEFB[k],ok=d.scrap>=b.c&&(b.up||d.blds.length<14);h+='<div class="btn" data-a="dbd" data-i="'+k+'" style="cursor:pointer;border-radius:12px;padding:8px;background:#0b1a10dd;border:2px solid '+(ok?'#9c6':'#444')+';'+(ok?'':'opacity:.55')+'">'+
+    '<img src="img/def/'+k+'.png" style="width:64px;height:64px;object-fit:contain"><div style="font-size:14px"><b>'+b.ic+' '+b.n+'</b></div><div style="font-size:12px;color:#bcd;min-height:30px">'+b.d+'</div><div style="font-size:15px;color:#ffd75a"><b>⚙️ '+b.c+'</b></div></div>'}
+  h+='</div><button class="big sec" data-a="dbx">← กลับไปเล่น</button>';page(h)}
+function defResume(){ov.style.display='none';state='play';last=performance.now();syncMbg()}
+function defBuild(k){const d=G.def,b=DEFB[k];if(!d||!b)return;if(d.scrap<b.c||(!b.up&&d.blds.length>=14)){sfx('ui_err');return}
+  if(b.up){d.scrap-=b.c;d.lv*=1.3;d.hp=Math.min(d.max,d.hp+d.max*.15);G.ban={s:'⬆️ อัปเกรดสิ่งก่อสร้างทั้งหมด! (x'+d.lv.toFixed(2)+')',t:2};sfx('evo');defResume();return}
+  const o={k,x:P.x,y:P.y+10,hp:b.hp*(1+(d.lv-1)*.5),max:b.hp*(1+(d.lv-1)*.5),cd:0,a:0,fl:0};if(Math.hypot(o.x-d.x,o.y-d.y)<95){const a=Math.atan2(o.y-d.y,o.x-d.x)||1.57;o.x=d.x+Math.cos(a)*100;o.y=d.y+Math.sin(a)*100}
+  d.blds.push(o);d.scrap-=b.c;sfx('buy');burst(o.x,o.y,'#cde',12);P.y+=46;defResume()}
+function defBlock(z){const d=G.def;if(!d)return null;for(const o of d.blds){if(o.k!=='barricade'&&o.k!=='mg'&&o.k!=='cannon'&&o.k!=='tesla')continue;const dx=z.x-o.x,dy=z.y-o.y,dd=Math.hypot(dx,dy),rr=o.r+z.T.r;
+  if(dd<rr){const p=(rr-dd)/(dd||1);z.x+=dx*p;z.y+=dy*p;if(z.T.kind!=='goblin'){o.hp-=z.T.dmg*.9*(1/60);o.fl=.1}return o}}return null}
+function defSpawnOne(){const d=G.def,w=d.wave,a=Math.random()*6.28,c={x:d.x+Math.cos(a)*820,y:d.y+Math.sin(a)*820};arenaIn(c,90);
+  const pool=['normal','normal','fast','normal','tank','boom','spit','shield','screamer','healer'],pk=pool[Math.floor(Math.random()*Math.min(pool.length,4+w))];
+  const z=mkZ(pk,c.x,c.y,(1+w*.22)*(D.hp?1:1));if(z){if(w>=6&&Math.random()<.08)setAfx&&setAfx(z)}}
+function updDef(dt){const d=G.def;if(d.hit>0)d.hit-=dt;
+  if(d.ph==='build'){d.t-=dt;if(d.t<=0){d.wave++;d.ph='wave';d.q=16+d.wave*7;d.st=0;G.ban={s:'🧟 คลื่นที่ '+d.wave+'/10 มาแล้ว!'+(d.wave===5||d.wave===10?' (มีบอส!)':''),t:2.5};sfx('event');if(d.wave===5||d.wave===10){spawnBoss();if(G.boss){G.boss.hp*=d.wave===10?2.2:1.3;G.boss.max=G.boss.hp}}}}
+  else{d.st-=dt;if(d.q>0&&d.st<=0&&Z.length<MAX_Z){d.st=Math.max(.18,.9-d.wave*.06);defSpawnOne();d.q--}
+    if(d.q<=0){d.lt=(d.lt||0)+dt;if(d.lt>8)for(const z of Z)if(z.hp>0&&!z.tgD&&z.T.kind!=='boss')z.tgD=1;if(d.lt>16){d.lt=8;for(const z of Z)if(z.hp>0&&!z.T.cust&&Math.hypot(z.x-d.x,z.y-d.y)>380){const a=Math.random()*6.28;z.x=d.x+Math.cos(a)*380;z.y=d.y+Math.sin(a)*380;burst(z.x,z.y,'#666',6)}}}else d.lt=0;
+    if(d.q<=0&&!Z.some(z=>z.hp>0&&!z.T.cust)){if(d.wave>=10){d.ph='win';G.ban={s:'🏆 ป้องกันรถอพยพสำเร็จ! รถออกเดินทางแล้ว',t:3};sfx('extract');setTimeout(()=>{if(state==='play'&&G.def)gameOver(true)},1800);return}
+      d.ph='build';d.t=14;d.hp=Math.min(d.max,d.hp+d.max*.1);const bonus=20+d.wave*8;d.scrap+=bonus;G.ban={s:'✅ ผ่านคลื่นที่ '+d.wave+'! +'+bonus+' ⚙️ ซ่อมรถ 10% · พักสร้าง 14 วิ',t:3};sfx('misok')}}
+  // ซอมบี้ตีรถ
+  const q=near(d.x,d.y,120);let att=0;for(const z of q){if(z.hp>0&&!z.T.cust&&z.T.kind!=='goblin'&&Math.hypot(z.x-d.x,z.y-d.y)<70+z.T.r){d.hp-=z.T.dmg*.55*dt*(z.T.kind==='boss'?3:1);att=1}}
+  if(att){d.hit=.12;if(Math.random()<dt*2)burst(d.x+(Math.random()-.5)*80,d.y,'#fa6',3)}
+  if(d.hp<=0){d.hp=0;G.ban={s:'💥 รถอพยพถูกทำลาย!',t:3};explode(d.x,d.y,200,0,0,'255,120,40');gameOver(false,'truck');return}
+  // สิ่งก่อสร้าง
+  const lv=d.lv;for(let i=d.blds.length-1;i>=0;i--){const o=d.blds[i],b=DEFB[o.k];if(o.fl>0)o.fl-=dt;
+    if(o.hp<=0){d.blds.splice(i,1);burst(o.x,o.y,'#a87',16);sfx('wall_break',o.x,o.y);continue}
+    o.cd-=dt;if(o.cd>0||!b.rng)continue;
+    if(o.k==='mg'||o.k==='cannon'||o.k==='tesla'){let tz=null,td=b.rng;for(const z of near(o.x,o.y,b.rng)){if(z.hp<=0||z.T.cust)continue;const dd=Math.hypot(z.x-o.x,z.y-o.y);if(dd<td){td=dd;tz=z}}if(!tz)continue;o.cd=b.cd;o.a=Math.atan2(tz.y-o.y,tz.x-o.x);
+      if(o.k==='mg'){const v=760;newB(o.x+Math.cos(o.a)*30,o.y-14+Math.sin(o.a)*30,Math.cos(o.a)*v,Math.sin(o.a)*v,b.rng/v+.05,1,(7+G.dmg*.35)*lv,'#ffd36a');if(Math.random()<.25)sfx('turret',o.x,o.y)}
+      else if(o.k==='cannon'){const tx=tz.x,ty=tz.y;G.fxl.push({k:'lob',sx:o.x,sy:o.y-20,x:tx,y:ty,l:.45,m:.45});G.gq.push({t:.45,fn:()=>explode(tx,ty,95,0,(55+G.dmg*1.5)*lv,'255,150,60')})}
+      else{chainAt(o.x,o.y-40,4,(30+G.dmg*.8)*lv,0,b.rng);sfx('zap',o.x,o.y)}}
+    else{o.cd=b.cd;let hit=0;for(const z of near(o.x,o.y,b.rng+30)){if(z.hp<=0||z.T.cust)continue;if(Math.hypot(z.x-o.x,z.y-o.y)>b.rng+z.T.r)continue;hit=1;
+      if(o.k==='spikes')hitZ(z,(10+G.dmg*.4)*lv);else if(o.k==='flame'){hitZ(z,(6+G.dmg*.25)*lv);z.brn=Math.max(z.brn||0,2);z.brnM=lv}else if(o.k==='ice'){z.slow=Math.max(z.slow||0,.6);z.slf=.4}}
+      if(hit&&o.k==='flame'&&Math.random()<.4)burst(o.x,o.y-10,'#f83',4);if(hit&&o.k!=='ice'&&Math.random()<.15)sfx('trap',o.x,o.y)}}}
+function drawDef(){const d=G.def,ti=DEFI.truck;
+  for(const o of d.blds){const im=DEFI[o.k],b=DEFB[o.k],sz=o.k==='barricade'?96:o.k==='spikes'||o.k==='ice'||o.k==='flame'?80:84;ctx.save();if(o.fl>0)ctx.globalAlpha=.7;
+    if(o.k==='ice'||o.k==='flame'){ctx.globalAlpha=.18;ctx.fillStyle=o.k==='ice'?'#9df':'#f84';ctx.beginPath();ctx.arc(o.x,o.y,b.rng,0,6.28);ctx.fill();ctx.globalAlpha=o.fl>0?.7:1}
+    if(im){const h=sz*im.height/im.width;if((o.k==='mg'||o.k==='cannon')&&Math.cos(o.a)<0){ctx.translate(o.x,o.y);ctx.scale(-1,1);ctx.drawImage(im,-sz/2,-h*.7,sz,h)}else ctx.drawImage(im,o.x-sz/2,o.y-h*.7,sz,h)}
+    ctx.restore();if(o.max<1e8&&o.hp<o.max){ctx.fillStyle='#000a';ctx.fillRect(o.x-24,o.y+14,48,5);ctx.fillStyle='#8f6';ctx.fillRect(o.x-24,o.y+14,48*Math.max(0,o.hp/o.max),5)}}
+  ctx.save();if(d.hit>0){ctx.translate((Math.random()-.5)*4,0)}if(ti){const w=190,h=w*ti.height/ti.width;ctx.drawImage(ti,d.x-w/2,d.y-h*.68,w,h)}else{ctx.fillStyle='#6a7a3a';ctx.fillRect(d.x-70,d.y-50,140,80)}ctx.restore();
+  const bw=150;ctx.fillStyle='#000b';ctx.fillRect(d.x-bw/2,d.y+44,bw,9);ctx.fillStyle=d.hp/d.max>.35?'#6f6':'#f55';ctx.fillRect(d.x-bw/2,d.y+44,bw*d.hp/d.max,9);ctx.strokeStyle='#000';ctx.strokeRect(d.x-bw/2,d.y+44,bw,9)}
+function drawDefHUD(){const d=G.def;ctx.save();ctx.textAlign='center';const fs=Math.round(Math.min(17,H_*.043));ctx.font='bold '+fs+'px sans-serif';ctx.lineWidth=4;ctx.strokeStyle='#000';
+  const t=d.ph==='build'?'🔧 พักสร้าง '+Math.ceil(d.t)+' วิ · คลื่นถัดไป '+(d.wave+1)+'/10':d.ph==='wave'?'🧟 คลื่นที่ '+d.wave+'/10 · เหลือ '+(d.q+Z.filter(z=>z.hp>0&&!z.T.cust).length):'🏆 สำเร็จ!';
+  const y=H_-14;ctx.strokeText(t+'   ⚙️ '+d.scrap+'   🚚 '+Math.round(d.hp/d.max*100)+'%',W_/2,y);ctx.fillStyle='#ffd75a';ctx.fillText(t+'   ⚙️ '+d.scrap+'   🚚 '+Math.round(d.hp/d.max*100)+'%',W_/2,y);
+  const dx=d.x-P.x,dy=d.y-P.y;if(Math.abs(dx)>W_/2-40||Math.abs(dy)>H_/2-40){const a=Math.atan2(dy,dx),ex=W_/2+Math.cos(a)*Math.min(W_/2-50,H_/2-50)*1.0,ey=H_/2+Math.sin(a)*(H_/2-50);ctx.font='26px sans-serif';ctx.fillText('🚚',ex,ey+8)}ctx.restore()}
+function syncMbg(){const db=document.getElementById('defB');if(db)db.style.display=(G&&G.def&&state==='play')?'block':'none';const m=document.getElementById('mbg');if(m)m.style.display=(ov.style.display==='block'&&state==='menu')?'block':'none'}
 function page(html){  // v18: เลือก/ซื้อ/สลับรายการในหน้าเดิม = อยู่ตำแหน่งเลื่อนเดิม; เปลี่ยนหน้า = กลับบนสุด
   const was=ov.style.display==='block',st=ov.scrollTop,sig=(html.match(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/)||[])[1]||'';
   if(was&&pgSig)PGSC[pgSig]=st;
   const keep=was&&sig&&sig===pgSig;pgSig=sig;
   const bk=(html.match(/data-a="([a-z]+)"[^>]*>← กลับ/)||[])[1];
-  const nav=bk&&!/data-a="resume"/.test(html)?'<div class="navb"><button data-a="'+bk+'">◀</button>'+(bk!=='menu'&&state!=='paused'&&state!=='lvl'?'<button data-a="menu">🏠</button>':'')+'</div>':'';
+  const nav=bk&&!/data-a="resume"/.test(html)?'<div class="navb"><button data-a="'+bk+'">◀</button>'+(bk!=='menu'&&state!=='paused'&&state!=='lvl'&&state!=='build'?'<button data-a="menu">🏠</button>':'')+'</div>':'';
   ov.style.display='block';ov.innerHTML=nav+'<div class="pg">'+EJ(html.split('🪙').join(COINI))+'</div>';ov.scrollTop=keep?st:(PGREM.test(sig)&&PGSC[sig])||0;syncMbg()}
 setInterval(syncMbg,250);
 const PGSC={},PGREM=/โหมดเนื้อเรื่อง|กระดานเควส|ตัวละคร|แผนที่|ร้าน/;
@@ -4132,6 +4191,8 @@ ov.addEventListener('click',e=>{
   else if(a==='menu')showMenu();
   else if(a==='mus')showMusic();
   else if(a==='login')showLogin();
+  else if(a==='dbd'){defBuild(i)}
+  else if(a==='dbx'){defResume()}
   else if(a==='wx'){S.wx=S.wx===0?1:0;save();showSet()}
   else if(a==='skin')showSkins();
   else if(a==='zbook')showZBook();
@@ -4284,7 +4345,7 @@ function gameOver(win,how){
      '<button class="big sec sm" data-a="lb">'+BI('lb')+'อันดับ</button><button class="big sec sm" data-a="menu">เมนูหลัก</button></div>';
   page(h);
 }
-function start(){fixSize();warmI=0;warmImgs(true);applyAimUI();AIM.on=false;aimT=null;ac();if(!muted&&bgmOn)startBGM();lockLand();joy.on=false;joy.dx=joy.dy=0;reset();v57Init();arenaSet();perfStart();lowQ=S.q==='low';applyDPR();fpsAcc=0;fpsN=0;lowCnt=0;try{draw()}catch(e){}ov.style.display='none';state='play';last=performance.now();if(!STORY_RUN&&S.mode==='rush'&&!TUTN)rushInit();G.dcr=[];G.dcrT=6;if(!STORY_RUN&&!TUTN&&S.mode!=='rush'&&S.wx!==0)wxInit();if(!STORY_RUN&&!G.inDun&&!TUTN)runCard();if(S.fthV>0&&!G.fth&&!TUTN){G.fth=1;S.fthV--;save();G.ban={s:'🪶 ใช้ขนนกฟีนิกซ์จากของรางวัล',t:2}}if(G.pend>0)setTimeout(openNext,400)}
+function start(){fixSize();warmI=0;warmImgs(true);applyAimUI();AIM.on=false;aimT=null;ac();if(!muted&&bgmOn)startBGM();lockLand();joy.on=false;joy.dx=joy.dy=0;reset();v57Init();arenaSet();perfStart();lowQ=S.q==='low';applyDPR();fpsAcc=0;fpsN=0;lowCnt=0;try{draw()}catch(e){}ov.style.display='none';state='play';last=performance.now();if(!STORY_RUN&&S.mode==='rush'&&!TUTN)rushInit();if(!STORY_RUN&&S.mode==='defense'&&!TUTN)defInit();G.dcr=[];G.dcrT=6;if(!STORY_RUN&&!TUTN&&S.mode!=='rush'&&S.mode!=='defense'&&S.wx!==0)wxInit();if(!STORY_RUN&&!G.inDun&&!TUTN)runCard();if(S.fthV>0&&!G.fth&&!TUTN){G.fth=1;S.fthV--;save();G.ban={s:'🪶 ใช้ขนนกฟีนิกซ์จากของรางวัล',t:2}}if(G.pend>0)setTimeout(openNext,400)}
 
 // ---------- Draw ----------
 function draw(){
@@ -4315,7 +4376,7 @@ function draw(){
     }
   }
   for(let i=0;i<DECALS.length;i++){const d=DECALS[i];if(Math.abs(d.x-P.x)>W_/2+d.r||Math.abs(d.y-P.y)>H_/2+d.r)continue;ctx.globalAlpha=Math.min(.7,d.t*0.2);ctx.fillStyle=d.c;ctx.beginPath();ctx.arc(d.x,d.y,d.r,0,6.28);ctx.fill()}ctx.globalAlpha=1;
-  if(G.dcr&&G.dcr.length)drawDcr();
+  if(G.def)drawDef();if(G.dcr&&G.dcr.length)drawDcr();
   BARRELS.forEach(br=>{if(BARIMG){const bs=br.r*2.6;ctx.drawImage(BARIMG,br.x-bs/2,br.y-bs*.6,bs,bs);return}ctx.fillStyle='#d32f2f';ctx.beginPath();ctx.arc(br.x,br.y,br.r,0,6.28);ctx.fill();ctx.fillStyle='#ff7043';ctx.beginPath();ctx.arc(br.x,br.y,br.r*0.6,0,6.28);ctx.fill();ctx.fillStyle='#111';ctx.font='16px sans-serif';ctx.fillText('🛢️',br.x-10,br.y+6)});
   if(G.quest&&G.quest.active){
     const q=G.quest,inn=Math.hypot(P.x-q.x,P.y-q.y)<150,pu=1+Math.sin(G.t*5)*.02,col=inn?'95,255,110':'255,215,70';
@@ -4626,7 +4687,7 @@ function draw(){
     g.addColorStop(0,'rgba(10,12,14,0)');g.addColorStop(1,'rgba(10,12,14,.93)');
     ctx.globalAlpha=Math.min(1,G.evt);ctx.fillStyle=g;ctx.fillRect(0,0,W_,H_);ctx.globalAlpha=1;
   }
-  if(G.wx)drawWx();drawV53Screen();drawV57Screen();drawV61Screen();drawArenaHint();if(G.tut)drawTut();if(G.rush)drawRushHUD();
+  if(G.wx)drawWx();if(G.def)drawDefHUD();drawV53Screen();drawV57Screen();drawV61Screen();drawArenaHint();if(G.tut)drawTut();if(G.rush)drawRushHUD();
   drawV37Overlay();
   if(M.fx==='dark'&&G.lit<=0){
     const g=ctx.createRadialGradient(W_/2,H_/2,180,W_/2,H_/2,360);
@@ -4786,7 +4847,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v76 (เกม v76) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v77 (เกม v77) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
