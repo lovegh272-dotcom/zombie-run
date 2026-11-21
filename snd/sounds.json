@@ -149,8 +149,14 @@
 "shoot_wizard": [
 "shoot_wizard.mp3"
 ],
+"sk_wizard": [
+"sk_wizard.mp3"
+],
 "skill": [
 "skill.mp3"
+],
+"sniper_aim": [
+"sniper_aim.mp3"
 ],
 "step": [
 "step_1.mp3",
@@ -183,6 +189,12 @@
 ],
 "ult_cutin": [
 "ult_cutin.mp3"
+],
+"ult_gren": [
+"ult_gren.mp3"
+],
+"ult_wizard": [
+"ult_wizard.mp3"
 ],
 "wall_break": [
 "wall_break.mp3"
