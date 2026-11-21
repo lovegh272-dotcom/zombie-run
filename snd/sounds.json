@@ -1,62 +1,4 @@
 {
-"boss": [
-"boss.mp3"
-],
-"boss_step": [
-"boss_step.mp3"
-],
-"roar": [
-"roar.mp3"
-],
-"step": [
-"step_1.mp3",
-"step_2.mp3",
-"step_3.mp3"
-],
-"zgroan": [
-"zgroan_1.mp3",
-"zgroan_2.mp3",
-"zgroan_3.mp3"
-],
-"zgroan_big": [
-"zgroan_big.mp3"
-],
-"zscreech": [
-"zscreech.mp3"
-],
-"shoot": [
-"shoot.mp3"
-],
-"shoot_berserk": [
-"shoot_berserk.mp3"
-],
-"shoot_blader": [
-"shoot_blader.mp3"
-],
-"shoot_gren": [
-"shoot_gren.mp3"
-],
-"shoot_nara": [
-"shoot_nara.mp3"
-],
-"shoot_priest": [
-"shoot_priest.mp3"
-],
-"shoot_shot": [
-"shoot_shot.mp3"
-],
-"shoot_sniper": [
-"shoot_sniper.mp3"
-],
-"shoot_soldier": [
-"shoot_soldier.mp3"
-],
-"shoot_storm": [
-"shoot_storm.mp3"
-],
-"shoot_wizard": [
-"shoot_wizard.mp3"
-],
 "bgm_boss": [
 "bgm_boss_1.mp3",
 "bgm_boss_2.mp3",
@@ -90,14 +32,29 @@
 "boom": [
 "boom.mp3"
 ],
+"boss": [
+"boss.mp3"
+],
+"boss_step": [
+"boss_step.mp3"
+],
 "buy": [
 "buy.mp3"
+],
+"camera": [
+"camera.mp3"
 ],
 "chest": [
 "chest.mp3"
 ],
+"chop": [
+"chop.mp3"
+],
 "crate": [
 "crate.mp3"
+],
+"daily": [
+"daily.mp3"
 ],
 "die": [
 "die.mp3"
@@ -105,11 +62,20 @@
 "die_big": [
 "die_big.mp3"
 ],
+"event": [
+"event.mp3"
+],
 "evo": [
 "evo.mp3"
 ],
+"extract": [
+"extract.mp3"
+],
 "gem": [
 "gem.mp3"
+],
+"heli": [
+"heli.mp3"
 ],
 "hit": [
 "hit.mp3"
@@ -119,27 +85,6 @@
 ],
 "lvl": [
 "lvl.mp3"
-],
-"pickup": [
-"pickup.mp3"
-],
-"skill": [
-"skill.mp3"
-],
-"zap": [
-"zap.mp3"
-],
-"chop": [
-"chop.mp3"
-],
-"event": [
-"event.mp3"
-],
-"extract": [
-"extract.mp3"
-],
-"heli": [
-"heli.mp3"
 ],
 "mis": [
 "mis.mp3"
@@ -156,20 +101,61 @@
 "pact": [
 "pact.mp3"
 ],
-"warp": [
-"warp.mp3"
-],
-"camera": [
-"camera.mp3"
-],
-"daily": [
-"daily.mp3"
+"pickup": [
+"pickup.mp3"
 ],
 "plane": [
 "plane.mp3"
 ],
 "rain": [
 "rain.mp3"
+],
+"roar": [
+"roar.mp3"
+],
+"shoot": [
+"shoot.mp3"
+],
+"shoot_berserk": [
+"shoot_berserk.mp3"
+],
+"shoot_blader": [
+"shoot_blader.mp3"
+],
+"shoot_fieldmed": [
+"shoot_fieldmed.mp3"
+],
+"shoot_gren": [
+"shoot_gren.mp3"
+],
+"shoot_nara": [
+"shoot_nara.mp3"
+],
+"shoot_priest": [
+"shoot_priest.mp3"
+],
+"shoot_shot": [
+"shoot_shot.mp3"
+],
+"shoot_sniper": [
+"shoot_sniper.mp3"
+],
+"shoot_soldier": [
+"shoot_soldier.mp3"
+],
+"shoot_storm": [
+"shoot_storm.mp3"
+],
+"shoot_wizard": [
+"shoot_wizard.mp3"
+],
+"skill": [
+"skill.mp3"
+],
+"step": [
+"step_1.mp3",
+"step_2.mp3",
+"step_3.mp3"
 ],
 "thunder": [
 "thunder.mp3"
@@ -179,12 +165,6 @@
 ],
 "turret": [
 "turret.mp3"
-],
-"ult_cutin": [
-"ult_cutin.mp3"
-],
-"wall_break": [
-"wall_break.mp3"
 ],
 "ui": [
 "ui.mp3"
@@ -200,5 +180,28 @@
 ],
 "ui_toggle": [
 "ui_toggle.mp3"
+],
+"ult_cutin": [
+"ult_cutin.mp3"
+],
+"wall_break": [
+"wall_break.mp3"
+],
+"warp": [
+"warp.mp3"
+],
+"zap": [
+"zap.mp3"
+],
+"zgroan": [
+"zgroan_1.mp3",
+"zgroan_2.mp3",
+"zgroan_3.mp3"
+],
+"zgroan_big": [
+"zgroan_big.mp3"
+],
+"zscreech": [
+"zscreech.mp3"
 ]
 }
