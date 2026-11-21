@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon.svg">
+<link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-180.png">
 <title>Zombie Run</title>
 <style>
 *{box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
@@ -35,9 +35,18 @@ canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none}
 #ov .navb button{width:42px;height:42px;border-radius:12px;border:2px solid #6c8;background:#132018e6;color:#fff;font-size:20px;box-shadow:0 2px 8px #000a}
 #ov .card.rec{outline:3px solid #ffcf3a;outline-offset:-3px;border-color:#ffcf3a!important;box-shadow:0 0 14px #ffcf3a88;background:linear-gradient(#3a3012cc,#1c1a10cc)}
 #ov .rect{display:block;color:#ffd75a;font-size:12px;margin-top:3px}
-#boot{position:fixed;inset:0;z-index:50;background:#120a0a url(img/ui/cover.jpg) center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:max(12px,env(safe-area-inset-top)) 16px max(14px,env(safe-area-inset-bottom));color:#fff;text-align:center;transition:opacity .45s}
+#boot{position:fixed;inset:0;z-index:50;background:linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.75)),#120a0a url(img/ui/cover.jpg) center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:max(12px,env(safe-area-inset-top)) 16px max(14px,env(safe-area-inset-bottom));color:#fff;text-align:center;transition:opacity .45s}
 #boot.hide{opacity:0;pointer-events:none}
-#boot .bt-logo{width:min(70vw,560px);aspect-ratio:1000/306;background:url(img/ui/logo.png) center/contain no-repeat;filter:drop-shadow(0 6px 10px #000c);animation:btIn .8s ease-out}
+#boot.go .bt-logo{transform:scale(1.18);filter:drop-shadow(0 0 28px #8f4) brightness(1.25)}
+#boot.go .bt-tip,#boot.go .bt-bar,#boot.go .bt-st{opacity:0;transition:opacity .25s}
+#boot.go::after{content:'';position:absolute;inset:0;background:#cfffb0;animation:btFlash .5s ease-out forwards;pointer-events:none}
+@keyframes btFlash{0%{opacity:.55}100%{opacity:0}}
+#mbg{position:fixed;inset:0;z-index:9;display:none;background:linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.45)),#0a0f0a url(img/ui/cover.jpg) center/cover no-repeat;overflow:hidden;pointer-events:none}
+#mbg i{position:absolute;width:70vmax;height:40vmax;border-radius:50%;background:radial-gradient(rgba(120,200,110,.16),transparent 70%);animation:mbgF 26s linear infinite}
+#mbg i:nth-child(2){animation-duration:34s;animation-delay:-12s;top:45%}
+#mbg i:nth-child(3){animation-duration:41s;animation-delay:-25s;top:10%;background:radial-gradient(rgba(150,110,200,.12),transparent 70%)}
+@keyframes mbgF{0%{transform:translateX(-80vmax)}100%{transform:translateX(130vw)}}
+#boot .bt-logo{width:min(66vw,104vh,640px);aspect-ratio:1100/617;margin-top:auto;transition:transform .7s cubic-bezier(.2,1.6,.4,1),filter .7s;background:url(img/ui/logo.png) center/contain no-repeat;filter:drop-shadow(0 6px 10px #000c);animation:btIn .8s ease-out}
 @keyframes btIn{from{transform:scale(.7);opacity:0}to{transform:none;opacity:1}}
 #boot .bt-tip{margin-top:auto;margin-bottom:10px;max-width:640px;background:#000b;border:1px solid #6c8a;border-radius:12px;padding:8px 14px;font-size:14px;line-height:1.35;min-height:20px}
 #boot .bt-bar{width:min(80vw,520px);height:12px;border-radius:8px;background:#0009;border:2px solid #9c6;overflow:hidden}
@@ -140,7 +149,7 @@ button.big.sm{padding:4px 6px;width:auto;font-size:15px}
   <div class="sk" id="s3"><span class="ic">🌟</span><small>ULT</small><div class="cd"></div></div>
   <div class="sk" id="sf"><span class="ic">🔫</span><small>FIRE</small></div>
 </div>
-<div id="ov"></div>
+<div id="mbg"><i></i><i></i><i></i></div><div id="ov"></div>
 <div id="boot"><div class="bt-logo"></div><div class="bt-tip" id="btTip"></div><div class="bt-bar"><i id="btBar"></i></div><div class="bt-st" id="btSt">กำลังโหลด...</div></div>
 <div id="rot"><div class="ph">📱</div><div>กรุณาหมุนเครื่องเป็นแนวนอน</div></div>
 <script>
@@ -2288,7 +2297,11 @@ function bootStart(){const b=document.getElementById('boot');if(!b)return;let ti
   const iv=setInterval(()=>{const tot=ALLIMG.length||1,ok=ALLIMG.filter(i=>i.complete).length,f=ok/tot,el=performance.now()-t0;
     document.getElementById('btBar').style.width=Math.round(f*100)+'%';document.getElementById('btSt').textContent='กำลังโหลด... '+Math.round(f*100)+'%';
     if((f>=1&&el>700)||el>15000){clearInterval(iv);warmI=0;warmImgs(true);b.classList.add('ready');document.getElementById('btBar').style.width='100%';document.getElementById('btSt').textContent='แตะเพื่อเริ่ม';
-      const go=()=>{b.removeEventListener('pointerdown',go);fixSizeSoon();clearInterval(tipI);bootDone=true;try{ac();if(!muted&&bgmOn)startBGM()}catch(e){}sfx('ui');b.classList.add('hide');setTimeout(()=>b.remove(),500)};
+      const go=e=>{b.removeEventListener('pointerdown',go);if(e){e.preventDefault();e.stopPropagation()}fixSizeSoon();clearInterval(tipI);bootDone=true;
+        // v72: กันการแตะทะลุไปโดนปุ่มเมนูด้านหลัง + ฉากเปิด (โลโก้ซูม/แฟลช/เสียง) ~0.8 วิ แล้วค่อยเฟดเข้าเมนู
+        const blk=ev=>{ev.stopPropagation();ev.preventDefault()};['click','pointerup','touchend','mouseup'].forEach(t=>document.addEventListener(t,blk,true));
+        try{ac();if(!muted&&bgmOn)startBGM()}catch(e2){}sfx('roar');b.classList.add('go');
+        setTimeout(()=>{b.classList.add('hide');setTimeout(()=>{['click','pointerup','touchend','mouseup'].forEach(t=>document.removeEventListener(t,blk,true));b.remove()},480)},780)};
       b.addEventListener('pointerdown',go)}},120)}
 function runCard(){const m=M,zs=[];const nm={normal:'ซอมบี้ปกติ',fast:'ตัวเร็ว',tank:'ตัวถึก',boom:'ตัวระเบิด',spit:'คายกรด',split:'แบ่งร่าง',screamer:'กรีดร้อง',shield:'โล่',healer:'ตัวรักษา',necromancer:'เนโครแมนเซอร์',
   root:'🌿 รากไม้',hazmat:'☣️ ชุดกันสารพิษ',faceless:'👻 คนไข้ไร้เงา',fisher:'🕸️ ชาวประมง',wraith:'💀 วิญญาณอาฆาต',mini:'ลูกสมุน'};
@@ -2388,7 +2401,7 @@ function vfxSkill(i){const id=S.sel,a=faceA(),c=Math.cos(a),sn=Math.sin(a);
     else vfx(1,P.x,P.y,id==='soldier'?290:330,{d:.85});return}
   if(i===2){vfx(2,0,0,id==='berserk'?230:215,{att:'P',loop:1,d:3,a:id==='shot'?a:undefined})}}
 function sigUlt(id){const U=(40+G.dmg*2.2)*G.ulm,a=faceA(),c=Math.cos(a),sn=Math.sin(a),px=P.x,py=P.y;
-  G.cut={id,t:0,d:id==='sniper'?.9:1.2};P.inv=Math.max(P.inv,1.2);G.ban={s:'',t:0};sfx('ult_cutin');
+  G.cut={id,t:0,d:.95};P.inv=Math.max(P.inv,1.2);G.ban={s:'',t:0};sfx('ult_cutin');
   const Q=(t,fn)=>G.gq.push({t,fn});sfx('skill');G.ghT=.6;
   if(ULT2[id]){ULT2[id](U,a,c,sn,px,py,Q);return true}
   if(id==='soldier'){G.plane={x:px-c*700,y:py-sn*700,a,t:0,d:1.9};setTimeout(()=>sfx('plane'),250);const pe=[-sn,c];
@@ -2537,7 +2550,7 @@ function drawV61Screen(){
   if(G.wf>0){ctx.fillStyle='rgba(255,250,225,'+Math.min(.9,G.wf)+')';ctx.fillRect(0,0,W_,H_)}
   drawRicoHUD();
   const c=G.cut;if(!c)return;const t=c.t,al=t<.12?t/.12:t>c.d-.25?Math.max(0,(c.d-t)/.25):1,col=PCOL[c.id]||'#3a8cff';ctx.save();ctx.globalAlpha=al;
-  const nar=CUT_NAR[c.id],h=nar?Math.min(64,H_*.16):Math.min(150,H_*.36),y=nar?h/2+10:H_*.42;ctx.translate(0,y);if(!nar)ctx.rotate(-.08);
+  const nar=1,h=nar?Math.min(64,H_*.16):Math.min(150,H_*.36),y=nar?h/2+10:H_*.42;ctx.translate(0,y);if(!nar)ctx.rotate(-.08);
   ctx.fillStyle='rgba(0,0,0,.75)';ctx.fillRect(-40,-h/2-8,W_+80,h+16);ctx.fillStyle=col;ctx.globalAlpha=al*.85;ctx.fillRect(-40,-h/2,W_+80,h);ctx.globalAlpha=al;
   ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=2;for(let i=0;i<14;i++){const lx=((i*97+t*1400)%(W_+200))-100;ctx.beginPath();ctx.moveTo(lx,-h/2);ctx.lineTo(lx-60,h/2);ctx.stroke()}
   const pa=PA8[c.id],sx=Math.min(1,t/.18),px=-200+(W_*.28+200)*(1-Math.pow(1-sx,3));if(pa){const cs=pa.width/7,sz=h*(nar?1.25:1.6);ctx.drawImage(pa,6*cs,0,cs,cs,px-sz/2,-sz*(nar?.55:.62),sz,sz)}
@@ -3637,13 +3650,15 @@ const EJM=[['🦴','','w_blade'],['🏺','','w_nade'],['🔱','','w_ltn'],['☠�
  ['🪖','','me_soldier'],['🌠','','me_blader'],['☄️','ระเบิดสะเทือนฟ้า','me_gren'],['🎯','กระสุนทะลวงเป้า','me_sniper'],['⚡','เทพีสายฟ้า','me_storm'],['🔫','ลูกซองรถถัง','me_shot'],['💊','','me_fieldmed'],['👹','','me_berserk'],['❄️','หน้าไม้ธารน้ำแข็ง','me_nara'],['🌞','คทาสุริยะ','me_priest'],['🪶','','feather']]
 .sort((a,b)=>(b[1].length-a[1].length));
 function EJ(h){for(const [e,t,n] of EJM){const k=t?e+' '+t:e;if(h.indexOf(k)<0)continue;h=h.split(k).join('<i class="ei" style="--ic:url(img/ui/e_'+n+'.png)"></i>'+(t?' '+t:''))}return h}
+function syncMbg(){const m=document.getElementById('mbg');if(m)m.style.display=(ov.style.display==='block'&&state==='menu')?'block':'none'}
 function page(html){  // v18: เลือก/ซื้อ/สลับรายการในหน้าเดิม = อยู่ตำแหน่งเลื่อนเดิม; เปลี่ยนหน้า = กลับบนสุด
   const was=ov.style.display==='block',st=ov.scrollTop,sig=(html.match(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/)||[])[1]||'';
   if(was&&pgSig)PGSC[pgSig]=st;
   const keep=was&&sig&&sig===pgSig;pgSig=sig;
   const bk=(html.match(/data-a="([a-z]+)"[^>]*>← กลับ/)||[])[1];
   const nav=bk&&!/data-a="resume"/.test(html)?'<div class="navb"><button data-a="'+bk+'">◀</button>'+(bk!=='menu'&&state!=='paused'&&state!=='lvl'?'<button data-a="menu">🏠</button>':'')+'</div>':'';
-  ov.style.display='block';ov.innerHTML=nav+'<div class="pg">'+EJ(html.split('🪙').join(COINI))+'</div>';ov.scrollTop=keep?st:(PGREM.test(sig)&&PGSC[sig])||0}
+  ov.style.display='block';ov.innerHTML=nav+'<div class="pg">'+EJ(html.split('🪙').join(COINI))+'</div>';ov.scrollTop=keep?st:(PGREM.test(sig)&&PGSC[sig])||0;syncMbg()}
+setInterval(syncMbg,250);
 const PGSC={},PGREM=/โหมดเนื้อเรื่อง|กระดานเควส|ตัวละคร|แผนที่|ร้าน/;
 function fmt(s){return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
 const ICK={map:{forest:'forest',city:'city',hosp:'hosp',deadport:'port',darkgrave:'grave'},diff:{easy:'d_easy',normal:'d_norm',hell:'d_hell',nightmare:'d_hell',apoc:'d_hell'},
@@ -3656,7 +3671,7 @@ function MI(n){return n[0]==='!'?'<i class="mi em">'+n.slice(1)+'</i>':'<i class
 function showMenu(){
   state='menu';STORY_RUN=null;pickCfg();
   const C=CHARS[S.sel];
-  page('<h1 style="margin:0">🧟 ZOMBIE RUN</h1>'+
+  page('<h1 style="margin:0"><img src="img/ui/logo.png" alt="ZOMBIE RUN" style="height:min(120px,26vh);filter:drop-shadow(0 4px 8px #000)"></h1>'+
     '<div class="coin">🪙 '+S.coins+'</div>'+
     '<div>ตัวละคร: '+C.ic+' '+C.n+' | สถิติ: '+fmt(S.st.best)+'</div>'+
     '<div style="font-size:14px;color:#8cf">'+EI('map',M.id,M.ic)+M.n+' | '+EI('diff',keyOf(DIFF,D),D.ic)+D.n+' | '+EI('mode',keyOf(MODES,MO),MO.ic)+MO.n+'</div>'+
@@ -4531,7 +4546,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v71 (เกม v71) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v72 (เกม v72) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
