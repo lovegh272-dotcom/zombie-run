@@ -623,12 +623,13 @@ CHARS.priest={n:'นักบวชแสง',ic:'✨',d:'คทาแสงย�
 PCOL.nara='#5fd4ff';PCOL.priest='#ffd25a';
 // รูปตัวละครใหม่ (v24): img/<id>_f0..f3.png = ยืน, เดิน1, เดิน2, ยิง/ร่าย  และหน้าการ์ด img/face_<id>.png (ไม่มีไฟล์ = ใช้ภาพเดิม/ตัววาดด้วยโค้ด)
 const FR={},FACE={};
+const NOFR={nara:1,priest:1};  // v87: ตัวที่ใช้ชีต pa_ อย่างเดียว ไม่มีไฟล์ภาพเดินแยก
 Object.keys(CHARS).forEach(id=>{const arr=[];let n=0;
-  [0,1,2,3].forEach(i=>{const im=new Image();im.onload=()=>{arr[i]=im;if(++n===4)FR[id]=arr};im.src='img/'+id+'_f'+i+'.png'});
+  if(!NOFR[id])[0,1,2,3].forEach(i=>{const im=new Image();im.onload=()=>{arr[i]=im;if(++n===4)FR[id]=arr};im.src='img/'+id+'_f'+i+'.png'});
   const fi=new Image();fi.onload=()=>{FACE[id]=fi};fi.src='img/face_'+id+'.png'});
 // v26: มุมหน้า (เดิน/เล็งลง) และมุมหลัง (เดิน/เล็งขึ้น): img/<id>_front_f0..f3.png, <id>_back_f0..f3.png (ไม่มีไฟล์ = ใช้มุมข้างต่อไป)
 const FRV={};
-Object.keys(CHARS).forEach(id=>['front','back'].forEach(v=>{const arr=[];let n=0;
+Object.keys(CHARS).forEach(id=>!NOFR[id]&&['front','back'].forEach(v=>{const arr=[];let n=0;
   [0,1,2,3].forEach(i=>{const im=new Image();im.onload=()=>{arr[i]=im;if(++n===4)(FRV[id]=FRV[id]||{})[v]=arr};im.src='img/'+id+'_'+v+'_f'+i+'.png'})}));
 // v39: ชีต 8 ทิศ img/pa_<id>.png (7x3 ช่องละ 224px, เท้าที่ y=208) — มีไฟล์นี้จะใช้แทนภาพ 3 มุมเดิม
 // แถว: 0=เล็ง/ยืน 1=ยิง 2=ก้าวเดิน | คอลัมน์: 0=บนซ้าย 1=บน 2=บนขวา 3=ลง 4=ขวา 5=ล่างขวา 6=ลง(ก้ม)
@@ -1162,7 +1163,8 @@ TYPES.rwall={hp:55,spd:0,r:17,dmg:0,col:'#6b4a2a',xp:0,kind:'wall',cust:1};
 TYPES.bclone={hp:200,spd:70,r:30,dmg:14,col:'#8e44c9',xp:0,kind:'clone'};
 const MZT={forest:'root',city:'hazmat',hosp:'faceless',deadport:'fisher',darkgrave:'wraith',crypt:'wraith'};
 Object.keys(TYPES).forEach(k=>TYPES[k].id=k);
-function loadZ(key,r){const im=new Image();im.onload=()=>{const sz=Math.ceil(r*3.6*2),c=document.createElement('canvas');c.width=c.height=sz;c.getContext('2d').drawImage(im,0,0,sz,sz);ZIMG[key]=c};im.src='img/z_'+key+'.png'}
+const NOZI={bclone:1,egg:1,faceless:1,fisher:1,hazmat:1,root:1,rwall:1,wraith:1};  // v87: ชนิดที่ใช้ชีต za_ อย่างเดียว
+function loadZ(key,r){if(NOZI[key])return;const im=new Image();im.onload=()=>{const sz=Math.ceil(r*3.6*2),c=document.createElement('canvas');c.width=c.height=sz;c.getContext('2d').drawImage(im,0,0,sz,sz);ZIMG[key]=c};im.src='img/z_'+key+'.png'}
 Object.keys(TYPES).forEach(k=>{if(k==='boss'){[0,1,2].forEach(i=>loadZ('boss'+i,TYPES.boss.r))}else loadZ(k,TYPES[k].r)});
 // v27: ซอมบี้เริ่มต้น (normal) แบบหลายมุม: atlas 7 ช่อง x 3 แถว (แถว0=หน้า 1=ข้าง(หันขวา) 2=หลัง; ช่อง0=ยืน 1-4=เดิน 5-6=โจมตี)
 const SKF=[],SKH=[];for(let i=0;i<4;i++){let a=new Image();a.src='img/sk_f'+i+'.png';SKF.push(a);a=new Image();a.src='img/sk_h'+i+'.png';SKH.push(a)}
@@ -3755,7 +3757,7 @@ function updTut(dt){const T=G.tut;T.t+=dt;P.hp=P.max;G.t=Math.min(G.t,20);
   else if(T.s===6&&(G.cut||(SK[3]&&SK[3].t>0)))nx();
   else if(T.s===8&&T.t>2.6)tutEnd(true)}
 function tutSetPage(){state='paused';{const b=document.getElementById('tutSk');if(b)b.style.display='none'}const am=S.am==='man',ap=S.apk||0,AP=['ปิด — เลือกการ์ดเองทุกครั้ง','เปิด — เลือกการ์ดที่แนะนำ ⭐ ให้ทันที','กึ่งอัตโนมัติ — รอ 2 วิ แล้วเลือก ⭐ ให้'];
-  page('<h2 style="margin:0">⚙️ ตั้งค่าที่ควรรู้ (บทสอน 8/8)</h2><div class="sub">ปรับได้เลยตอนนี้ หรือเปลี่ยนทีหลังที่ ⚙️ ตั้งค่า (ทั้งหน้าหลักและตอนกดหยุดเกม)</div>'+
+  page('<h2 style="margin:0">⚙️ ตั้งค่าที่ควรรู้ (บทสอน 8/9)</h2><div class="sub">ปรับได้เลยตอนนี้ หรือเปลี่ยนทีหลังที่ ⚙️ ตั้งค่า (ทั้งหน้าหลักและตอนกดหยุดเกม)</div>'+
     '<div class="card"><div class="row"><div style="text-align:left"><b>🎯 โหมดยิงปืน</b><small>'+(am?'ยิงเอง: กดค้างปุ่ม FIRE หรือจอฝั่งขวา แล้วลากเพื่อเล็ง':'ออโต้: เล็งและยิงซอมบี้ใกล้สุดให้เอง (แนะนำสำหรับมือถือ)')+'</small></div><span class="tag ok" data-a="tutam" style="cursor:pointer">'+(am?'ยิงเอง':'ออโต้')+' ⇄</span></div></div>'+
     '<div class="card"><div class="row"><div style="text-align:left"><b>⬆️ เลือกการ์ดอัปเกรดอัตโนมัติ</b><small>'+AP[ap]+'</small></div><span class="tag ok" data-a="tutapk" style="cursor:pointer">'+['ปิด','เปิด','กึ่งออโต้'][ap]+' ⇄</span></div></div>'+
     '<div class="card"><small style="text-align:left;display:block">อื่นๆ ในตั้งค่า: เสียง/เพลง · เลือกเพลง · คุณภาพกราฟิก (ลดเองอัตโนมัติถ้ากระตุก) · สภาพอากาศ · เล่นบทสอนอีกครั้ง</small></div>'+
@@ -3765,14 +3767,20 @@ function tutEnd(done){if(!G.tut)return;G.tut=null;tutHi(null);const b=document.g
   if(!done){S.tut=S.tut||0;save()}state='menu';
   page('<h2 style="margin:0">'+(done?'🎉 จบบทสอน!':'⏭ ข้ามบทสอนแล้ว')+'</h2><div class="card">'+(done?'ได้รับ <b>+300 🪙</b> · ':'')+'เล่นบทสอนใหม่ได้ที่ ⚙️ ตั้งค่า</div><button class="big" data-a="tutdone">ไปหน้าหลัก</button>')}
 function drawTut(){const T=G.tut,st=TUTS[T.s];if(!st)return;const tx=(T.s===1&&manual()&&st.tm)?st.tm:st.t;ctx.save();
-  const fs=Math.round(Math.min(19,H_*.048)),w=Math.min(W_*.8,ctx.measureText?620:620),y=Math.min(132,H_*.3);ctx.font='bold '+fs+'px sans-serif';const tw=Math.min(W_*.86,ctx.measureText(tx).width+40);
+  // v87: กรอบสูงตามตัวหนังสือจริง (เผื่อสระ/วรรณยุกต์ไทย) · ยาวเกินตัด 2 บรรทัด · ไม่ชนมินิแมพ · ตัวนับ 1/9..9/9
+  const fs=Math.round(Math.min(19,H_*.048)),y0=Math.min(124,H_*.27),mm=(W_-150)-10,maxW=Math.max(220,Math.min(W_*.86,2*(Math.min(mm,W_-12)-W_/2)));
+  ctx.font='bold '+fs+'px sans-serif';const pad=18,lim=maxW-pad*2;let lines=[tx];
+  if(ctx.measureText(tx).width>lim){const ws=tx.split(' ');let best=null;for(let i=1;i<ws.length;i++){const l1=ws.slice(0,i).join(' '),l2=ws.slice(i).join(' '),m=Math.max(ctx.measureText(l1).width,ctx.measureText(l2).width);if(!best||m<best.m)best={l1,l2,m}}
+    if(best)lines=[best.l1,best.l2];else{const h=Math.ceil(tx.length/2);lines=[tx.slice(0,h),tx.slice(h)]}}
+  let fz=fs;const mw=()=>Math.max(...lines.map(l=>ctx.measureText(l).width));while(mw()>lim&&fz>11){fz--;ctx.font='bold '+fz+'px sans-serif'}
+  const tw=Math.min(maxW,mw()+pad*2),lh=fz*1.55,th=Math.round(fs*.62),boxH=th*1.5+lines.length*lh+fz*.55,x0=W_/2-tw/2,yT=y0-fs*1.2;
   const pul=.85+.15*Math.sin(G.t*6+T.t*6);ctx.fillStyle='rgba(0,0,0,.72)';ctx.strokeStyle='rgba(255,215,90,'+pul+')';ctx.lineWidth=2;
-  const x0=W_/2-tw/2;ctx.beginPath();ctx.roundRect?ctx.roundRect(x0,y-fs*1.2,tw,fs*2.4,12):ctx.rect(x0,y-fs*1.2,tw,fs*2.4);ctx.fill();ctx.stroke();
-  ctx.textAlign='center';ctx.fillStyle='#ffd75a';ctx.font='bold '+Math.round(fs*.62)+'px sans-serif';ctx.fillText('บทสอน '+(Math.min(T.s+1,8))+'/8',W_/2,y-fs*.35);
-  ctx.fillStyle='#fff';ctx.font='bold '+fs+'px sans-serif';ctx.fillText(tx,W_/2,y+fs*.75);
+  ctx.beginPath();ctx.roundRect?ctx.roundRect(x0,yT,tw,boxH,12):ctx.rect(x0,yT,tw,boxH);ctx.fill();ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#ffd75a';ctx.font='bold '+th+'px sans-serif';ctx.fillText('บทสอน '+(T.s+1)+'/'+TUTS.length,W_/2,yT+th*.95);
+  ctx.fillStyle='#fff';ctx.font='bold '+fz+'px sans-serif';lines.forEach((l,i)=>ctx.fillText(l,W_/2,yT+th*1.5+lh*(i+.5)+fz*.1));ctx.textBaseline='alphabetic';
   if(st.hint==='joy'&&!joy.on){const jx=W_*.17,jy=H_*.72,o=Math.sin(T.t*3)*40;ctx.globalAlpha=.75;ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(jx,jy,46,0,6.2832);ctx.stroke();
     ctx.fillStyle='#ffd75a';ctx.beginPath();ctx.arc(jx+o,jy,20,0,6.2832);ctx.fill();ctx.font='28px sans-serif';ctx.fillText('👆',jx+o+6,jy+38)}
-  if(T.s===1){ctx.globalAlpha=1;ctx.font='bold '+Math.round(fs*.8)+'px sans-serif';ctx.fillStyle='#9f6';ctx.fillText(Math.min(5,G.kills-T.k0)+' / 5',W_/2,y+fs*2.1)}
+  if(T.s===1){ctx.globalAlpha=1;ctx.font='bold '+Math.round(fs*.8)+'px sans-serif';ctx.fillStyle='#9f6';ctx.fillText(Math.min(5,G.kills-T.k0)+' / 5',W_/2,yT+boxH+fs*.95)}
   ctx.restore()}
 // ================= v74: สกิน / สมุดซอมบี้ / ความสำเร็จเพิ่ม / อันดับตามตัวละคร =================
 const SK_SH=2000,SK_C=2000,SK_GP=5;
@@ -3829,7 +3837,7 @@ function zbStar(k){const n=(S.zk||{})[k]||0,t=ZB_T[k]||ZB_D;return n>=t[2]?3:n>=
 function zbStars(){return ZB_LIST.map(zbStar)}
 function zbBonusMap(){const m={};ZB_LIST.forEach(k=>{const b=ZB_B[zbStar(k)];if(b)m[k]=1+b});if(m.boss){['bclone'].forEach(x=>m[x]=m.boss)}return m}
 function showZBook(){const tot=zbStars().reduce((a,b)=>a+b,0);let h='<h2 style="margin:0">📖 สมุดซอมบี้</h2><div class="sub">ฆ่าซอมบี้แต่ละชนิดเพื่อเก็บดาว · ⭐ ดาเมจใส่ชนิดนั้น +3% · ⭐⭐ +6% · ⭐⭐⭐ +10% (ดาวรวม '+tot+'/'+ZB_LIST.length*3+')</div>';
-  h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;max-width:860px;margin:6px auto">';
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px;width:100%;max-width:860px;box-sizing:border-box;margin:6px auto">';  // v87: ไม่ล้นจอเล็ก
   ZB_LIST.forEach(k=>{const n=(S.zk||{})[k]||0,st=zbStar(k),t=ZB_T[k]||ZB_D,nx=t[st]||null,seen=n>0;
     h+='<div style="border-radius:12px;padding:8px;background:#0b1a10cc;border:2px solid '+(st>=3?'#ffd75a':'#4a6a4a')+'"><canvas data-zb="'+k+'" width="96" height="96" style="position:static;display:block;margin:0 auto;touch-action:auto;width:72px;height:72px;'+(seen?'':'filter:brightness(0) opacity(.6)')+'"></canvas>'+
       '<div style="font-size:13px"><b>'+(seen?ZB_N[k]:'???')+'</b></div><div style="font-size:15px;letter-spacing:2px">'+'⭐'.repeat(st)+'<span style="opacity:.3">'+'⭐'.repeat(3-st)+'</span></div>'+
@@ -4314,7 +4322,8 @@ function showChars(){
     h+='<div class="cc'+(sel?' sel':'')+(!sel&&!own&&!afford?' off':'')+(lastPick===id?' pop':'')+'" data-a="char" data-i="'+id+'" style="--c:'+col+';--cg:rgba('+hexRGB(col)+',.32)">'+
       '<div class="cc-top"><div class="cc-face"'+(fp?' style="background-image:url('+fp+')">':'>'+c.ic)+'</div>'+
       '<div class="cc-info"><b>'+c.ic+' '+c.n+'</b><small>'+c.d+'</small></div>'+
-      '<span class="tag'+(sel?' ok':own?'':afford?'':' no')+'">'+(sel?'ใช้อยู่':own?'เลือก':slk?'🔒 ผ่านบท 2 (ด่าน 2-4)':'🪙 '+c.price)+(id==='priest'&&!own?'</span><span class="tag" style="font-size:11px">หรือฟรีเมื่อได้ 3 ดาวทุกด่าน':'')+'</span></div>'+
+      '<span class="tag'+(sel?' ok':own?'':afford?'':' no')+'">'+(sel?'ใช้อยู่':own?'เลือก':slk?'🔒 ผ่านบท 2 (ด่าน 2-4)':'🪙 '+c.price)+'</span></div>'+(id==='priest'&&!own?'<div style="font-size:12px;color:#ffd75a;margin:2px 0 0;text-align:left">🌟 หรือปลดฟรี เมื่อจบบท 5 และได้ 3 ดาวทุกด่าน</div>':'')+  // v87: แยกบรรทัด (เดิมเบียดชื่อจนช่องสูงผิดปกติ)
+      
       '<div class="cc-sk">'+sk+'</div>'+
       (own?(()=>{const n=(S.wsl&&S.wsl[id])||0;return '<div class="row" style="margin-top:6px;font-size:13px"><span>🎒 ช่องอาวุธเสริม '+(3+n)+'/5</span>'+(n<2?'<span class="tag'+(S.wslV>0||S.coins>=WSLOT_PRICE[n]?'':' no')+'" data-a="wslot" data-i="'+id+'">+1 ช่อง '+(S.wslV>0?'🎒 ใช้ตั๋ว ('+S.wslV+')':'🪙 '+WSLOT_PRICE[n])+'</span>':'<span class="tag ok">เต็มแล้ว</span>')+'</div>'})():'')+
       '</div>';
@@ -4980,7 +4989,8 @@ function draw(){
     g.addColorStop(0,'rgba(10,12,14,0)');g.addColorStop(1,'rgba(10,12,14,.88)');
     ctx.fillStyle=g;ctx.fillRect(0,0,W_,H_);
   }
-  if(G.wx)drawWx();if(G.def&&state!=='place')drawDefHUD();drawV53Screen();drawV57Screen();drawV61Screen();drawArenaHint();if(G.tut)drawTut();if(G.rush)drawRushHUD();
+  const ovQ=state==='over';  // v87: หน้าจบรอบ ไม่วาดป้าย/แถบข้อความในเกมทับ
+  if(G.wx)drawWx();if(G.def&&state!=='place'&&!ovQ)drawDefHUD();drawV53Screen();drawV57Screen();drawV61Screen();if(!ovQ)drawArenaHint();if(G.tut&&!ovQ)drawTut();if(G.rush&&!ovQ)drawRushHUD();
   // HUD
   ctx.fillStyle='#0008';ctx.fillRect(10,10,W_-20,16);
   ctx.fillStyle='#4cf';ctx.fillRect(10,10,(W_-20)*G.xp/G.need,16);
@@ -5041,8 +5051,9 @@ function draw(){
     }
   }
   if(G.ammo){const q=FXS[AMSP[G.ammo.k]];if(q&&q.f[3].complete){const hx=W_/2-50,hy=H_*.34;ctx.drawImage(q.f[(G.t*8|0)&3],hx-34,hy-18,36,36);ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(hx+4,hy-4,100,8);ctx.fillStyle=G.ammo.t<5?'#f66':'#8df';ctx.fillRect(hx+4,hy-4,100*G.ammo.t/G.ammo.m,8)}}
-  if(G.ban.t>0){ctx.globalAlpha=Math.min(1,G.ban.t);ctx.font='bold 22px sans-serif';ctx.textAlign='center';
-    ctx.fillStyle='#000';ctx.fillText(G.ban.s,W_/2+2,H_*.28+2);ctx.fillStyle='#fd4';ctx.fillText(G.ban.s,W_/2,H_*.28);ctx.globalAlpha=1}
+  if(G.ban.t>0&&!ovQ){ctx.globalAlpha=Math.min(1,G.ban.t);let bf=22;ctx.font='bold 22px sans-serif';const bw=ctx.measureText(G.ban.s).width,bm=W_*.9;if(bw>bm){bf=Math.max(13,Math.floor(22*bm/bw));ctx.font='bold '+bf+'px sans-serif'}ctx.textAlign='center';
+    const by=Math.max(H_*.28,(G.ex||G.stg)?140:120);  // v87: ย่อให้พอดีจอ และเลื่อนลงไม่ทับข้อความมุมซ้ายบน
+    ctx.fillStyle='#000';ctx.fillText(G.ban.s,W_/2+2,by+2);ctx.fillStyle='#fd4';ctx.fillText(G.ban.s,W_/2,by);ctx.globalAlpha=1}
   if(G.ex)drawExtractionArrow();
   if(G.quest && G.quest.active)drawQuestArrow(); // [เพิ่มใหม่] วาดลูกศรชี้เป้าเควส
   drawV37Arrows();drawStoryArrows();
@@ -5134,7 +5145,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v86 (เกม v86) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v87 (เกม v87) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
