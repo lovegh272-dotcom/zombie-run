@@ -853,7 +853,7 @@ function musicKick(when,vol){
 }
 // v43: เพลงจากไฟล์ (ไม่บังคับ) bgm_menu / bgm_play / bgm_boss / bgm_dungeon ใน sounds.json -> เล่นวนแทนเพลงสังเคราะห์ ครอสเฟด 1.5 วิ
 let bgmCur=null;
-function bgmKind(){try{if(state!=='play'&&state!=='build')return'bgm_menu';if(G.def&&SND.bgm.bgm_defense)return G.boss?'bgm_boss':'bgm_defense';if(G.inDun)return SND.bgm.bgm_dungeon?'bgm_dungeon':'bgm_boss';return G.boss?'bgm_boss':'bgm_play'}catch(e){return'bgm_menu'}}
+function bgmKind(){try{if(state!=='play'&&state!=='build'&&state!=='place')return'bgm_menu';if(G.def&&SND.bgm.bgm_defense)return G.boss?'bgm_boss':'bgm_defense';if(G.inDun)return SND.bgm.bgm_dungeon?'bgm_dungeon':'bgm_boss';return G.boss?'bgm_boss':'bgm_play'}catch(e){return'bgm_menu'}}
 // v68: เพลงไฟล์จริง: สุ่ม 1 เพลงต่อฉาก (ไม่ซ้ำเพลงล่าสุด) เล่นวนจนเปลี่ยนฉาก | ล็อกเพลงได้ในตั้งค่า (S.bgmSel)
 //      โหลด/ถอดรหัสเฉพาะเพลงที่จะเล่น เก็บไว้ไม่เกิน 3 เพลง (ประหยัดแรมบน iPhone) | ต่อรอยวนด้วยครอสเฟด
 const BGM_X=.9,BGM_KEEP=3;let bgmLast={},bgmForce=null,bgmWant=null;
@@ -3723,6 +3723,7 @@ const TUTS=[
   {t:'กดปุ่ม BLAST สกิลโจมตีแรงๆ',el:'s1'},
   {t:'กดปุ่ม SHIELD โล่ป้องกันชั่วคราว',el:'s2'},
   {t:'ท่าไม้ตายพร้อมแล้ว! กดปุ่ม ULT',el:'s3'},
+  {t:'⚙️ ตั้งค่าที่ควรรู้: โหมดยิง และการเลือกการ์ดอัตโนมัติ'},
   {t:'เยี่ยมมาก! พร้อมลุยแล้ว 🎉 รับ +300 🪙'}];
 function tutStart(){TUTN=1;STORY_RUN=null;try{start()}finally{TUTN=0}
   G.tut={s:0,t:0,ox:P.x,oy:P.y,k0:0,lv0:0,hi:null};G.spm=0;G.thrOn=false;G.evAt=1e9;Z.length=0;
@@ -3735,7 +3736,8 @@ function tutStep(i){const T=G.tut;T.s=i;T.t=0;tutHi(TUTS[i].el||null);sfx(i?'mis
   if(i===1){T.k0=G.kills;tutZ(5)}
   if(i===2){T.lv0=G.lv;G.xp=Math.max(G.xp,G.need-1);if(!GEM.length)for(let k=0;k<4;k++)GEM.push({x:P.x+Math.cos(k*1.57)*130,y:P.y+Math.sin(k*1.57)*130,v:3})}
   if(i>=3&&i<=6){const s2=SK[i-3];if(s2)s2.t=0;if(i===4)tutZ(6)}
-  if(i===7){S.coins+=300;S.tut=1;save();tutHi(null)}}
+  if(i===7){tutHi(null);setTimeout(()=>{if(G.tut&&G.tut.s===7)tutSetPage()},900)}
+  if(i===8){S.coins+=300;S.tut=1;save();tutHi(null)}}
 function updTut(dt){const T=G.tut;T.t+=dt;P.hp=P.max;G.t=Math.min(G.t,20);
   const nx=()=>tutStep(T.s+1);
   if(T.s===0&&Math.hypot(P.x-T.ox,P.y-T.oy)>220)nx();
@@ -3745,7 +3747,14 @@ function updTut(dt){const T=G.tut;T.t+=dt;P.hp=P.max;G.t=Math.min(G.t,20);
   else if(T.s===4&&SK[1]&&SK[1].t>0)nx();
   else if(T.s===5&&SK[2]&&SK[2].t>0)nx();
   else if(T.s===6&&(G.cut||(SK[3]&&SK[3].t>0)))nx();
-  else if(T.s===7&&T.t>2.6)tutEnd(true)}
+  else if(T.s===8&&T.t>2.6)tutEnd(true)}
+function tutSetPage(){state='paused';{const b=document.getElementById('tutSk');if(b)b.style.display='none'}const am=S.am==='man',ap=S.apk||0,AP=['ปิด — เลือกการ์ดเองทุกครั้ง','เปิด — เลือกการ์ดที่แนะนำ ⭐ ให้ทันที','กึ่งอัตโนมัติ — รอ 2 วิ แล้วเลือก ⭐ ให้'];
+  page('<h2 style="margin:0">⚙️ ตั้งค่าที่ควรรู้ (บทสอน 8/8)</h2><div class="sub">ปรับได้เลยตอนนี้ หรือเปลี่ยนทีหลังที่ ⚙️ ตั้งค่า (ทั้งหน้าหลักและตอนกดหยุดเกม)</div>'+
+    '<div class="card"><div class="row"><div style="text-align:left"><b>🎯 โหมดยิงปืน</b><small>'+(am?'ยิงเอง: กดค้างปุ่ม FIRE หรือจอฝั่งขวา แล้วลากเพื่อเล็ง':'ออโต้: เล็งและยิงซอมบี้ใกล้สุดให้เอง (แนะนำสำหรับมือถือ)')+'</small></div><span class="tag ok" data-a="tutam" style="cursor:pointer">'+(am?'ยิงเอง':'ออโต้')+' ⇄</span></div></div>'+
+    '<div class="card"><div class="row"><div style="text-align:left"><b>⬆️ เลือกการ์ดอัปเกรดอัตโนมัติ</b><small>'+AP[ap]+'</small></div><span class="tag ok" data-a="tutapk" style="cursor:pointer">'+['ปิด','เปิด','กึ่งออโต้'][ap]+' ⇄</span></div></div>'+
+    '<div class="card"><small style="text-align:left;display:block">อื่นๆ ในตั้งค่า: เสียง/เพลง · เลือกเพลง · คุณภาพกราฟิก (ลดเองอัตโนมัติถ้ากระตุก) · สภาพอากาศ · เล่นบทสอนอีกครั้ง</small></div>'+
+    '<button class="big" data-a="tutok">ต่อไป ▶</button>')}
+function defResumeT(){ov.style.display='none';state='play';{const b=document.getElementById('tutSk');if(b)b.style.display='block'}last=performance.now();if(G.tut&&G.tut.s===7)tutStep(8)}
 function tutEnd(done){if(!G.tut)return;G.tut=null;tutHi(null);const b=document.getElementById('tutSk');if(b)b.style.display='none';
   if(!done){S.tut=S.tut||0;save()}state='menu';
   page('<h2 style="margin:0">'+(done?'🎉 จบบทสอน!':'⏭ ข้ามบทสอนแล้ว')+'</h2><div class="card">'+(done?'ได้รับ <b>+300 🪙</b> · ':'')+'เล่นบทสอนใหม่ได้ที่ ⚙️ ตั้งค่า</div><button class="big" data-a="tutdone">ไปหน้าหลัก</button>')}
@@ -3753,7 +3762,7 @@ function drawTut(){const T=G.tut,st=TUTS[T.s];if(!st)return;const tx=(T.s===1&&m
   const fs=Math.round(Math.min(19,H_*.048)),w=Math.min(W_*.8,ctx.measureText?620:620),y=Math.min(132,H_*.3);ctx.font='bold '+fs+'px sans-serif';const tw=Math.min(W_*.86,ctx.measureText(tx).width+40);
   const pul=.85+.15*Math.sin(G.t*6+T.t*6);ctx.fillStyle='rgba(0,0,0,.72)';ctx.strokeStyle='rgba(255,215,90,'+pul+')';ctx.lineWidth=2;
   const x0=W_/2-tw/2;ctx.beginPath();ctx.roundRect?ctx.roundRect(x0,y-fs*1.2,tw,fs*2.4,12):ctx.rect(x0,y-fs*1.2,tw,fs*2.4);ctx.fill();ctx.stroke();
-  ctx.textAlign='center';ctx.fillStyle='#ffd75a';ctx.font='bold '+Math.round(fs*.62)+'px sans-serif';ctx.fillText('บทสอน '+(Math.min(T.s+1,7))+'/7',W_/2,y-fs*.35);
+  ctx.textAlign='center';ctx.fillStyle='#ffd75a';ctx.font='bold '+Math.round(fs*.62)+'px sans-serif';ctx.fillText('บทสอน '+(Math.min(T.s+1,8))+'/8',W_/2,y-fs*.35);
   ctx.fillStyle='#fff';ctx.font='bold '+fs+'px sans-serif';ctx.fillText(tx,W_/2,y+fs*.75);
   if(st.hint==='joy'&&!joy.on){const jx=W_*.17,jy=H_*.72,o=Math.sin(T.t*3)*40;ctx.globalAlpha=.75;ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(jx,jy,46,0,6.2832);ctx.stroke();
     ctx.fillStyle='#ffd75a';ctx.beginPath();ctx.arc(jx+o,jy,20,0,6.2832);ctx.fill();ctx.font='28px sans-serif';ctx.fillText('👆',jx+o+6,jy+38)}
@@ -3913,8 +3922,30 @@ function defMenu(){if(!G.def||state!=='play')return;state='build';const d=G.def;
 function defResume(){ov.style.display='none';state='play';last=performance.now();syncMbg()}
 function defBuild(k){const d=G.def,b=DEFB[k];if(!d||!b)return;if(d.scrap<b.c||(!b.up&&d.blds.length>=14)){sfx('ui_err');return}
   if(b.up){d.scrap-=b.c;d.lv*=1.3;d.hp=Math.min(d.max,d.hp+d.max*.15);G.ban={s:'⬆️ อัปเกรดสิ่งก่อสร้างทั้งหมด! (x'+d.lv.toFixed(2)+')',t:2};sfx('evo');defResume();return}
-  const o={k,x:P.x,y:P.y+10,hp:b.hp*(1+(d.lv-1)*.5),max:b.hp*(1+(d.lv-1)*.5),cd:0,a:0,fl:0};if(Math.hypot(o.x-d.x,o.y-d.y)<95){const a=Math.atan2(o.y-d.y,o.x-d.x)||1.57;o.x=d.x+Math.cos(a)*100;o.y=d.y+Math.sin(a)*100}
-  d.blds.push(o);d.scrap-=b.c;sfx('buy');burst(o.x,o.y,'#cde',12);P.y+=46;defResume()}
+  defPlaceStart(k)}
+// v83: ลากวางสิ่งก่อสร้าง + ตารางเขียว/แดง
+const PLG=40;
+function plcValid(k,x,y){const d=G.def,b=DEFB[k],r=b.r||30;if(Math.hypot(x-d.x,y-d.y)<100+r*.4)return false;if(G.ac&&(Math.abs(x-G.ac.x)>G.ac.hw-60||Math.abs(y-G.ac.y)>G.ac.hw-60))return false;
+  for(const o of d.blds)if(Math.hypot(o.x-x,o.y-y)<(DEFB[o.k].r||30)+r-6)return false;const t={x,y};if(typeof pushOut==='function'){pushOut(t,r*.7);if(Math.hypot(t.x-x,t.y-y)>1)return false}return true}
+function defPlaceStart(k){const d=G.def;state='place';ov.style.display='none';const a=P.aim||0;G.plc={k,x:Math.round((P.x+Math.cos(a)*90)/PLG)*PLG,y:Math.round((P.y+Math.sin(a)*90)/PLG)*PLG};
+  let o=document.getElementById('plcO');if(!o){o=document.createElement('div');o.id='plcO';o.style.cssText='position:fixed;inset:0;z-index:8;touch-action:none';
+    const mv=e=>{if(!G.plc)return;const r=cv.getBoundingClientRect(),sx=(e.clientX-r.left)*W_/r.width,sy=(e.clientY-r.top)*H_/r.height-(e.pointerType==='touch'?60:0),zm=G.zm||1;
+      G.plc.x=Math.round((P.x+(sx-W_/2)/zm)/PLG)*PLG;G.plc.y=Math.round((P.y+(sy-H_/2)/zm)/PLG)*PLG;plcBtns();e.preventDefault()};
+    o.addEventListener('pointerdown',e=>{o.setPointerCapture&&o.setPointerCapture(e.pointerId);mv(e)});o.addEventListener('pointermove',e=>{if(e.buttons||e.pointerType==='touch')mv(e)});document.body.appendChild(o);
+    const bb=document.createElement('div');bb.id='plcB';bb.style.cssText='position:fixed;z-index:9;left:50%;transform:translateX(-50%);bottom:max(12px,env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center';
+    bb.innerHTML='<div id="plcT" style="background:#000b;color:#fff;padding:6px 12px;border-radius:12px;font-size:14px"></div><button data-a="plok" class="big" style="margin:0;padding:8px 16px">✅ วางตรงนี้</button><button data-a="plx" class="big sec" style="margin:0;padding:8px 16px">❌ ยกเลิก</button>';document.body.appendChild(bb);
+    bb.querySelector('[data-a=plok]').addEventListener('click',e=>{e.stopPropagation();defPlaceOk()});bb.querySelector('[data-a=plx]').addEventListener('click',e=>{e.stopPropagation();defPlaceCancel()})}
+  o.style.display='block';document.getElementById('plcB').style.display='flex';plcBtns()}
+function plcBtns(){const p=G.plc;if(!p)return;const ok=plcValid(p.k,p.x,p.y),t=document.getElementById('plcT'),b=document.querySelector('#plcB [data-a=plok]');if(t)t.textContent=DEFB[p.k].ic+' '+DEFB[p.k].n+' · ลากนิ้วเลือกจุด · '+(ok?'🟩 วางได้':'🟥 วางไม่ได้');if(b)b.style.opacity=ok?1:.4}
+function defPlaceEnd(){G.plc=null;const o=document.getElementById('plcO'),b=document.getElementById('plcB');if(o)o.style.display='none';if(b)b.style.display='none';defResume()}
+function defPlaceCancel(){defPlaceEnd()}
+function defPlaceOk(){const d=G.def,p=G.plc;if(!p||!d)return;const b=DEFB[p.k];if(!plcValid(p.k,p.x,p.y)||d.scrap<b.c){sfx('ui_err');return}
+  const o={k:p.k,x:p.x,y:p.y,hp:b.hp*(1+(d.lv-1)*.5),max:b.hp*(1+(d.lv-1)*.5),cd:0,a:0,fl:0};d.blds.push(o);d.scrap-=b.c;sfx('buy');burst(o.x,o.y,'#cde',12);defPlaceEnd()}
+function drawPlc(){const p=G.plc;if(!p)return;const b=DEFB[p.k],R=6;ctx.save();
+  for(let gx=-R;gx<=R;gx++)for(let gy=-R;gy<=R;gy++){const x=p.x+gx*PLG,y=p.y+gy*PLG;if(gx*gx+gy*gy>R*R)continue;const ok=plcValid(p.k,x,y);ctx.fillStyle=ok?'rgba(60,220,90,.16)':'rgba(240,60,60,.16)';ctx.fillRect(x-PLG/2+1,y-PLG/2+1,PLG-2,PLG-2)}
+  const ok=plcValid(p.k,p.x,p.y);ctx.strokeStyle=ok?'#6f8':'#f55';ctx.lineWidth=3;ctx.strokeRect(p.x-PLG/2,p.y-PLG/2,PLG,PLG);
+  if(b.rng){ctx.globalAlpha=.25;ctx.fillStyle=ok?'#6f8':'#f55';ctx.beginPath();ctx.arc(p.x,p.y,b.rng,0,6.28);ctx.fill()}ctx.globalAlpha=.75;
+  const im=DEFI[p.k],sz=p.k==='barricade'?96:84;if(im){const h=sz*im.height/im.width;ctx.drawImage(im,p.x-sz/2,p.y-h*.7,sz,h)}ctx.restore()}
 function defBlock(z){const d=G.def;if(!d)return null;for(const o of d.blds){if(o.k!=='barricade'&&o.k!=='mg'&&o.k!=='cannon'&&o.k!=='tesla')continue;const dx=z.x-o.x,dy=z.y-o.y,dd=Math.hypot(dx,dy),rr=o.r+z.T.r;
   if(dd<rr){const p=(rr-dd)/(dd||1);z.x+=dx*p;z.y+=dy*p;if(z.T.kind!=='goblin'){o.hp-=z.T.dmg*.9*(1/60);o.fl=.1}return o}}return null}
 function defSpawnOne(){const d=G.def,w=d.wave,a=Math.random()*6.28,c={x:d.x+Math.cos(a)*820,y:d.y+Math.sin(a)*820};arenaIn(c,90);
@@ -3941,7 +3972,7 @@ function updDef(dt){const d=G.def;if(d.hit>0)d.hit-=dt;
     else{o.cd=b.cd;let hit=0;for(const z of near(o.x,o.y,b.rng+30)){if(z.hp<=0||z.T.cust)continue;if(Math.hypot(z.x-o.x,z.y-o.y)>b.rng+z.T.r)continue;hit=1;
       if(o.k==='spikes')hitZ(z,(10+G.dmg*.4)*lv);else if(o.k==='flame'){hitZ(z,(6+G.dmg*.25)*lv);z.brn=Math.max(z.brn||0,2);z.brnM=lv}else if(o.k==='ice'){z.slow=Math.max(z.slow||0,.6);z.slf=.4}}
       if(hit&&o.k==='flame'&&Math.random()<.4)burst(o.x,o.y-10,'#f83',4);if(hit&&o.k!=='ice'&&Math.random()<.15)sfx('trap',o.x,o.y)}}}
-function drawDef(){const d=G.def,ti=DEFI.truck;
+function drawDef(){const d=G.def,ti=DEFI.truck;if(G.plc)drawPlc();
   for(const o of d.blds){const im=DEFI[o.k],b=DEFB[o.k],sz=o.k==='barricade'?96:o.k==='spikes'||o.k==='ice'||o.k==='flame'?80:84;ctx.save();if(o.fl>0)ctx.globalAlpha=.7;
     if(o.k==='ice'||o.k==='flame'){ctx.globalAlpha=.18;ctx.fillStyle=o.k==='ice'?'#9df':'#f84';ctx.beginPath();ctx.arc(o.x,o.y,b.rng,0,6.28);ctx.fill();ctx.globalAlpha=o.fl>0?.7:1}
     if(im){const h=sz*im.height/im.width;if((o.k==='mg'||o.k==='cannon')&&Math.cos(o.a)<0){ctx.translate(o.x,o.y);ctx.scale(-1,1);ctx.drawImage(im,-sz/2,-h*.7,sz,h)}else ctx.drawImage(im,o.x-sz/2,o.y-h*.7,sz,h)}
@@ -3987,6 +4018,13 @@ function bzGiantDraw(pfl){if(S.sel!=='berserk'||!(G.bigT>0))return false;let im=
   else if(t0<.6){row=0;fr=Math.min(5,Math.floor(t0/.1))}else if(G.bzA>0){row=G.bzAR||2;fr=Math.min(5,Math.floor((1-G.bzA/.32)*6))}else{fr=mv?Math.floor(G.t*10)%6:0}
   const left=!(vw&&im2)&&Math.cos(P.aim)<0,sz=200;ctx.save();const m=ctx.getTransform(),sc=Math.hypot(m.a,m.b);ctx.setTransform(sc,0,0,sc,m.e,m.f);if(left)ctx.scale(-1,1);
   ctx.drawImage(im,fr*cs,row*cs,cs,cs,-sz/2,30-sz*.95,sz,sz);ctx.restore();return true}
+// v83: หน้าหลัก 2 การ์ด (เนื้อเรื่อง / เล่นอิสระ)
+function storyNext(){return STAGE_ORDER.find(k=>!((S.story||{})[k]>0))||null}
+function menuCards(){pickCfg();const nx=storyNext(),allDone=!nx,st=nx&&STAGES[nx];
+  const card=(a,ic,t,sub,sub2,col)=>'<button class="big" data-a="'+a+'" style="flex:1;min-width:0;margin:0;padding:10px 8px;text-align:center;line-height:1.35;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;filter:hue-rotate('+col+')"><div style="font-size:17px">'+ic+' <b>'+t+'</b></div><div style="font-size:15px">'+sub+'</div><div style="font-size:12px;opacity:.85">'+sub2+'</div></button>';
+  return '<div style="display:flex;gap:10px;max-width:620px;width:100%;margin:8px auto">'+
+    card('stnext','📖','เนื้อเรื่อง',allDone?'▶ เลือกด่าน (ผ่านครบแล้ว)':'▶ เล่นต่อ ด่าน '+nx,(st?st.n+' · ':'')+'⭐ '+storyStars()+'/'+STAGE_ORDER.length*3,'-60deg')+
+    card('start','🎮','เล่นอิสระ','▶ '+(MO.ic||'')+' '+MO.n,M.ic+' '+M.n+' · '+D.ic+' '+D.n+' (เปลี่ยนที่ 🗺️)','0deg')+'</div>'}
 function syncMbg(){const db=document.getElementById('defB');if(db)db.style.display=(G&&G.def&&state==='play')?'block':'none';const m=document.getElementById('mbg');if(m)m.style.display=(ov.style.display==='block'&&state==='menu')?'block':'none'}
 function page(html){  // v18: เลือก/ซื้อ/สลับรายการในหน้าเดิม = อยู่ตำแหน่งเลื่อนเดิม; เปลี่ยนหน้า = กลับบนสุด
   const was=ov.style.display==='block',st=ov.scrollTop,sig=(html.match(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/)||[])[1]||'';
@@ -4012,8 +4050,7 @@ function showMenu(){
     '<div class="coin">🪙 '+S.coins+' <span class="tag" data-a="login" style="font-size:14px;vertical-align:middle">🎁 รายวัน'+(lgCan()?' <span style="color:#f66">●</span>':'')+'</span></div>'+
     '<div>ตัวละคร: '+C.ic+' '+C.n+' | สถิติ: '+fmt(S.st.best)+'</div>'+
     '<div style="font-size:14px;color:#8cf">'+EI('map',M.id,M.ic)+M.n+' | '+EI('diff',keyOf(DIFF,D),D.ic)+D.n+' | '+EI('mode',keyOf(MODES,MO),MO.ic)+MO.n+'</div>'+
-    '<button class="big" data-a="start">'+BI('play')+'เริ่มเกม</button>'+
-    '<button class="big sec" data-a="story">📖 โหมดเนื้อเรื่อง <span style="font-size:13px">⭐'+storyStars()+'</span></button>'+
+    menuCards()+
     '<button class="big sec" data-a="mode">'+BI('map')+'แผนที่และโหมด</button>'+
     '<div class="grid2">'+
     '<button class="big sec sm" data-a="shop">'+BI('shop')+'ร้านอัป</button>'+
@@ -4062,7 +4099,7 @@ function showMode(){
       '<br>ดีสุดวันนี้ '+(r.best?r.best.toLocaleString():'-')+(r.clr?' ✅':' | ชนะครั้งแรกของวัน +200 🪙')+((S.dstreak&&S.dstreak.n&&(S.dstreak.last===r.d||S.dstreak.last===dayKey(1)))?' | 🔥 ต่อเนื่อง '+S.dstreak.n+' วัน':'')}
     h+='<div class="card btn'+(sel?' done':'')+'" data-a="mod" data-i="'+id+'"><div class="row"><div><b>'+EI('mode',id,d.ic)+d.n+'</b><small>'+dd+'</small></div>'+(sel?'<span class="tag ok">ใช้อยู่</span>':'')+'</div></div>';
   }
-  h+='<button class="big" data-a="start">'+BI('play')+'เริ่มเกม</button><button class="big sec" data-a="menu">← กลับ</button>';
+  pickCfg();h+='<button class="big" data-a="start">'+BI('play')+'เริ่ม '+(MO.ic||'')+' '+MO.n+' · '+M.ic+' '+M.n+'</button><button class="big sec" data-a="menu">← กลับ</button>';
   page(h);
 }
 function showEvo(){
@@ -4253,6 +4290,12 @@ ov.addEventListener('click',e=>{
   else if(a==='menu')showMenu();
   else if(a==='mus')showMusic();
   else if(a==='login')showLogin();
+  else if(a==='stnext'){const nx=storyNext();if(nx&&stageOpen(nx))showStageIntro(nx);else showStory()}
+  else if(a==='plok')defPlaceOk();
+  else if(a==='plx')defPlaceCancel();
+  else if(a==='tutam'){S.am=S.am==='man'?'auto':'man';save();applyAimUI();tutSetPage()}
+  else if(a==='tutapk'){S.apk=((S.apk||0)+1)%3;save();tutSetPage()}
+  else if(a==='tutok'){defResumeT()}
   else if(a==='dbd'){defBuild(i)}
   else if(a==='dbx'){defResume()}
   else if(a==='wx'){S.wx=S.wx===0?1:0;save();showSet()}
@@ -4402,8 +4445,8 @@ function gameOver(win,how){
   if(G.newAch.length)h+='<div class="card done"><b>🏅 ภารกิจสำเร็จ</b><small>'+G.newAch.join('<br>')+'</small></div>';
   if(qd.length||cqd.length)h+='<div class="card done"><b>📋 เควสสำเร็จ</b><small>'+qd.concat(cqd).join('<br>')+(qd.length?'<br>ไปกดรับรางวัลที่ 📋 เควส':'')+'</small></div>';
   if(sr&&win){const i=STAGE_ORDER.indexOf(G.stgId),nx=STAGE_ORDER[i+1];if(nx)h+='<button class="big" data-a="stg" data-i="'+nx+'">▶️ ด่านถัดไป '+nx+'</button>'}
-  if(sr)h+='<button class="big sec" data-a="story">📖 เลือกด่าน</button>';
-  h+='<button class="big" data-a="start">'+BI('retry')+'เล่นใหม่</button><button class="big sec" data-a="share">'+BI('share')+'แชร์คะแนน</button>'+
+  if(sr)h+='<button class="big'+(win?' sec':'')+'" data-a="stg" data-i="'+G.stgId+'">🔁 '+(win?'เล่นด่าน '+G.stgId+' อีกครั้ง':'ลองด่าน '+G.stgId+' อีกครั้ง')+'</button><button class="big sec" data-a="story">📖 เลือกด่าน</button>';
+  h+=(sr?'':'<button class="big" data-a="start">'+BI('retry')+'เล่นใหม่ ('+(MO.ic||'')+' '+MO.n+')</button>')+'<button class="big sec" data-a="share">'+BI('share')+'แชร์คะแนน</button>'+
      '<div class="grid2"><button class="big sec sm" data-a="mode">'+BI('map')+'แผนที่</button><button class="big sec sm" data-a="shop">'+BI('shop')+'ร้านอัป</button>'+
      '<button class="big sec sm" data-a="lb">'+BI('lb')+'อันดับ</button><button class="big sec sm" data-a="menu">เมนูหลัก</button></div>';
   page(h);
@@ -4914,7 +4957,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v82 (เกม v82) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v83 (เกม v83) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
