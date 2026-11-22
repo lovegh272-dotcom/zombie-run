@@ -169,6 +169,15 @@
 "trap": [
 "trap.mp3"
 ],
+"trap_flame_end": [
+"trap_flame_end.mp3"
+],
+"trap_flame_loop": [
+"trap_flame_loop.mp3"
+],
+"trap_flame_start": [
+"trap_flame_start.mp3"
+],
 "turret": [
 "turret.mp3"
 ],
