@@ -622,6 +622,10 @@ CHARS.nara={n:'หมอนารา',ic:'❄️',d:'หน้าไม้เข
 CHARS.priest={n:'นักบวชแสง',ic:'✨',d:'คทาแสงยิงลูกแสงทะลุ แรงขึ้น 60% กับตัวใหญ่/บอส · ก้าวแสง คลื่นศักดิ์สิทธิ์ ม่านแสง ท่าไม้ตายเสาแสงพิพากษา',price:4000,st:'5-4',hp:1.1,dmg:1.15,rate:.9,spd:.98,range:1.1,blade:0,nade:0,pierce:1};
 PCOL.nara='#5fd4ff';PCOL.priest='#ffd25a';
 // รูปตัวละครใหม่ (v24): img/<id>_f0..f3.png = ยืน, เดิน1, เดิน2, ยิง/ร่าย  และหน้าการ์ด img/face_<id>.png (ไม่มีไฟล์ = ใช้ภาพเดิม/ตัววาดด้วยโค้ด)
+// v88: iPhone (Safari) จัดกึ่งกลาง/ชิดขวาข้อความภาษาไทยบน canvas ผิด → คำนวณตำแหน่งเองแล้ววาดแบบชิดซ้าย
+(()=>{const P2=CanvasRenderingContext2D.prototype,TH=/[\u0E00-\u0E7F]/;['fillText','strokeText'].forEach(fn=>{const o=P2[fn];P2[fn]=function(t,x,y,mw){const a=this.textAlign;
+  if((a==='center'||a==='right'||a==='end')&&typeof t==='string'&&TH.test(t)){let w=this.measureText(t).width;if(mw!==undefined&&w>mw)w=mw;this.textAlign='left';try{return mw!==undefined?o.call(this,t,a==='center'?x-w/2:x-w,y,mw):o.call(this,t,a==='center'?x-w/2:x-w,y)}finally{this.textAlign=a}}
+  return mw!==undefined?o.call(this,t,x,y,mw):o.call(this,t,x,y)}})})();
 const FR={},FACE={};
 const NOFR={nara:1,priest:1};  // v87: ตัวที่ใช้ชีต pa_ อย่างเดียว ไม่มีไฟล์ภาพเดินแยก
 Object.keys(CHARS).forEach(id=>{const arr=[];let n=0;
@@ -2640,7 +2644,8 @@ function drawArenaTop(A,hw,DW,DH){const k=WALLM[M.id]||M.id,ix=WALLX[k];
       const a=Math.min(1,(bl+.2)*1.5)*.9,c=i%3===0?'255,60,40':i%3===1?'255,220,60':'180,90,255';ctx.fillStyle='rgba('+c+','+a+')';ctx.shadowColor='rgba('+c+',1)';ctx.shadowBlur=8;
       ctx.beginPath();ctx.ellipse(x-7,y,3.2,1.8,0,0,6.28);ctx.ellipse(x+7,y,3.2,1.8,0,0,6.28);ctx.fill();ctx.shadowBlur=0}
     if(G.t>(G.grlT||0)){G.grlT=G.t+9+Math.random()*8;const L=A.hw;if(Math.min(P.x-(A.x-L),(A.x+L)-P.x,P.y-(A.y-L),(A.y+L)-P.y)<500)sfx('zgroan_big')}}}
-function drawMinimap(){const A=G.ac;if(!A||G.inDun||state!=='play')return;ctx.globalCompositeOperation='source-over';const S2=Math.min(96,H_*.24),x0=W_-S2-12,y0=Math.max(58,H_*.16),k=S2/(A.hw*2);
+let TOPB=0;setInterval(()=>{const t=document.getElementById('top');if(t){const r=t.getBoundingClientRect();TOPB=r.height?r.bottom:0}},500);
+function drawMinimap(){const A=G.ac;if(!A||G.inDun||state!=='play')return;ctx.globalCompositeOperation='source-over';const S2=Math.min(80,H_*.2),x0=W_-S2-12,y0=Math.max(64,(TOPB||0)+8),k=S2/(A.hw*2);  // v88: เล็กลง และอยู่ใต้ปุ่มบนขวา
   ctx.save();ctx.globalAlpha=.85;ctx.fillStyle='rgba(6,10,8,.82)';ctx.strokeStyle='rgba(170,220,150,.9)';ctx.lineWidth=2;ctx.fillRect(x0,y0,S2,S2);ctx.strokeRect(x0,y0,S2,S2);
   const mp=(x,y)=>[x0+(x-A.x+A.hw)*k,y0+(y-A.y+A.hw)*k];const dot=(x,y,r,c)=>{const q=mp(x,y);ctx.fillStyle=c;ctx.beginPath();ctx.arc(q[0],q[1],r,0,6.28);ctx.fill()};
   ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=1;const v1=mp(P.x-W_/2,P.y-H_/2);ctx.strokeRect(v1[0],v1[1],W_*k,H_*k);
@@ -3711,14 +3716,15 @@ function showTutAsk(){const nw=!(S.st&&S.st.games>0);
     '<br>ทำครบรับ <b>+300 🪙</b> · เล่นใหม่ได้ภายหลังที่ ⚙️ ตั้งค่า</div></div>'+
     '<button class="big" data-a="tuty">▶ เริ่มบทสอน</button><button class="big sec" data-a="tutn">ข้าม</button>')}
 const LGR=[{c:200},{c:300},{f:1,w:3},{c:500},{p:1},{c:800},{ch:'berserk',c:300}];
-function lgText(r){const own=r.ch&&(S.chars||[]).includes(r.ch);return [r.ch?(own?'🪙 1500 + 🧩×2<br><small>(มีนักล่าคลั่งแล้ว)</small>':'🔥 นักล่าคลั่ง ฟรี!'):'',r.c&&!r.ch?'🪙 '+r.c:'',r.f?'🪶 ขนนกฟีนิกซ์':'',r.w?'🎒 ตั๋วช่องอาวุธ ×'+r.w:'',r.p?'🧩 ชิ้นส่วนสกิน ×'+r.p:''].filter(Boolean).join('<br>')}
+function lgText(r){const own=r.ch&&(S.chars||[]).includes(r.ch);return [r.ch?(own?'🪙 1500<br>🧩 ×2':'🔥 นักล่าคลั่ง<br>ฟรี!'):'',r.c&&!r.ch?'🪙 '+r.c:'',r.f?'🪶 ขนนก ×1':'',r.w?'🎒 ตั๋ว ×'+r.w:'',r.p?'🧩 สกิน ×'+r.p:''].filter(Boolean).join('<br>')}
 function lgCan(){S.lg=S.lg||{last:'',n:0};return S.lg.last!==dayKey()}
 function showLogin(){LG_SEEN=1;const lg=S.lg||{last:'',n:0},can=lgCan(),cur=lg.n%7;let h='<h2 style="margin:0">🎁 ล็อกอินรายวัน</h2><div class="sub">เข้าเกมวันละครั้งรับของ · ขาดวันไหนไม่เป็นไร นับต่อจากเดิม · ครบ 7 วันเริ่มรอบใหม่</div>';
   h+='<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;max-width:720px;margin:8px auto">';
   LGR.forEach((r,i)=>{const today=can&&i===cur,done=can?i<cur:i<((lg.n-1)%7+1);
-    h+='<div style="margin:0;padding:8px 4px;text-align:center;border-radius:12px;background:'+(i===6?'linear-gradient(#5a4a12cc,#2a2208cc)':'#0b1a10cc')+';border:2px solid '+(today?'#ffd75a':done?'#4a6a4a':'#5c7c5c')+';'+(today?'box-shadow:0 0 18px #ffd75a88;':'')+(done?'opacity:.55;':'')+'"><b style="font-size:13px">วันที่ '+(i+1)+'</b><div style="font-size:12px;line-height:1.4;margin-top:4px">'+lgText(r)+'</div>'+(done?'<div style="font-size:18px">✅</div>':'')+(i===6?'<small style="color:#ffd75a">รางวัลใหญ่</small>':'')+'</div>'});
-  h+='</div>'+(can?'<button class="big" data-a="lgc">🎁 รับรางวัลวันที่ '+(cur+1)+'</button>':'<div class="card">✅ วันนี้รับแล้ว — มาใหม่พรุ่งนี้นะ (วันถัดไป: วันที่ '+(lg.n%7+1)+')</div>')+
-    '<div class="sub">🪶 ขนนกฟีนิกซ์: ใช้ชุบชีวิตฟรีอัตโนมัติในรอบถัดไป (มี '+(S.fthV||0)+') · 🎒 ตั๋วช่องอาวุธ: '+(S.wslV||0)+' (ใช้เพิ่มช่องอาวุธเสริมที่หน้าตัวละคร) · 🧩 ชิ้นส่วนสกิน: '+(S.skp||0)+'</div>'+
+    h+='<div style="margin:0;padding:8px 4px;text-align:center;border-radius:12px;background:'+(i===6?'linear-gradient(#5a4a12cc,#2a2208cc)':'#0b1a10cc')+';border:2px solid '+(today?'#ffd75a':done?'#4a6a4a':'#5c7c5c')+';'+(today?'box-shadow:0 0 18px #ffd75a88;':'')+(done?'opacity:.55;':'')+'display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:86px"><b style="font-size:13px;white-space:nowrap">วันที่ '+(i+1)+'</b><div style="font-size:12px;line-height:1.45;margin-top:4px;white-space:nowrap">'+lgText(r)+'</div>'+(done?'<div style="font-size:16px;margin-top:2px">✅</div>':'')+(i===6&&!done?'<small style="color:#ffd75a;margin-top:auto">รางวัลใหญ่</small>':'')+'</div>'});
+  h+='</div>'+(can?'<button class="big" data-a="lgc">🎁 รับรางวัลวันที่ '+(cur+1)+'</button>':'<div style="margin:4px auto;padding:6px 14px;border-radius:12px;background:#0b1a10cc;border:2px solid #4a6a4a;font-size:14px;white-space:nowrap">✅ วันนี้รับแล้ว · พรุ่งนี้รับวันที่ '+(lg.n%7+1)+'</div>')+
+    '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-width:720px;margin:6px auto;text-align:left">'+
+    [['🪶','ขนนกฟีนิกซ์',S.fthV||0,'ชุบชีวิตฟรีรอบถัดไป'],['🎒','ตั๋วช่องอาวุธ',S.wslV||0,'เพิ่มช่องที่หน้าตัวละคร'],['🧩','ชิ้นส่วนสกิน',S.skp||0,'แลกสกินที่หน้าสกิน']].map(q=>'<div style="padding:5px 8px;border-radius:10px;background:#0006;border:1px solid #4a6a4a"><div style="font-size:13px;white-space:nowrap"><b>'+q[0]+' '+q[1]+': '+q[2]+'</b></div><div style="font-size:11px;color:#bcd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+q[3]+'</div></div>').join('')+'</div>'+
     '<button class="big sec" data-a="lgx">← กลับ</button>';page(h)}
 function lgClaim(){if(!lgCan())return showLogin();const lg=S.lg,r=LGR[lg.n%7];if(r.ch){if(!S.chars.includes(r.ch)){S.chars.push(r.ch);G.ban={s:'🔥 ได้นักล่าคลั่งฟรี!',t:2}}else{S.coins+=1500;S.skp=(S.skp||0)+2}}else if(r.c){S.coins+=r.c;S.st.coins=(S.st.coins||0)+r.c}if(r.f)S.fthV=(S.fthV||0)+1;if(r.w)S.wslV=(S.wslV||0)+r.w;if(r.p)S.skp=(S.skp||0)+r.p;
   lg.n=lg.n%7+1;lg.last=dayKey();save();sfx('daily');showLogin()}
@@ -5145,7 +5151,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v87 (เกม v87) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v88 (เกม v88) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
