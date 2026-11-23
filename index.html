@@ -118,6 +118,7 @@ button.big:not(.sec):active{border-image-source:url(img/ui/btn_pri_p.png)}
 #pb{--ic:url(img/ui/ic_pause.png)}#mb{--ic:url(img/ui/ic_snd_on.png)}#mb.off{--ic:url(img/ui/ic_snd_off.png)}#fb{--ic:url(img/ui/ic_full.png)}
 .ei{display:inline-block;width:1.7em;height:1.7em;background:var(--ic) center/contain no-repeat;vertical-align:middle;margin-right:4px}
 .ei.co{width:1.25em;height:1.25em;margin:0 2px}
+.ti{display:inline-block;flex:none;width:1.4em;height:1.4em;background:var(--ic) center/contain no-repeat;vertical-align:-.35em;margin-right:3px;font-style:normal}
 button.big.sm{padding:4px 6px;width:auto;font-size:15px}
 .bi{display:inline-block;flex:none;width:30px;height:30px;background:var(--ic) center/contain no-repeat;filter:drop-shadow(0 2px 1px rgba(0,0,0,.6))}
 .mi{display:inline-block;flex:none;width:40px;height:40px;background:var(--ic) center/contain no-repeat;margin-right:8px}
@@ -3784,10 +3785,10 @@ function defTruck(a){const op=a==='dtr'?'tr':'ta';
   if(NETG()){netBReq({op});sfx('buy');setTimeout(()=>{if(state==='build')defMenu2()},450);return}
   if(defTruckDo(op)){sfx(op==='ta'?'evo':'buy');defMenu2()}else sfx('ui_err')}
 function defMenu(){const d=G.def;if(!d||state!=='play')return;state='build';
-  if(d.ph!=='build'){const dm=d.blds.filter(o=>o.hp<o.max);let h='<h2 style="margin:0">🔧 ซ่อม (ระหว่างคลื่น)</h2><div class="coin">⚙️ '+d.scrap+'</div>'+defTruckCard()+'<div class="sub">ระหว่างคลื่นสร้าง/ย้ายไม่ได้ · ซ่อมแบบเสียเศษเหล็ก หรือยืนนิ่งๆ ข้างสิ่งก่อสร้างเพื่อซ่อมฟรี · แตะที่ชิ้นในเกมเพื่ออัปเกรด</div>';
+  if(d.ph!=='build'){const dm=d.blds.filter(o=>o.hp<o.max);let h='<h2 style="margin:0">'+BI('build')+' ซ่อม (ระหว่างคลื่น)</h2><div class="coin">⚙️ '+d.scrap+'</div>'+defTruckCard()+'<div class="sub">ระหว่างคลื่นสร้าง/ย้ายไม่ได้ · ซ่อมแบบเสียเศษเหล็ก หรือยืนนิ่งๆ ข้างสิ่งก่อสร้างเพื่อซ่อมฟรี · แตะที่ชิ้นในเกมเพื่ออัปเกรด</div>';
     if(!dm.length)h+='<div class="card">ทุกชิ้นยังสมบูรณ์ดี 👍</div>';dm.forEach(o=>{const c=repCost(o);h+='<div class="card"><div class="row"><b>'+DEFB[o.k].ic+' '+DEFB[o.k].n+' LV'+(o.lv||1)+' · '+Math.round(o.hp/o.max*100)+'%</b><span class="tag'+(d.scrap>=c?'':' no')+'" data-a="drp" data-i="'+d.blds.indexOf(o)+'">ซ่อม ⚙️ '+c+'</span></div></div>'});
     h+='<button class="big sec" data-a="dbx">← กลับไปเล่น</button>';page(h);return}
-  let h='<h2 style="margin:0">🔧 สร้างป้องกัน</h2><div class="coin">⚙️ '+d.scrap+' เศษเหล็ก</div>'+defTruckCard()+'<div class="sub" style="font-size:14px">ลากวางในวงเส้นประ · '+(()=>{const c=defCnt(),m=defCaps();return'🧱📌 ไม่จำกัด · ชิ้นพิเศษ '+c.n+'/'+m.cap+' · ป้อมยิง '+c.t+'/'+m.tur})()+'<br><small style="opacity:.75">ป้อมยิงเว้นห่าง 2 ช่อง · แตะชิ้นที่วางแล้วเพื่อย้าย/หมุน/อัปเกรด/ขาย</small></div>';
+  let h='<h2 style="margin:0">'+BI('build')+' สร้างป้องกัน</h2><div class="coin">⚙️ '+d.scrap+' เศษเหล็ก</div>'+defTruckCard()+'<div class="sub" style="font-size:14px">ลากวางในวงเส้นประ · '+(()=>{const c=defCnt(),m=defCaps();return'🧱📌 ไม่จำกัด · ชิ้นพิเศษ '+c.n+'/'+m.cap+' · ป้อมยิง '+c.t+'/'+m.tur})()+'<br><small style="opacity:.75">ป้อมยิงเว้นห่าง 2 ช่อง · แตะชิ้นที่วางแล้วเพื่อย้าย/หมุน/อัปเกรด/ขาย</small></div>';
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;max-width:820px;margin:0 auto">';
   const pic={barricade:'def2/bar_h',gate:'def2/gate_c',flame:'def2/flame_r',mg:'def/mg',cannon:'def/cannon'};
   for(const k in DEFB){const b=DEFB[k],why=defWhy(k),ok=d.scrap>=b.c&&!why;h+='<div class="btn" data-a="dbd" data-i="'+k+'" style="cursor:pointer;border-radius:12px;padding:8px;background:#0b1a10dd;border:2px solid '+(ok?'#9c6':'#444')+';'+(ok?'':'opacity:.55')+'">'+
@@ -3988,9 +3989,9 @@ function drawDef(){const d=G.def,ti=DEFI.truck;
   const bw=84;ctx.fillStyle='#000b';ctx.fillRect(d.x-bw/2,d.y+26,bw,7);ctx.fillStyle=d.hp/d.max>.35?'#6f6':'#f55';ctx.fillRect(d.x-bw/2,d.y+26,bw*d.hp/d.max,7);ctx.strokeStyle='#000';ctx.strokeRect(d.x-bw/2,d.y+26,bw,7)}
 function drawDefHUD(){const d=G.def;ctx.save();ctx.textAlign='center';const fs=Math.round(Math.min(16,H_*.042));ctx.font='bold '+fs+'px sans-serif';ctx.lineWidth=4;ctx.strokeStyle='#000';
   const t=d.ph==='build'?'🔧 พักสร้าง '+Math.ceil(d.t)+' วิ · คลื่นถัดไป '+(d.wave+1)+(d.end?'':'/10'):d.ph==='wave'?'🧟 คลื่นที่ '+d.wave+(d.end?'':'/10')+' · เหลือ '+(d.plan.length+Z.filter(z=>z.hp>0&&!z.T.cust).length):'🏆 สำเร็จ!';
-  const s2=t+'   ⚙️ '+d.scrap+'   🚚 '+Math.round(d.hp/d.max*100)+'%',y=H_-14;ctx.strokeText(s2,W_/2,y);ctx.fillStyle='#ffd75a';ctx.fillText(s2,W_/2,y);
+  const s2=t+'   ⚙️ '+d.scrap+'   🚚 '+Math.round(d.hp/d.max*100)+'%',y=H_-14;ctx.fillStyle='#ffd75a';hudText(s2,W_/2,y,1);
   if(d.ph==='build'){const p2='ศัตรูคลื่นถัดไป: '+defPlanText(d.plan)+((d.wave+1)%5===0?' + 👹บอส':'');ctx.font='bold '+Math.round(fs*.85)+'px sans-serif';ctx.strokeText(p2,W_/2,y-fs*1.4);ctx.fillStyle='#fff';ctx.fillText(p2,W_/2,y-fs*1.4)}
-  const dx=d.x-P.x,dy=d.y-P.y;if(Math.abs(dx)>W_/2-40||Math.abs(dy)>H_/2-40){const a=Math.atan2(dy,dx),ex=W_/2+Math.cos(a)*(Math.min(W_/2,H_/2)-50),ey=H_/2+Math.sin(a)*(H_/2-50);ctx.font='26px sans-serif';ctx.fillText('🚚',ex,ey+8)}ctx.restore()}
+  const dx=d.x-P.x,dy=d.y-P.y;if(Math.abs(dx)>W_/2-40||Math.abs(dy)>H_/2-40){const a=Math.atan2(dy,dx),ex=W_/2+Math.cos(a)*(Math.min(W_/2,H_/2)-50),ey=H_/2+Math.sin(a)*(H_/2-50);if(HUDI.truck)ctx.drawImage(HUDI.truck,ex-20,ey-20,40,40);else{ctx.font='26px sans-serif';ctx.fillText('🚚',ex,ey+8)}}ctx.restore()}
 // ================= v78: นักล่าคลั่ง v2 =================
 VFXI.bzc=null;{const im=new Image();im.onload=()=>{VFXI.bzc=im};im.src='img/vfx/bzc.png'}
 const BZG={};[['a','img/bzg_a.png'],['b','img/bzg_b.png']].forEach(([k,u])=>{const im=new Image();im.onload=()=>{BZG[k]=im};im.src=u});
@@ -4033,22 +4034,38 @@ function menuCards(){pickCfg();const nx=storyNext(),allDone=!nx,st=nx&&STAGES[nx
   return '<div style="display:flex;gap:10px;max-width:620px;width:100%;margin:8px auto">'+
     card('stnext','📖','เนื้อเรื่อง',allDone?'▶ เลือกด่าน (ผ่านครบแล้ว)':'▶ เล่นต่อ ด่าน '+nx,(st?st.n+' · ':'')+'⭐ '+storyStars()+'/'+STAGE_ORDER.length*3,'-60deg')+
     card('start','🎮','เล่นอิสระ','▶ '+(MO.ic||'')+' '+MO.n,M.ic+' '+M.n+' · '+D.ic+' '+D.n+' (เปลี่ยนที่ 🗺️)','0deg')+'</div>'}
-function defGoTxt(){const t=Math.max(0,G.def.t);return'▶ เริ่มเลย · เหลือ '+Math.ceil(t)+' วิ (+'+Math.floor(t)*2+' ⚙️)'}
-function syncMbg(){const db=document.getElementById('defB');if(db){db.style.display=(G&&G.def&&state==='play')?'block':'none';if(G&&G.def)db.innerHTML=G.def.ph==='build'?'🔧 สร้าง':'🔧 ซ่อม'}const dg=document.getElementById('defGo');if(dg){const on=G&&G.def&&state==='play'&&G.def.ph==='build';dg.style.display=on?'block':'none';if(on)dg.innerHTML=defGoTxt()}const m=document.getElementById('mbg');if(m)m.style.display=(ov.style.display==='block'&&state==='menu')?'block':'none'}
+function defGoTxt(){const t=Math.max(0,G.def.t);return TI('wave_go')+'เริ่มเลย · เหลือ '+Math.ceil(t)+' วิ (+'+Math.floor(t)*2+' '+TI('hud_scrap')+')'}
+function syncMbg(){const db=document.getElementById('defB');if(db){db.style.display=(G&&G.def&&state==='play')?'block':'none';if(G&&G.def){const h=TI('build')+(G.def.ph==='build'?'สร้าง':'ซ่อม');if(db._h!==h){db._h=h;db.innerHTML=h}}}const dg=document.getElementById('defGo');if(dg){const on=G&&G.def&&state==='play'&&G.def.ph==='build';dg.style.display=on?'block':'none';if(on){const h=defGoTxt();if(dg._h!==h){dg._h=h;dg.innerHTML=h}}}const m=document.getElementById('mbg');if(m)m.style.display=(ov.style.display==='block'&&state==='menu')?'block':'none'}
 function page(html){  // v18: เลือก/ซื้อ/สลับรายการในหน้าเดิม = อยู่ตำแหน่งเลื่อนเดิม; เปลี่ยนหน้า = กลับบนสุด
   const was=ov.style.display==='block',st=ov.scrollTop,sig=(html.match(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/)||[])[1]||'';
   if(was&&pgSig)PGSC[pgSig]=st;
   const keep=was&&sig&&sig===pgSig;pgSig=sig;
   const bk=(html.match(/data-a="([a-z]+)"[^>]*>← กลับ/)||[])[1];
   const nav=bk&&!/data-a="resume"/.test(html)?'<div class="navb"><button data-a="'+bk+'">◀</button>'+(bk!=='menu'&&state!=='paused'&&state!=='lvl'&&state!=='build'?'<button data-a="menu">🏠</button>':'')+'</div>':'';
-  ov.style.display='block';ov.innerHTML=nav+'<div class="pg">'+EJ(html.split('🪙').join(COINI))+'</div>';ov.scrollTop=keep?st:(PGREM.test(sig)&&PGSC[sig])||0;syncMbg()}
+  ov.style.display='block';ov.innerHTML=nav+'<div class="pg">'+EJ(html.split('🪙').join(COINI).replace(/⚙️ ?(?=[\d+])/g,SCRI))+'</div>';ov.scrollTop=keep?st:(PGREM.test(sig)&&PGSC[sig])||0;syncMbg()}
 setInterval(syncMbg,250);
 const PGSC={},PGREM=/โหมดเนื้อเรื่อง|กระดานเควส|ตัวละคร|แผนที่|ร้าน/;
 function fmt(s){return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
-const ICK={map:{forest:'forest',city:'city',hosp:'hosp',deadport:'port',darkgrave:'grave'},diff:{easy:'d_easy',normal:'d_norm',hell:'d_hell',nightmare:'d_hell',apoc:'d_hell'},
-  mode:{endless:'m_inf',m15:'m_time',m30:'m_war',extract:'m_heli'},shop:{hp:'s_hp',dmg:'s_dmg',rate:'s_rate',spd:'s_spd',xp:'s_xp',mag:'s_mag',rev:'s_rev'}};
+const ICK={map:{forest:'forest',city:'city',hosp:'hosp',deadport:'port',darkgrave:'grave',crypt:'crypt'},diff:{easy:'d_easy',normal:'d_norm',hell:'d_hell',nightmare:'d_night',apoc:'d_apoc'},
+  mode:{endless:'m_inf',m15:'m_time',m30:'m_30',extract:'m_extract',defense:'m_def',defendless:'m_definf',rush:'m_rush',daily:'m_daily'},shop:{hp:'s_hp',dmg:'s_dmg',rate:'s_rate',spd:'s_spd',xp:'s_xp',mag:'s_mag',rev:'s_rev'}};
 function EI(kind,key,fb){const n=ICK[kind][key];return n?'<i class="ei" style="--ic:url(img/ui/ic_'+n+'.png)"></i>':fb}
 function keyOf(d,o){return Object.keys(d).find(k=>d[k]===o)}
+// v104: ไอคอนรูปเล็กในข้อความ/แท็ก (แทนอิโมจิ)
+function TI(n){return '<i class="ti" style="--ic:url(img/ui/'+(n.indexOf('hud_')===0?'':'ic_')+n+'.png)"></i>'}
+function TK(kind,key,fb){const n=ICK[kind]&&ICK[kind][key];return n?TI(n):fb+' '}
+const SCRI='<i class="ei co" style="--ic:url(img/ui/hud_scrap.png)"></i>';
+// v104: ปุ่มลอยเป็นรูปไอคอนทั้งปุ่ม (กรอบเหล็ก) · glow = สีเรืองบอกสถานะ
+function icBtn(b,n,glow){if(!b)return;if(b._ic!==n){b._ic=n;b.textContent='';b.style.background='url(img/ui/ic_'+n+'.png) center/contain no-repeat';b.style.border='none';b.style.borderRadius='10px'}
+  const f=(glow?'drop-shadow(0 0 5px '+glow+') ':'')+'drop-shadow(0 2px 3px #0009)';if(b._gl!==f){b._gl=f;b.style.filter=f}}
+// v104: ข้อความ HUD บนแคนวาส แทนอิโมจิบางตัวด้วยรูป
+const HUDI={};['coin','scrap','kill','time','relic','star','truck','wave'].forEach(k=>{const im=new Image();im.onload=()=>{HUDI[k]=im};im.src='img/ui/hud_'+k+'.png'});
+const HUDM=[['☠️',''],['⏱️','time'],['⏱','time'],['☠','kill'],['⭐','star'],['🔷','relic'],['⚙️','scrap'],['🚚','truck'],['🧟','wave'],['🪙','coin']];
+function hudSplit(s){const o=[];let b='';for(let i=0;i<s.length;){let h=null;for(const m of HUDM)if(s.startsWith(m[0],i)){h=m;break}
+    if(h){if(h[1]&&HUDI[h[1]]){if(b)o.push(b);b='';o.push(HUDI[h[1]])}else b+=h[0];i+=h[0].length}else{b+=s[i];i++}}if(b)o.push(b);return o}
+function hudText(s,x,y,st){const g=hudSplit(s);if(g.length===1&&typeof g[0]==='string'){if(st)ctx.strokeText(s,x,y);ctx.fillText(s,x,y);return}
+  const fs=parseFloat((ctx.font.match(/([\d.]+)px/)||[0,14])[1]),z=fs*1.45,gp=fs*.1;let w=0;for(const p of g)w+=typeof p==='string'?ctx.measureText(p).width:z+gp;
+  const al=ctx.textAlign;let cx=al==='center'?x-w/2:al==='right'?x-w:x;ctx.save();ctx.textAlign='left';
+  for(const p of g){if(typeof p==='string'){if(st)ctx.strokeText(p,cx,y);ctx.fillText(p,cx,y);cx+=ctx.measureText(p).width}else{ctx.drawImage(p,cx,y-fs*.36-z/2,z,z);cx+=z+gp}}ctx.restore()}
 const COINI='<i class="ei co" style="--ic:url(img/ui/ic_coin.png)"></i>';
 function BI(n){return '<i class="bi" style="--ic:url(img/ui/ic_'+n+'.png)"></i>'}
 function MI(n){return n[0]==='!'?'<i class="mi em">'+n.slice(1)+'</i>':'<i class="mi" style="--ic:url(img/ui/ic_'+n+'.png)"></i>'}
@@ -4061,7 +4078,7 @@ function showMenu(){
     '<div style="font-size:14px;color:#8cf">'+EI('map',M.id,M.ic)+M.n+' | '+EI('diff',keyOf(DIFF,D),D.ic)+D.n+' | '+EI('mode',keyOf(MODES,MO),MO.ic)+MO.n+'</div>'+
     menuCards()+
     '<button class="big sec" data-a="mode">'+BI('map')+'แผนที่และโหมด</button>'+
-    '<button class="big" data-a="online" style="background:linear-gradient(#2f7cc4,#173d70);border-color:#7cf">🌐 เล่นออนไลน์ (2 คน)</button>'+
+    '<button class="big" data-a="online" style="background:linear-gradient(#2f7cc4,#173d70);border-color:#7cf">'+BI('online')+'เล่นออนไลน์ (2 คน)</button>'+
     '<div class="grid2">'+
     '<button class="big sec sm" data-a="shop">'+BI('shop')+'ร้านอัป</button>'+
     '<button class="big sec sm" data-a="chars">'+BI('chars')+'ตัวละคร</button>'+
@@ -4421,7 +4438,7 @@ function netLobChat(){let el=document.getElementById('netLC');const on=!NET.inGa
   if(!el){el=document.createElement('div');el.id='netLC';
     el.style.cssText='position:fixed;z-index:15;left:max(8px,env(safe-area-inset-left));bottom:max(10px,env(safe-area-inset-bottom));width:min(36vw,310px);display:flex;flex-direction:column;gap:5px;pointer-events:none';
     el.innerHTML='<div id="netLobLog" style="max-height:min(38vh,170px);overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;pointer-events:auto;font-size:13px;line-height:1.35;color:#fff;text-shadow:0 1px 2px #000;background:linear-gradient(#0000,#0003 35%,#000a);-webkit-mask-image:linear-gradient(#0000,#000 38%);mask-image:linear-gradient(#0000,#000 38%);border-radius:10px;padding:14px 8px 6px;display:flex;flex-direction:column"></div>'+
-      '<div style="display:flex;gap:4px;pointer-events:auto"><button id="vcL" title="ไมค์" style="font:inherit;font-size:16px;color:#fff;background:#0d2236dd;border:2px solid #7cf;border-radius:10px;padding:0 7px;display:none">🎤</button><button id="vcLM" title="เสียงเพื่อน" style="font:inherit;font-size:16px;color:#fff;background:#0d2236dd;border:2px solid #7cf;border-radius:10px;padding:0 7px;display:none">🔊</button><button id="netLobMin" title="ย่อแชท" style="font:inherit;font-size:14px;color:#fff;background:#0b1520cc;border:2px solid #7cf8;border-radius:10px;padding:0 8px">▾</button><input id="netLobbyIn" maxlength="80" enterkeyhint="send" autocomplete="off" placeholder="💬 พิมพ์..." style="flex:1;min-width:0;font:inherit;font-size:16px;padding:6px 8px;border-radius:10px;border:2px solid #7cf8;background:#06101acc;color:#fff;-webkit-user-select:text;user-select:text"><button id="netLobSend" style="font:inherit;font-size:14px;font-weight:700;color:#fff;background:#2f7cc4;border:2px solid #7cf;border-radius:10px;padding:0 10px">ส่ง</button></div>';
+      '<div style="display:flex;gap:4px;pointer-events:auto"><button id="vcL" title="ไมค์" style="font:inherit;font-size:16px;color:#fff;background:#0d2236dd;border:2px solid #7cf;border-radius:10px;padding:0 7px;display:none">🎤</button><button id="vcLM" title="เสียงเพื่อน" style="font:inherit;font-size:16px;color:#fff;background:#0d2236dd;border:2px solid #7cf;border-radius:10px;padding:0 7px;display:none">🔊</button><button id="netLobMin" title="ย่อแชท" style="font:inherit;font-size:14px;color:#fff;background:#0b1520cc;border:2px solid #7cf8;border-radius:10px;padding:0 8px">▾</button><input id="netLobbyIn" maxlength="80" enterkeyhint="send" autocomplete="off" placeholder="💬 พิมพ์..." style="flex:1;min-width:0;font:inherit;font-size:16px;padding:6px 8px;border-radius:10px;border:2px solid #7cf8;background:#06101acc;color:#fff;-webkit-user-select:text;user-select:text"><button id="netLobSend" style="font:inherit;font-size:14px;font-weight:700;color:#fff;background:#2f7cc4;border:2px solid #7cf;border-radius:10px;padding:0 8px">'+TI('send')+'ส่ง</button></div>';
     ['pointerdown','touchstart','wheel'].forEach(t=>el.addEventListener(t,e=>e.stopPropagation(),{passive:true}));
     el.querySelector('#netLobSend').addEventListener('click',()=>netAct('on_chat'));el.querySelector('#vcL').addEventListener('click',()=>vcToggle());el.querySelector('#vcLM').addEventListener('click',()=>vcMuteToggle());
     el.querySelector('#netLobMin').addEventListener('click',()=>{NET.lcMin=!NET.lcMin;try{localStorage.zlcMin=NET.lcMin?'1':'0'}catch(e){}netLobChatMin()});
@@ -4429,29 +4446,29 @@ function netLobChat(){let el=document.getElementById('netLC');const on=!NET.inGa
   el.style.display='flex';netLobChatMin();const l=el.querySelector('#netLobLog'),html='<div style="margin-top:auto"></div>'+netLobLogHTML();if(l._h!==html){const atEnd=l.scrollHeight-l.scrollTop-l.clientHeight<30;l._h=html;l.innerHTML=html;if(atEnd||!l._init){l.scrollTop=l.scrollHeight;l._init=1}}}
 function netLobChatMin(){const el=document.getElementById('netLC');if(!el)return;if(NET.lcMin===undefined){try{NET.lcMin=localStorage.zlcMin==='1'}catch(e){NET.lcMin=false}}
   const l=el.querySelector('#netLobLog'),i=el.querySelector('#netLobbyIn'),s=el.querySelector('#netLobSend'),m=el.querySelector('#netLobMin'),un=NET.chat.length-(NET.lcSeen||0);
-  if(NET.lcMin){l.style.display='none';i.style.display='none';s.style.display='none';m.textContent='💬'+(un>0?' '+un:'');m.style.padding='6px 10px';el.style.width='auto'}
+  if(NET.lcMin){l.style.display='none';i.style.display='none';s.style.display='none';m.innerHTML=TI('chat')+(un>0?'<b style="color:#ffd75a">'+un+'</b>':'');m.style.padding='4px 8px';el.style.width='auto'}
   else{l.style.display='flex';i.style.display='';s.style.display='';m.textContent='▾';m.style.padding='0 8px';NET.lcSeen=NET.chat.length;chatPlace()}}
 function netRender(){netLobChat();if(state!=='menu'||ov.style.display!=='block'||!document.getElementById('onl'))return;
   showOnline(true);netLobChat()}
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='netLobbyIn')NET.draft=e.target.value});
 
 function showOnline(re){if(NET.st==='rooms')return showRooms();if(!re&&NET.st==='fail'){NET.st='idle';NET.err=''}state='menu';
-  const st=NET.st,H='<h2 id="onl" style="margin:0">🌐 เล่นออนไลน์</h2>';let h=H;
-  const modeCard='<div class="card"><b>🛡️ โหมด: ป้องกันรถ (ไม่จำกัดคลื่น)</b><small>เล่นด้วยกัน 2 คน · ช่วยกันสร้างป้องกัน · ล้มแล้วเพื่อนชุบได้ (ยืนข้างๆ 3 วิ)</small></div>';
+  const st=NET.st,H='<h2 id="onl" style="margin:0">'+BI('online')+' เล่นออนไลน์</h2>';let h=H;
+  const modeCard='<div class="card"><b>'+TI('m_definf')+'โหมด: ป้องกันรถ (ไม่จำกัดคลื่น)</b><small>เล่นด้วยกัน 2 คน · ช่วยกันสร้างป้องกัน · ล้มแล้วเพื่อนชุบได้ (ยืนข้างๆ 3 วิ)</small></div>';
   if(st==='idle'){
     h+=modeCard+'<div class="card"><div class="row"><span>ชื่อของคุณ</span><b>'+netEsc(netNick())+'</b></div><span class="tag" data-a="on_name">✏️ เปลี่ยนชื่อ</span></div>'+
-      '<button class="big" data-a="on_quick">⚡ เล่นด่วน (หาห้องว่างให้)</button><button class="big" data-a="on_rooms">🔍 หาห้อง</button>'+
-      '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="big sec" data-a="on_hostpub" style="flex:1;min-width:150px">🌍 สร้างห้องสาธารณะ</button><button class="big sec" data-a="on_host" style="flex:1;min-width:150px">🔒 สร้างห้องส่วนตัว</button></div>'+
-      '<button class="big sec" data-a="on_join">🔑 เข้าห้องด้วยรหัส</button>'+
+      '<button class="big" data-a="on_quick">'+BI('quickplay')+'เล่นด่วน (หาห้องว่างให้)</button><button class="big" data-a="on_rooms">'+BI('rooms')+'หาห้อง</button>'+
+      '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="big sec" data-a="on_hostpub" style="flex:1;min-width:150px">'+BI('room_pub')+'สร้างห้องสาธารณะ</button><button class="big sec" data-a="on_host" style="flex:1;min-width:150px">'+BI('room_priv')+'สร้างห้องส่วนตัว</button></div>'+
+      '<button class="big sec" data-a="on_join">'+BI('join_code')+'เข้าห้องด้วยรหัส</button>'+
       '<div class="sub" style="max-width:380px">🌍 ห้องสาธารณะ = ใครก็หาเจอและกดเข้าได้ · 🔒 ห้องส่วนตัว = เข้าได้ด้วยรหัสเท่านั้น · ระหว่างเล่นอย่าสลับแอป ไม่งั้นหลุด</div>'+
       '<button class="big sec" data-a="menu">← กลับ</button>'}
   else if(st==='join'){
-    h+='<div class="card"><b>🔑 ใส่รหัสห้อง 4 ตัวจากเพื่อน</b>'+
+    h+='<div class="card"><b>'+TI('join_code')+'ใส่รหัสห้อง 4 ตัวจากเพื่อน</b>'+
       '<input id="netCode" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" value="'+netEsc(NET.jc||'')+'" style="display:block;width:100%;box-sizing:border-box;margin:8px 0 2px;font:inherit;font-size:34px;letter-spacing:12px;text-align:center;text-transform:uppercase;padding:8px;border-radius:12px;border:2px solid #6cf;background:#0b1520;color:#fff"></div>'+
       (NET.err?'<div style="color:#f88">'+netEsc(NET.err)+'</div>':'')+
-      '<button class="big" data-a="on_go">✅ เข้าห้อง</button><button class="big sec" data-a="on_back">✖ ยกเลิก</button>'}
+      '<button class="big" data-a="on_go">'+BI('ready')+'เข้าห้อง</button><button class="big sec" data-a="on_back">✖ ยกเลิก</button>'}
   else if(st==='loading'||st==='connecting'||st==='quick'){
-    h+='<div class="card" style="text-align:center"><b>⏳ '+(st==='quick'?'⚡ กำลังหาห้องว่าง...':st==='loading'?(NET.role==='host'?'กำลังสร้างห้อง...':'กำลังเตรียมระบบออนไลน์...'):'กำลังเชื่อมต่อห้อง '+netEsc(NET.jc)+'...')+'</b><small>ใช้เวลาไม่เกิน 15 วินาที</small></div>'+
+    h+='<div class="card" style="text-align:center"><b>'+TI('wait')+(st==='quick'?'กำลังหาห้องว่าง...':st==='loading'?(NET.role==='host'?'กำลังสร้างห้อง...':'กำลังเตรียมระบบออนไลน์...'):'กำลังเชื่อมต่อห้อง '+netEsc(NET.jc)+'...')+'</b><small>ใช้เวลาไม่เกิน 15 วินาที</small></div>'+
       '<button class="big sec" data-a="on_back">✖ ยกเลิก</button>'}
   else if(st==='fail'){
     h+='<div class="card" style="border-color:#f66"><b>⚠️ เชื่อมต่อไม่สำเร็จ</b><small>'+netEsc(NET.err)+'</small></div>'+
@@ -4459,25 +4476,25 @@ function showOnline(re){if(NET.st==='rooms')return showRooms();if(!re&&NET.st===
   else if(st==='lobby'){
     const ks=Object.keys(NET.pl),me=NET.pl[NET.me]||{},full=ks.length>=2,allRd=full&&ks.every(k=>NET.pl[k].rd);
     h+='<div class="card" style="text-align:center"><small>รหัสห้อง</small><div style="font-size:44px;font-weight:900;letter-spacing:10px;color:#ffd75a;line-height:1.1">'+netEsc(NET.code)+'</div>'+
-      (NET.role==='host'?'<span class="tag" data-a="on_copy">📤 ส่งรหัสให้เพื่อน</span><span class="tag'+(NET.pub?' ok':'')+'" data-a="on_pub">'+(NET.pub?'🌍 สาธารณะ':'🔒 ส่วนตัว')+'</span>':'<small>📶 ปิง '+(NET.ping||'-')+' ms · '+(NET.pub?'🌍 ห้องสาธารณะ':'🔒 ห้องส่วนตัว')+'</small>')+'</div>';
+      (NET.role==='host'?'<span class="tag" data-a="on_copy">'+TI('send')+'ส่งรหัสให้เพื่อน</span><span class="tag'+(NET.pub?' ok':'')+'" data-a="on_pub">'+(NET.pub?TI('room_pub')+'สาธารณะ':TI('room_priv')+'ส่วนตัว')+'</span>':'<small>📶 ปิง '+(NET.ping||'-')+' ms · '+(NET.pub?TI('room_pub')+'ห้องสาธารณะ':TI('room_priv')+'ห้องส่วนตัว')+'</small>')+'</div>';
     h+=modeCard;
     for(const k of ks){const p=NET.pl[k],C=CHARS[p.ch]||CHARS.soldier;
-      h+='<div class="card'+(k===NET.me?' sel':'')+'"><div class="row"><b>'+(p.host?'👑 ':'')+C.ic+' '+netEsc(p.n)+(k===NET.me?' (คุณ)':'')+'</b><span>'+(NET.role==='host'&&k!==NET.me?'<span class="tag" data-a="on_kick" data-i="'+netEsc(k)+'" style="margin-right:4px">🚫 เตะ</span>':'')+'<span class="tag'+(p.rd?' ok':'')+'">'+(p.rd?'✅ พร้อม':'⏳ ยังไม่พร้อม')+'</span></span></div><small>'+C.n+(p.host?' · โฮสต์':' · ปิง '+(p.ms||'-')+' ms')+'</small></div>'}
-    if(!full)h+='<div class="card" style="opacity:.7;text-align:center"><b>⌛ รอเพื่อนเข้าห้อง...</b><small>ให้เพื่อนกด 🌐 เล่นออนไลน์ > 🔑 เข้าห้องเพื่อน แล้วใส่รหัสด้านบน</small></div>';
+      h+='<div class="card'+(k===NET.me?' sel':'')+'"><div class="row"><b>'+(p.host?TI('host'):'')+C.ic+' '+netEsc(p.n)+(k===NET.me?' (คุณ)':'')+'</b><span>'+(NET.role==='host'&&k!==NET.me?'<span class="tag" data-a="on_kick" data-i="'+netEsc(k)+'" style="margin-right:4px">'+TI('kick')+'เตะ</span>':'')+'<span class="tag'+(p.rd?' ok':'')+'">'+(p.rd?TI('ready')+'พร้อม':TI('wait')+'ยังไม่พร้อม')+'</span></span></div><small>'+C.n+(p.host?' · โฮสต์':' · ปิง '+(p.ms||'-')+' ms')+'</small></div>'}
+    if(!full)h+='<div class="card" style="opacity:.7;text-align:center"><b>'+TI('wait')+'รอเพื่อนเข้าห้อง...</b><small>ให้เพื่อนกด 🌐 เล่นออนไลน์ > 🔑 เข้าห้องเพื่อน แล้วใส่รหัสด้านบน</small></div>';
     {const cf=NET.cfg||{},M0=MAPS[cf.map]||MAPS.forest,D0=DIFF[cf.diff]||DIFF.normal;
-      h+='<div class="card" style="padding:8px 10px"><div class="row"><b>🗺️ '+M0.ic+' '+M0.n+'</b><b>'+D0.ic+' '+D0.n+'</b></div>';
-      if(NET.role==='host'){h+='<div id="netMapS" style="display:flex;gap:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x;padding:4px 0">'+Object.keys(MAPS).filter(k=>!MAPS[k].hidden&&S.maps.includes(k)).map(k=>'<span class="tag'+(cf.map===k?' ok':'')+'" data-a="on_map" data-i="'+k+'" style="flex:none;font-size:13px;padding:5px 8px;margin:0">'+MAPS[k].ic+' '+MAPS[k].n+'</span>').join('')+'</div>'+
-        '<div id="netDifS" style="display:flex;gap:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x;padding:2px 0">'+Object.keys(DIFF).map(k=>'<span class="tag'+(cf.diff===k?' ok':'')+'" data-a="on_diff" data-i="'+k+'" style="flex:none;font-size:13px;padding:5px 8px;margin:0">'+DIFF[k].ic+' '+DIFF[k].n+'</span>').join('')+'</div>'}
+      h+='<div class="card" style="padding:8px 10px"><div class="row"><b>🗺️ '+TK('map',cf.map||'forest',M0.ic)+M0.n+'</b><b>'+TK('diff',cf.diff||'normal',D0.ic)+D0.n+'</b></div>';
+      if(NET.role==='host'){h+='<div id="netMapS" style="display:flex;gap:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x;padding:4px 0">'+Object.keys(MAPS).filter(k=>!MAPS[k].hidden&&S.maps.includes(k)).map(k=>'<span class="tag'+(cf.map===k?' ok':'')+'" data-a="on_map" data-i="'+k+'" style="flex:none;font-size:13px;padding:5px 8px;margin:0">'+TK('map',k,MAPS[k].ic)+MAPS[k].n+'</span>').join('')+'</div>'+
+        '<div id="netDifS" style="display:flex;gap:5px;overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x;padding:2px 0">'+Object.keys(DIFF).map(k=>'<span class="tag'+(cf.diff===k?' ok':'')+'" data-a="on_diff" data-i="'+k+'" style="flex:none;font-size:13px;padding:5px 8px;margin:0">'+TK('diff',k,DIFF[k].ic)+DIFF[k].n+'</span>').join('')+'</div>'}
       else h+='<small>โฮสต์เป็นคนเลือกแผนที่และความยาก</small>';
       if(Object.keys(NET.pl).some(k=>NET.pl[k].dev))h+='<div style="font-size:12px;margin-top:4px;color:#f9c74f">🛠 โหมดทดสอบ: '+Object.keys(NET.pl).map(k=>netEsc(NET.pl[k].n)+(NET.pl[k].dev?' ✅':' ❌')).join(' · ')+(devHostOK()?' (ใช้ได้ทั้งคู่)':' (เพื่อนใช้ได้เมื่อเปิดทั้งสองคน)')+'</div>';
       h+='</div>'}
     h+='<div id="netChS" style="display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x;max-width:min(92vw,560px);margin:4px auto;padding:2px 2px 6px">';
     for(const id of netOwned()){const C=CHARS[id],sel=me.ch===id;h+='<div data-a="on_pick" data-i="'+id+'" style="flex:none;width:64px;cursor:pointer;text-align:center;border-radius:12px;padding:5px 2px;background:'+(sel?'#2f5a1c':'#0b1520cc')+';border:2px solid '+(sel?'#9f6':'#456')+'"><div style="font-size:28px;line-height:1.1">'+C.ic+'</div><div style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+C.n+'</div></div>'}
     h+='</div>';
-    h+='<button class="big'+(me.rd?' sec':'')+'" data-a="on_ready">'+(me.rd?'↩️ ยกเลิกพร้อม':'✅ พร้อม')+'</button>';
+    h+='<button class="big'+(me.rd?' sec':'')+'" data-a="on_ready">'+(me.rd?'↩️ ยกเลิกพร้อม':BI('ready')+'พร้อม')+'</button>';
     if(NET.role==='host')h+='<button class="big'+(allRd?'':' sec')+'" data-a="on_start"'+(allRd?'':' style="opacity:.55"')+'>▶ เริ่มเกม'+(allRd?'':(full?' (รอทุกคนพร้อม)':' (รอเพื่อน)'))+'</button>';
     h+='<span class="tag" data-a="on_name" style="margin-top:6px">✏️ เปลี่ยนชื่อ</span>';
-    h+='<button class="big sec" data-a="on_leave">🚪 ออกจากห้อง</button>'}
+    h+='<button class="big sec" data-a="on_leave">'+BI('leave')+'ออกจากห้อง</button>'}
   const SC={};['netMapS','netDifS','netChS'].forEach(id=>{const e=document.getElementById(id);if(e)SC[id]=e.scrollLeft});
   page(h);for(const id in SC){const e=document.getElementById(id);if(e)e.scrollLeft=SC[id]}
   if(!re){const e=document.getElementById('netChS'),se=e&&e.querySelector('[style*="#9f6"]');if(se)try{se.scrollIntoView({inline:'center',block:'nearest'})}catch(_){}}}
@@ -4741,9 +4758,10 @@ function netLogDraw(){let el=document.getElementById('netLog');if(!NET.inGame){i
 setInterval(()=>{try{netChatBtn();netLobChat();if(NET.inGame)netLogDraw()}catch(e){}},400);
 // ปุ่ม 💬 บนแถบด้านบน + แผงแชท
 function netChatBtn(){let b=document.getElementById('chb');const on=NET.inGame&&(state==='play'||state==='paused');
-  if(!b){b=document.createElement('button');b.id='chb';b.textContent='💬';
+  if(!b){b=document.createElement('button');b.id='chb';
     b.style.cssText='position:fixed;z-index:12;width:44px;height:44px;border-radius:12px;border:2px solid #7cf;background:#0d2236dd;color:#fff;font-size:22px;padding:0;filter:drop-shadow(0 2px 3px #0009)';
     b.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();netChatToggle()});document.body.appendChild(b)}
+  icBtn(b,'chat',document.getElementById('netChatP')?'#7cf':'');
   b.style.display=on?'block':'none';if(!on){netChatClose();return}
   const pb=document.getElementById('pb'),r=pb&&pb.getBoundingClientRect();if(r&&r.width){b.style.top=r.top+'px';b.style.left=(r.left-54)+'px'}else{b.style.top='10px';b.style.right='170px'}}
 function netChatToggle(){if(document.getElementById('netChatP'))netChatClose();else netChatOpen()}
@@ -4761,7 +4779,7 @@ function netChatOpen(){netChatClose();const p=document.createElement('div');p.id
   p.style.cssText='position:fixed;z-index:35;left:50%;transform:translateX(-50%);bottom:max(8px,env(safe-area-inset-bottom));width:min(94vw,520px);background:#0b1520ee;border:2px solid #7cf;border-radius:14px;padding:6px;box-shadow:0 4px 16px #000a';
   const BS='font:inherit;font-size:14px;font-weight:700;color:#fff;background:#1d3a55;border:2px solid #7cf;border-radius:10px;padding:6px 9px;margin:0;white-space:nowrap;flex:none';
   p.innerHTML='<div id="netQC" style="display:none;flex-wrap:wrap;gap:5px;justify-content:center;margin-bottom:6px">'+NET_QC.map((q,i)=>'<button data-q="'+i+'" style="'+BS+'">'+q+'</button>').join('')+'</div>'+
-    '<div style="display:flex;gap:6px;align-items:center"><button data-t="1" title="แชทด่วน" style="'+BS+';background:#33415a">⚡</button><input id="netChatIn" maxlength="80" enterkeyhint="send" autocomplete="off" placeholder="พิมพ์ข้อความ..." style="flex:1;min-width:0;font:inherit;font-size:16px;padding:7px 10px;border-radius:10px;border:2px solid #7cf;background:#06101a;color:#fff"><button data-s="1" style="'+BS+';background:#2f7cc4">ส่ง</button><button data-x="1" style="'+BS+';background:#444">✖</button></div>';
+    '<div style="display:flex;gap:6px;align-items:center"><button data-t="1" title="แชทด่วน" style="'+BS+';background:#33415a;padding:2px 5px">'+TI('quick').replace('margin-right:3px','margin:0')+'</button><input id="netChatIn" maxlength="80" enterkeyhint="send" autocomplete="off" placeholder="พิมพ์ข้อความ..." style="flex:1;min-width:0;font:inherit;font-size:16px;padding:7px 10px;border-radius:10px;border:2px solid #7cf;background:#06101a;color:#fff"><button data-s="1" style="'+BS+';background:#2f7cc4">ส่ง</button><button data-x="1" style="'+BS+';background:#444">✖</button></div>';
   const stop=e=>e.stopPropagation();p.addEventListener('pointerdown',stop);p.addEventListener('touchstart',stop,{passive:true});
   const send=()=>{const i=document.getElementById('netChatIn');if(i&&netChatSend(i.value)){i.value='';netChatClose()}};
   p.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
@@ -4788,9 +4806,9 @@ function devHostOK(){const ks=Object.keys(NET.pl||{});return ks.length>0&&ks.eve
 function devAllowed(){if(!devIcon())return false;if(NET.pub&&(NET.inGame||NET.st==='lobby'))return false;if(!NET.inGame&&NET.st!=='lobby')return true;if(NET.role==='host')return true;return devHostOK()}
 function devInGame(){return state!=='menu'&&!!G&&!!P}
 function devBtnSync(){let b=document.getElementById('devI');const on=devAllowed()&&(state==='menu'||state==='play'||state==='paused'||state==='build'||state==='lvl');
-  if(!b){b=document.createElement('button');b.id='devI';b.textContent='🛠';
+  if(!b){b=document.createElement('button');b.id='devI';
     b.style.cssText='position:fixed;z-index:40;width:40px;height:40px;border-radius:12px;border:2px solid #f9c74f;background:#3a2a08e6;color:#fff;font-size:20px;padding:0;touch-action:none;filter:drop-shadow(0 2px 3px #000a)';
-    let pos=null;try{pos=JSON.parse(localStorage.zdevPos||'null')}catch(e){}devPlace(b,pos);
+    icBtn(b,'dev','#f9c74f');let pos=null;try{pos=JSON.parse(localStorage.zdevPos||'null')}catch(e){}devPlace(b,pos);
     let dr=null;  // v98: ลากย้ายไปตรงไหนก็ได้ · แตะเฉยๆ = เปิด/ปิดแผง
     b.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();try{b.setPointerCapture(e.pointerId)}catch(_){}const r=b.getBoundingClientRect();dr={id:e.pointerId,sx:e.clientX,sy:e.clientY,ox:r.left,oy:r.top,mv:0}});
     b.addEventListener('pointermove',e=>{if(!dr||e.pointerId!==dr.id)return;const dx=e.clientX-dr.sx,dy=e.clientY-dr.sy;if(Math.hypot(dx,dy)>8)dr.mv=1;if(dr.mv){devPlace(b,{x:dr.ox+dx,y:dr.oy+dy});const p=document.getElementById('devP');if(p)devPanelPos(p)}e.preventDefault()});
@@ -4896,14 +4914,14 @@ function vcUI(){const inG=NET.inGame&&(state==='play'||state==='paused'),inRoom=
   const mic=vcBtn('vcB','🎤',vcToggle),mu=vcBtn('vcM','🔊',vcMuteToggle);
   const micTxt=VC.busy?'⏳':VC.on?'🎙️':'🎤',micBg=VC.on?(VC.spk?'#1f8a3add':'#1d5a2add'):'#0d2236dd',micBd=VC.on?'#9f6':'#7cf';
   const muTxt=VC.need?'🔈':VC.mute?'🔇':'🔊',muBd=VC.mateSpk&&!VC.mute?'#ffd75a':'#7cf';
-  mic.textContent=micTxt;mic.style.background=micBg;mic.style.borderColor=micBd;mic.style.opacity=VC.on?'1':'.85';if(!VC.on)mic.style.textDecoration='line-through';else mic.style.textDecoration='none';
-  mu.textContent=muTxt;mu.style.borderColor=muBd;
+  const micI=VC.busy?'wait':VC.on?'mic_on':'mic_off',micG=VC.on?(VC.spk?'#9f6':'#4c8'):'',muI=VC.mute?'voice_off':'voice_on',muG=VC.need?'#fa4':VC.mateSpk&&!VC.mute?'#ffd75a':'';
+  icBtn(mic,micI,micG);icBtn(mu,muI,muG);mic.style.opacity='1';
   const pb=document.getElementById('pb'),r=pb&&pb.getBoundingClientRect();
   if(inG&&r&&r.width){mic.style.display='block';mic.style.top=r.top+'px';mic.style.left=(r.left-108)+'px';mu.style.display=(VC.fr||VC.frOn)?'block':'none';mu.style.top=r.top+'px';mu.style.left=(r.left-162)+'px'}
   else{mic.style.display='none';mu.style.display='none'}
   const lm=document.getElementById('vcL'),lv=document.getElementById('vcLM');
-  if(lm){lm.style.display=inRoom?'':'none';lm.textContent=micTxt;lm.style.background=micBg;lm.style.borderColor=micBd}
-  if(lv){lv.style.display=inRoom&&(VC.fr||VC.frOn)?'':'none';lv.textContent=muTxt;lv.style.borderColor=muBd}}
+  if(lm){lm.style.display=inRoom?'':'none';lm.style.width='36px';lm.style.padding='0';icBtn(lm,micI,micG)}
+  if(lv){lv.style.display=inRoom&&(VC.fr||VC.frOn)?'':'none';lv.style.width='36px';lv.style.padding='0';icBtn(lv,muI,muG)}}
 setInterval(()=>{try{vcUI();vcDuck()}catch(e){}},500);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(vcGameAudio,200)});['touchend','click'].forEach(t=>document.addEventListener(t,()=>{try{if(typeof AC!=='undefined'&&AC&&AC.state!=='running')AC.resume()}catch(e){}},{passive:true}));
 
@@ -4936,15 +4954,15 @@ async function fbWatch(cb){if(!(await fbInit())){cb&&cb();return false}fbUnwatch
   try{const q=FB.db.ref('rooms').orderByChild('ts').limitToLast(40);FB.watch=q;q.on('value',sn=>{FB.rooms=sn.val()||{};FB.err='';cb&&cb()},e=>{FB.err='อ่านรายการห้องไม่ได้ ('+((e&&(e.code||e.message))||'?')+')';cb&&cb()})}catch(e){FB.err='อ่านรายการห้องไม่ได้';cb&&cb();return false}return true}
 function fbUnwatch(){if(FB.watch){try{FB.watch.off()}catch(e){}FB.watch=null}fbIdle()}
 // ---------- หน้า "หาห้อง" ----------
-function showRooms(){NET.st='rooms';state='menu';let h='<h2 id="onl" style="margin:0">🔍 หาห้อง</h2>';
+function showRooms(){NET.st='rooms';state='menu';let h='<h2 id="onl" style="margin:0">'+BI('rooms')+' หาห้อง</h2>';
   if(!fbOK())h+='<div class="card" style="border-color:#f9c74f"><b>⚙️ ยังไม่ได้ตั้งค่าเซิร์ฟเวอร์ห้อง</b><small>ต้องใส่ค่า Firebase ในเกมก่อน (FB_CFG) · ระหว่างนี้ใช้ "เข้าห้องด้วยรหัส" ได้ตามปกติ</small></div>';
   else if(!FB.ready&&!FB.err)h+='<div class="card" style="text-align:center"><b>⏳ กำลังโหลดรายการห้อง...</b></div>';
   else if(FB.err)h+='<div class="card" style="border-color:#f66"><b>⚠️ '+netEsc(FB.err)+'</b></div>';
   else{const L=fbJoinable();
     if(!L.length)h+='<div class="card" style="text-align:center;opacity:.85"><b>ยังไม่มีห้องว่างตอนนี้</b><small>สร้างห้องสาธารณะเองเลย แล้วรอคนเข้า</small></div>';
     for(const r of L){const M0=MAPS[r.map]||MAPS.forest,D0=DIFF[r.diff]||DIFF.normal,C=CHARS[r.ch]||CHARS.soldier;
-      h+='<div class="card" data-a="on_room" data-i="'+netEsc(r.code)+'" style="cursor:pointer"><div class="row"><b>'+C.ic+' '+netEsc(r.n)+'</b><span class="tag ok">เข้าห้อง ('+(r.pl||1)+'/'+(r.max||2)+')</span></div><small>'+M0.ic+' '+M0.n+' · '+D0.ic+' '+D0.n+' · 🛡️ ป้องกันรถ</small></div>'}}
-  h+='<button class="big" data-a="on_hostpub">🌍 สร้างห้องสาธารณะ</button><button class="big sec" data-a="on_rback">← กลับ</button>';
+      h+='<div class="card" data-a="on_room" data-i="'+netEsc(r.code)+'" style="cursor:pointer"><div class="row"><b>'+C.ic+' '+netEsc(r.n)+'</b><span class="tag ok">'+TI('room_pub')+'เข้าห้อง ('+(r.pl||1)+'/'+(r.max||2)+')</span></div><small>'+TK('map',r.map,M0.ic)+M0.n+' · '+TK('diff',r.diff,D0.ic)+D0.n+' · '+TI('m_definf')+'ป้องกันรถ</small></div>'}}
+  h+='<button class="big" data-a="on_hostpub">'+BI('room_pub')+'สร้างห้องสาธารณะ</button><button class="big sec" data-a="on_rback">← กลับ</button>';
   page(h)}
 async function netQuick(){NET.err='';NET.st='quick';netRender();if(!(await fbWatch()))return netFail(FB.err||'เชื่อมต่อเซิร์ฟเวอร์ห้องไม่ได้');
   await new Promise(r=>setTimeout(r,1200));const L=fbJoinable();fbUnwatch();
@@ -5134,7 +5152,7 @@ function gameOver(win,how){ // v90: ห่อเพื่อแจ้งเพ�
   if(co){if(NET.role==='host')netAll({t:'over',k:G.kills,b:G.bossKills,tm:G.t,w:G.def?G.def.wave:0,win:!!win});else if(!NET.overMsg)netSend(NET.conns[0],{t:'gq'});
     const om=NET.overMsg;netEndGame();if(om)G.exMsg=om}
   gameOver0(win,how);
-  if(co&&NET.st==='lobby'){const b=ov.querySelector('button.big');if(b)b.insertAdjacentHTML('beforebegin','<button class="big" data-a="online" style="border-color:#7cf">🌐 กลับห้องออนไลน์ (รหัส '+netEsc(NET.code)+')</button>')}}
+  if(co&&NET.st==='lobby'){const b=ov.querySelector('button.big');if(b)b.insertAdjacentHTML('beforebegin','<button class="big" data-a="online" style="border-color:#7cf">'+BI('online')+'กลับห้องออนไลน์ (รหัส '+netEsc(NET.code)+')</button>')}}
 function start(){fixSize();warmI=0;warmImgs(true);applyAimUI();AIM.on=false;aimT=null;ac();if(!muted&&bgmOn)startBGM();lockLand();joy.on=false;joy.dx=joy.dy=0;reset();v57Init();arenaSet();perfStart();lowQ=S.q==='low';applyDPR();fpsAcc=0;fpsN=0;lowCnt=0;try{draw()}catch(e){}ov.style.display='none';state='play';last=performance.now();if(!STORY_RUN&&S.mode==='rush'&&!TUTN)rushInit();if(!STORY_RUN&&(S.mode==='defense'||S.mode==='defendless')&&!TUTN)defInit(S.mode==='defendless');G.dcr=[];G.dcrT=6;if(!STORY_RUN&&!TUTN&&S.mode!=='rush'&&S.mode!=='defense'&&S.mode!=='defendless'&&S.wx!==0)wxInit();if(!STORY_RUN&&!G.inDun&&!TUTN&&!NET.inGame)runCard();if(S.fthV>0&&!G.fth&&!TUTN){G.fth=1;S.fthV--;save();G.ban={s:'🪶 ใช้ขนนกฟีนิกซ์จากของรางวัล',t:2}}if(G.pend>0)setTimeout(openNext,400)}
 
 // ---------- Draw ----------
@@ -5441,7 +5459,7 @@ function draw(){
   ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';ctx.textAlign='left';
   const evs=G.ev==='fog'?'  🌫️':G.ev==='rain'?'  🌧️XP x2':G.ev==='blood'?'  🌕XP x1.5':'';
   const tm=G.goal?fmt(Math.floor(G.t))+'/'+fmt(G.goal):fmt(Math.floor(G.t));
-  ctx.fillText('LV '+G.lv+'   ⏱ '+tm+'   ☠ '+G.kills+(G.rev?'   ✨'+G.rev:'')+(G.fth?'   🪶':'')+(G.thrOn?'   ☠️'+G.thr:'')+(G.prv?'   ⭐'+G.prv:'')+evs,14,42);
+  hudText('LV '+G.lv+'   ⏱ '+tm+'   ☠ '+G.kills+(G.rev?'   ✨'+G.rev:'')+(G.fth?'   🪶':'')+(G.thrOn?'   ☠️'+G.thr:'')+(G.prv?'   ⭐'+G.prv:'')+evs,14,42);
   const bw=Math.min(240,W_*.5);
   ctx.fillStyle='#400';ctx.fillRect(10,52,bw,14);ctx.fillStyle='#e33';ctx.fillRect(10,52,bw*Math.max(0,P.hp)/P.max,14);
   ctx.fillStyle='#fff';ctx.fillText(Math.ceil(Math.max(0,P.hp))+'/'+Math.round(P.max),16,64);
@@ -5452,7 +5470,7 @@ function draw(){
   if(G.boots)pi+='👟'+G.boots+' ';if(G.armor)pi+='🛡️'+G.armor+' ';if(G.crit)pi+='🎲'+G.crit+' ';if(G.regen)pi+='💚'+G.regen+' ';if(G.clk)pi+='⏱️'+G.clk+' ';if(G.bat)pi+='🔋'+G.bat+' ';if(G.str)pi+='💪'+G.str+' ';if(G.fuel)pi+='⛽'+G.fuel+' ';if(G.relic&&!G.comp)pi+='🔷'+G.relic+'/3 ';if(G.comp)pi+=COMP[S.sel].ic+' ';{const fl=FUS.filter(f=>G.fus[f.k]).map(f=>f.n.split(' ')[0]).join('');if(fl)pi+=fl+' '}if(G.ulv)pi+='⭐ULT'+(G.ulv+1)+' ';if(G.pacts)pi+='📜'+G.pactL.join('');
   ctx.font='bold 13px sans-serif';
   if(wi)ctx.fillText(wi,12,84);
-  if(pi)ctx.fillText(pi,12,102);
+  if(pi)hudText(pi,12,102);
   const er=evoReady();
   let by=pi?118:100;
   if(er.length){ctx.fillStyle='#fd4';ctx.fillText('🎁 พร้อมวิวัฒนาการ: '+er[0].n+' (ฆ่าบอสเพื่อรับหีบ)',12,by);by+=16}
@@ -5898,7 +5916,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v103 (เกม v103) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v104 (เกม v104) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
