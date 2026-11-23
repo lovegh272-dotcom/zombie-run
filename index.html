@@ -4439,7 +4439,7 @@ function restoreSave(txt){
 }
 // ===================== v89: ออนไลน์ (เฟส 1: ห้อง + เชื่อมต่อ 2 เครื่อง) =====================
 // ใช้ PeerJS (WebRTC แบบ P2P) โหลดจาก CDN ตอนกดเข้าเมนูออนไลน์เท่านั้น · โฮสต์ = เครื่องที่สร้างห้อง
-const NET_VER='98',NET_PFX='zrun-v1-',NET_MAX=2,NET_ABC='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const NET_VER='99',NET_PFX='zrun-v1-',NET_MAX=2,NET_ABC='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const NET_ICE={config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}]}};
 const NET={peer:null,conns:[],role:null,code:'',me:null,pl:{},st:'idle',err:'',ping:0,pt:null,to:null,jc:'',inGame:0,sq:0};
 function netNick(){let n='';try{n=localStorage.znick||''}catch(e){}if(!n){n='ผู้เล่น'+(100+Math.floor(Math.random()*900));try{localStorage.znick=n}catch(e){}}return n}
@@ -4459,7 +4459,7 @@ function netOwned(){return Object.keys(CHARS).filter(id=>S.chars.includes(id))}
 function netSend(c,m){try{if(c&&c.open)c.send(m)}catch(e){}}
 function netAll(m,skip){for(const c of NET.conns)if(c!==skip)netSend(c,m)}
 function netLobby(){if(NET.role==='host')netAll({t:'lobby',pl:NET.pl,code:NET.code,cfg:NET.cfg});netRender()}
-function netLeave(quiet){
+function netLeave(quiet){try{vcEnd()}catch(e){}
   clearInterval(NET.pt);clearTimeout(NET.to);
   if(NET.role==='guest')netAll({t:'bye'});
   for(const c of NET.conns){try{c.close()}catch(e){}}
@@ -4475,7 +4475,7 @@ async function netHost(){netLeave(true);NET.err='';NET.role='host';NET.st='loadi
   const open=n=>{const code=Array.from({length:4},()=>NET_ABC[Math.floor(Math.random()*NET_ABC.length)]).join('');
     const p=new Peer(NET_PFX+code,NET_ICE);NET.peer=p;
     p.on('open',id=>{if(NET.peer!==p)return;NET.code=code;NET.me=id;NET.st='lobby';NET.pl={};NET.cfg={map:MAPS[S.map]&&S.maps.includes(S.map)&&!MAPS[S.map].hidden?S.map:'forest',diff:DIFF[S.diff]?S.diff:'normal'};NET.pl[id]={n:netNick(),ch:S.sel,rd:false,host:1,ms:0,dev:devIcon()?1:0};netLobby();if(typeof sfx==='function')sfx('pickup')});
-    p.on('connection',c=>netAccept(c));
+    p.on('connection',c=>netAccept(c));p.on('call',c=>vcOnCall(c));
     p.on('disconnected',()=>{if(NET.peer===p&&!p.destroyed){try{p.reconnect()}catch(e){}}});
     p.on('error',e=>{if(NET.peer!==p)return;if(e.type==='unavailable-id'&&n<5){try{p.destroy()}catch(_){}open(n+1)}else if(e.type!=='peer-unavailable')netFail(netErrTxt(e))})};
   open(0)}
@@ -4484,17 +4484,18 @@ function netAccept(c){
   NET.conns.push(c);
   c.on('data',d=>netOnHost(c,d));
   const gone=()=>{const i=NET.conns.indexOf(c);if(i<0)return;NET.conns.splice(i,1);const p=NET.pl[c.peer];delete NET.pl[c.peer];
-    for(const k in NET.pl)NET.pl[k].rd=false;if(p)netToast('🚪 '+p.n+' ออกจากห้อง');if(NET.inGame&&BUD){BUD=null;if(NET.hd){NET.hd=0;setTimeout(()=>{if(state==='play')gameOver(false)},50)}G.ban={s:'🚪 '+(p?p.n:'เพื่อน')+' หลุดจากเกม · เล่นต่อคนเดียว',t:3}}netLobby()};
+    for(const k in NET.pl)NET.pl[k].rd=false;if(p)netToast('🚪 '+p.n+' ออกจากห้อง');try{if(VC.inn)VC.inn.close()}catch(_){}VC.inn=null;vcPlay(null);VC.frOn=0;VC.mateSpk=0;try{if(VC.out)VC.out.close()}catch(_){}VC.out=null;if(NET.inGame&&BUD){BUD=null;if(NET.hd){NET.hd=0;setTimeout(()=>{if(state==='play')gameOver(false)},50)}G.ban={s:'🚪 '+(p?p.n:'เพื่อน')+' หลุดจากเกม · เล่นต่อคนเดียว',t:3}}netLobby()};
   c.on('close',gone);c.on('error',gone)}
 function netOnHost(c,d){if(!d||typeof d!=='object')return;const me=NET.pl[c.peer];
   if(d.t==='chat'){if(me)netChatRecv({t:'chat',s:d.s,n:me.n});return}
   if(d.t==='pz'){netPzRecv({on:d.on,n:me?me.n:d.n});return}
+  if(d.t==='vc'||d.t==='spk'){vcMsg(d);return}
   if(d.t==='devf'){if(me){me.dev=d.v?1:0;netLobby()}return}
   if(d.t==='dev'){if(me&&devHostOK()&&devIcon())devExec(String(d.op),d.v,true,d.on);return}
   if(NET.inGame&&netGameMsgHost(c,d))return;
   if(d.t==='gq'){if(BUD){G.ban={s:'🚪 '+BUD.n+' จบรอบไปก่อน · เล่นต่อคนเดียว',t:3};BUD=null;if(NET.hd){NET.hd=0;gameOver(false)}}return}
   if(d.t==='hello'){if(d.v!==NET_VER){netSend(c,{t:'ver',v:NET_VER});setTimeout(()=>{try{c.close()}catch(e){}},400);return}
-    NET.pl[c.peer]={n:String(d.n||'เพื่อน').slice(0,16),ch:CHARS[d.ch]?d.ch:'soldier',rd:false,ms:0,st:d.st||null,dev:d.dev?1:0};netToast('👋 '+NET.pl[c.peer].n+' เข้าห้องแล้ว');if(typeof sfx==='function')sfx('pickup');netLobby()}
+    NET.pl[c.peer]={n:String(d.n||'เพื่อน').slice(0,16),ch:CHARS[d.ch]?d.ch:'soldier',rd:false,ms:0,st:d.st||null,dev:d.dev?1:0};netToast('👋 '+NET.pl[c.peer].n+' เข้าห้องแล้ว');if(VC.on)setTimeout(vcCall,700);if(typeof sfx==='function')sfx('pickup');netLobby()}
   else if(!me)return;
   else if(d.t==='pick'&&CHARS[d.ch]){me.ch=d.ch;me.st=d.st||null;me.rd=false;netLobby()}
   else if(d.t==='ready'){me.rd=!!d.v;netLobby()}
@@ -4510,7 +4511,7 @@ async function netJoin(code){code=String(code||'').toUpperCase().replace(/[^A-Z0
   netLeave(true);NET.err='';NET.role='guest';NET.st='loading';netRender();
   try{await netLib()}catch(e){return netFail('โหลดระบบออนไลน์ไม่ได้ (ต้องต่ออินเทอร์เน็ต)')}
   if(NET.role!=='guest')return;
-  const p=new Peer(NET_ICE);NET.peer=p;
+  const p=new Peer(NET_ICE);NET.peer=p;p.on('call',c=>vcOnCall(c));
   p.on('open',id=>{if(NET.peer!==p)return;NET.me=id;NET.st='connecting';netRender();
     const c=p.connect(NET_PFX+code,{reliable:true});NET.conns=[c];
     NET.to=setTimeout(()=>{if(NET.st==='connecting')netFail('ต่อห้อง '+code+' ไม่สำเร็จ (หมดเวลา) · ลองให้ทั้งสองเครื่องใช้ Wi-Fi เดียวกัน')},15000);
@@ -4523,6 +4524,7 @@ async function netJoin(code){code=String(code||'').toUpperCase().replace(/[^A-Z0
 function netOnGuest(d){if(!d||typeof d!=='object')return;
   if(d.t==='chat'){netChatRecv(d);return}
   if(d.t==='pz'){netPzRecv(d);return}
+  if(d.t==='vc'||d.t==='spk'){vcMsg(d);return}
   if(netGameMsgGuest(d))return;
   if(d.t==='lobby'){NET.pl=d.pl||{};NET.code=d.code||NET.code;if(d.cfg)NET.cfg=d.cfg;netRender()}
   else if(d.t==='pong'){NET.ping=Math.round(performance.now()-d.ts);netAll({t:'lat',ms:NET.ping})}
@@ -4556,18 +4558,18 @@ function netLobLogHTML(){const L=NET.chat.slice(-15);return L.length?L.map(c=>'<
 function netLobChat(){let el=document.getElementById('netLC');const on=!NET.inGame&&NET.st==='lobby'&&state==='menu'&&ov.style.display==='block'&&!!document.getElementById('onl');
   if(!on){if(el)el.style.display='none';return}
   if(!el){el=document.createElement('div');el.id='netLC';
-    el.style.cssText='position:fixed;z-index:15;left:max(8px,env(safe-area-inset-left));bottom:max(10px,env(safe-area-inset-bottom));width:min(27vw,250px);display:flex;flex-direction:column;gap:5px;pointer-events:none';
+    el.style.cssText='position:fixed;z-index:15;left:max(8px,env(safe-area-inset-left));bottom:max(10px,env(safe-area-inset-bottom));width:min(36vw,310px);display:flex;flex-direction:column;gap:5px;pointer-events:none';
     el.innerHTML='<div id="netLobLog" style="max-height:min(38vh,170px);overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;pointer-events:auto;font-size:13px;line-height:1.35;color:#fff;text-shadow:0 1px 2px #000;background:linear-gradient(#0000,#0003 35%,#000a);-webkit-mask-image:linear-gradient(#0000,#000 38%);mask-image:linear-gradient(#0000,#000 38%);border-radius:10px;padding:14px 8px 6px;display:flex;flex-direction:column"></div>'+
-      '<div style="display:flex;gap:4px;pointer-events:auto"><button id="netLobMin" title="ย่อแชท" style="font:inherit;font-size:14px;color:#fff;background:#0b1520cc;border:2px solid #7cf8;border-radius:10px;padding:0 8px">▾</button><input id="netLobbyIn" maxlength="80" enterkeyhint="send" autocomplete="off" placeholder="💬 พิมพ์..." style="flex:1;min-width:0;font:inherit;font-size:16px;padding:6px 8px;border-radius:10px;border:2px solid #7cf8;background:#06101acc;color:#fff;-webkit-user-select:text;user-select:text"><button id="netLobSend" style="font:inherit;font-size:14px;font-weight:700;color:#fff;background:#2f7cc4;border:2px solid #7cf;border-radius:10px;padding:0 10px">ส่ง</button></div>';
+      '<div style="display:flex;gap:4px;pointer-events:auto"><button id="vcL" title="ไมค์" style="font:inherit;font-size:16px;color:#fff;background:#0d2236dd;border:2px solid #7cf;border-radius:10px;padding:0 7px;display:none">🎤</button><button id="vcLM" title="เสียงเพื่อน" style="font:inherit;font-size:16px;color:#fff;background:#0d2236dd;border:2px solid #7cf;border-radius:10px;padding:0 7px;display:none">🔊</button><button id="netLobMin" title="ย่อแชท" style="font:inherit;font-size:14px;color:#fff;background:#0b1520cc;border:2px solid #7cf8;border-radius:10px;padding:0 8px">▾</button><input id="netLobbyIn" maxlength="80" enterkeyhint="send" autocomplete="off" placeholder="💬 พิมพ์..." style="flex:1;min-width:0;font:inherit;font-size:16px;padding:6px 8px;border-radius:10px;border:2px solid #7cf8;background:#06101acc;color:#fff;-webkit-user-select:text;user-select:text"><button id="netLobSend" style="font:inherit;font-size:14px;font-weight:700;color:#fff;background:#2f7cc4;border:2px solid #7cf;border-radius:10px;padding:0 10px">ส่ง</button></div>';
     ['pointerdown','touchstart','wheel'].forEach(t=>el.addEventListener(t,e=>e.stopPropagation(),{passive:true}));
-    el.querySelector('#netLobSend').addEventListener('click',()=>netAct('on_chat'));
+    el.querySelector('#netLobSend').addEventListener('click',()=>netAct('on_chat'));el.querySelector('#vcL').addEventListener('click',()=>vcToggle());el.querySelector('#vcLM').addEventListener('click',()=>vcMuteToggle());
     el.querySelector('#netLobMin').addEventListener('click',()=>{NET.lcMin=!NET.lcMin;try{localStorage.zlcMin=NET.lcMin?'1':'0'}catch(e){}netLobChatMin()});
     document.body.appendChild(el)}
   el.style.display='flex';netLobChatMin();const l=el.querySelector('#netLobLog'),html='<div style="margin-top:auto"></div>'+netLobLogHTML();if(l._h!==html){const atEnd=l.scrollHeight-l.scrollTop-l.clientHeight<30;l._h=html;l.innerHTML=html;if(atEnd||!l._init){l.scrollTop=l.scrollHeight;l._init=1}}}
 function netLobChatMin(){const el=document.getElementById('netLC');if(!el)return;if(NET.lcMin===undefined){try{NET.lcMin=localStorage.zlcMin==='1'}catch(e){NET.lcMin=false}}
   const l=el.querySelector('#netLobLog'),i=el.querySelector('#netLobbyIn'),s=el.querySelector('#netLobSend'),m=el.querySelector('#netLobMin'),un=NET.chat.length-(NET.lcSeen||0);
   if(NET.lcMin){l.style.display='none';i.style.display='none';s.style.display='none';m.textContent='💬'+(un>0?' '+un:'');m.style.padding='6px 10px';el.style.width='auto'}
-  else{l.style.display='flex';i.style.display='';s.style.display='';m.textContent='▾';m.style.padding='0 8px';el.style.width='min(27vw,250px)';NET.lcSeen=NET.chat.length}}
+  else{l.style.display='flex';i.style.display='';s.style.display='';m.textContent='▾';m.style.padding='0 8px';el.style.width='min(36vw,310px)';NET.lcSeen=NET.chat.length}}
 function netRender(){netLobChat();if(state!=='menu'||ov.style.display!=='block'||!document.getElementById('onl'))return;
   showOnline(true);netLobChat()}
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='netLobbyIn')NET.draft=e.target.value});
@@ -4796,7 +4798,7 @@ function netDrawMates(){const o=NET.role==='host'?BUD:HB;if(!o)return;
   try{ctx.save();drawPBody()}catch(e){}finally{ctx.restore();P=sP;S.sel=sSel;NET.ssel=null;Object.assign(G,sv);o.inv=si;ctx.globalAlpha=1}
   ctx.save();ctx.textAlign='center';ctx.font='bold 13px sans-serif';ctx.lineWidth=3;ctx.strokeStyle='#000';
   if(o.shield>0){ctx.strokeStyle='#6cf';ctx.lineWidth=4;ctx.beginPath();ctx.arc(o.x,o.y,24,0,6.28);ctx.stroke()}
-  const nm=(o.down?'💀 ':'')+o.n;ctx.strokeText(nm,o.x,o.y-46);ctx.fillStyle=NET.role==='host'?'#9df':'#ffd75a';ctx.fillText(nm,o.x,o.y-46);
+  const nm=(o.down?'💀 ':'')+(VC.mateSpk?'🔊 ':'')+o.n;ctx.strokeText(nm,o.x,o.y-46);ctx.fillStyle=NET.role==='host'?'#9df':'#ffd75a';ctx.fillText(nm,o.x,o.y-46);
   const w=40,f=Math.max(0,Math.min(1,o.hp/(o.max||1)));ctx.fillStyle='#000b';ctx.fillRect(o.x-w/2,o.y-41,w,5);ctx.fillStyle=f>.35?'#6f6':'#f55';ctx.fillRect(o.x-w/2,o.y-41,w*f,5);
   if(o.down){ctx.strokeStyle='#6f9';ctx.lineWidth=4;ctx.beginPath();ctx.arc(o.x,o.y,30,-1.57,-1.57+6.28*Math.min(1,o.rv/3));ctx.stroke();
     ctx.globalAlpha=.6;ctx.setLineDash&&ctx.setLineDash([6,6]);ctx.lineWidth=2;ctx.beginPath();ctx.arc(o.x,o.y,75,0,6.28);ctx.stroke();ctx.setLineDash&&ctx.setLineDash([])}
@@ -4948,6 +4950,56 @@ function devExec(d,v,fromGuest,on){if(!devInGame())return;const df=G.def;
 function devTick(){if(!devInGame())return;
   if(DEV.nocd&&SK)for(const s of SK)if(s&&s.t>0)s.t=0;
   if(DEV.scrap&&G.def&&!NETG())G.def.scrap=Math.max(G.def.scrap,99999)}
+
+
+// ===================== v99: คุยด้วยเสียง (WebRTC ผ่าน PeerJS) =====================
+// กด 🎤 เปิด/ปิดไมค์ของเรา · 🔊/🔇 เปิด/ปิดเสียงเพื่อน · เสียงแต่ละฝั่งเป็นสายแยก (ฝั่งที่เปิดไมค์เป็นคนโทรหาอีกฝั่ง)
+const VC={on:0,st:null,out:null,inn:null,au:null,mute:0,fr:0,frOn:0,spk:0,mateSpk:0,an:null,ac:null,mt:null,need:0,busy:0};
+function vcPeerId(){if(!NET.conns.length)return null;return NET.role==='host'?NET.conns[0].peer:NET_PFX+NET.code}
+async function vcToggle(){if(VC.busy)return;if(VC.on)return vcStop(true);
+  if(!NET.peer||!NET.conns.length||!NET.conns[0].open){netToast('🎤 ยังไม่มีเพื่อนในห้อง');return}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){netToast('🎤 เบราว์เซอร์นี้ใช้ไมค์ไม่ได้');return}
+  VC.busy=1;vcUI();
+  try{VC.st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false})}
+  catch(e){VC.busy=0;vcUI();netToast('🎤 เปิดไมค์ไม่ได้: '+(e&&e.name==='NotAllowedError'?'ยังไม่ได้อนุญาตไมโครโฟน (ตั้งค่า > Safari > ไมโครโฟน)':(e&&e.message)||'ไม่ทราบสาเหตุ'));return}
+  VC.busy=0;VC.on=1;vcCall();vcMeter();netAll({t:'vc',on:1});
+  try{if(!localStorage.zvcTip){localStorage.zvcTip='1';netToast('🎧 ใส่หูฟังจะชัดและไม่มีเสียงสะท้อน')}else netToast('🎤 เปิดไมค์แล้ว')}catch(e){}
+  if(VC.au&&VC.need)vcResume();vcUI()}
+function vcCall(){const id=vcPeerId();if(!id||!VC.st||!NET.peer)return;try{if(VC.out)VC.out.close()}catch(e){}
+  try{const c=NET.peer.call(id,VC.st);VC.out=c;if(c){c.on('close',()=>{if(VC.out===c)VC.out=null});c.on('error',()=>{})}}catch(e){}}
+function vcStop(send){try{if(VC.st)VC.st.getTracks().forEach(t=>t.stop())}catch(e){}VC.st=null;try{if(VC.out)VC.out.close()}catch(e){}VC.out=null;
+  clearInterval(VC.mt);VC.mt=null;VC.an=null;if(VC.spk){VC.spk=0;if(send)netAll({t:'spk',v:0})}VC.on=0;if(send){netAll({t:'vc',on:0});netToast('🎤 ปิดไมค์แล้ว')}vcUI()}
+function vcEnd(){vcStop(false);try{if(VC.inn)VC.inn.close()}catch(e){}VC.inn=null;vcPlay(null);VC.frOn=0;VC.mateSpk=0;vcUI()}
+function vcOnCall(call){try{if(VC.inn&&VC.inn!==call)VC.inn.close()}catch(e){}VC.inn=call;call.answer();
+  call.on('stream',rs=>vcPlay(rs));call.on('close',()=>{if(VC.inn===call){VC.inn=null;vcPlay(null)}});call.on('error',()=>{})}
+function vcPlay(rs){let a=VC.au;if(!a){a=document.createElement('audio');a.autoplay=true;a.setAttribute('playsinline','');a.setAttribute('webkit-playsinline','');a.style.display='none';document.body.appendChild(a);VC.au=a}
+  if(!rs){try{a.pause()}catch(e){}a.srcObject=null;VC.fr=0;VC.need=0;vcUI();return}
+  a.srcObject=rs;a.muted=!!VC.mute;VC.fr=1;vcResume();vcUI()}
+function vcResume(){const a=VC.au;if(!a||!a.srcObject)return;const p=a.play();VC.need=0;if(p&&p.catch)p.catch(()=>{VC.need=1;vcUI();netToast('🔊 แตะปุ่ม 🔊 เพื่อฟังเสียงเพื่อน')})}
+function vcMuteToggle(){if(VC.need){vcResume();return}VC.mute=VC.mute?0:1;if(VC.au)VC.au.muted=!!VC.mute;netToast(VC.mute?'🔇 ปิดเสียงเพื่อน':'🔊 เปิดเสียงเพื่อน');vcUI()}
+// วัดระดับเสียงไมค์ของเรา → บอกเพื่อนว่ากำลังพูด (ขึ้น 🔊 บนหัว)
+function vcMeter(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const ac=(typeof AC!=='undefined'&&AC)||VC.ac||(VC.ac=new C());if(ac.state==='suspended')ac.resume();
+  const src=ac.createMediaStreamSource(VC.st),an=ac.createAnalyser();an.fftSize=512;src.connect(an);VC.an=an;const buf=new Uint8Array(an.fftSize);let quiet=0;
+  clearInterval(VC.mt);VC.mt=setInterval(()=>{if(!VC.an)return;an.getByteTimeDomainData(buf);let s=0;for(let i=0;i<buf.length;i++){const v=(buf[i]-128)/128;s+=v*v}const rms=Math.sqrt(s/buf.length);
+    if(rms>.035){quiet=0;if(!VC.spk){VC.spk=1;netAll({t:'spk',v:1});vcUI()}}else if(VC.spk&&++quiet>6){VC.spk=0;netAll({t:'spk',v:0});vcUI()}},120)}catch(e){}}
+function vcMsg(d){if(d.t==='vc'){VC.frOn=d.on?1:0;if(!d.on)VC.mateSpk=0;netToast(d.on?'🎤 เพื่อนเปิดไมค์':'🎤 เพื่อนปิดไมค์')}else if(d.t==='spk')VC.mateSpk=d.v?1:0;vcUI()}
+// ปุ่ม: ในเกม (แถบบนขวา ข้าง 💬) + ในห้องรอ (แถวช่องพิมพ์แชท)
+function vcBtn(id,txt,fn){let b=document.getElementById(id);if(!b){b=document.createElement('button');b.id=id;b.textContent=txt;
+    b.style.cssText='position:fixed;z-index:12;width:44px;height:44px;border-radius:12px;border:2px solid #7cf;background:#0d2236dd;color:#fff;font-size:20px;padding:0;filter:drop-shadow(0 2px 3px #0009)';
+    b.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();fn()});document.body.appendChild(b)}return b}
+function vcUI(){const inG=NET.inGame&&(state==='play'||state==='paused'),inRoom=NET.st==='lobby'&&NET.conns.length>0;
+  const mic=vcBtn('vcB','🎤',vcToggle),mu=vcBtn('vcM','🔊',vcMuteToggle);
+  const micTxt=VC.busy?'⏳':VC.on?'🎙️':'🎤',micBg=VC.on?(VC.spk?'#1f8a3add':'#1d5a2add'):'#0d2236dd',micBd=VC.on?'#9f6':'#7cf';
+  const muTxt=VC.need?'🔈':VC.mute?'🔇':'🔊',muBd=VC.mateSpk&&!VC.mute?'#ffd75a':'#7cf';
+  mic.textContent=micTxt;mic.style.background=micBg;mic.style.borderColor=micBd;mic.style.opacity=VC.on?'1':'.85';if(!VC.on)mic.style.textDecoration='line-through';else mic.style.textDecoration='none';
+  mu.textContent=muTxt;mu.style.borderColor=muBd;
+  const pb=document.getElementById('pb'),r=pb&&pb.getBoundingClientRect();
+  if(inG&&r&&r.width){mic.style.display='block';mic.style.top=r.top+'px';mic.style.left=(r.left-108)+'px';mu.style.display=(VC.fr||VC.frOn)?'block':'none';mu.style.top=r.top+'px';mu.style.left=(r.left-162)+'px'}
+  else{mic.style.display='none';mu.style.display='none'}
+  const lm=document.getElementById('vcL'),lv=document.getElementById('vcLM');
+  if(lm){lm.style.display=inRoom?'':'none';lm.textContent=micTxt;lm.style.background=micBg;lm.style.borderColor=micBd}
+  if(lv){lv.style.display=inRoom&&(VC.fr||VC.frOn)?'':'none';lv.textContent=muTxt;lv.style.borderColor=muBd}}
+setInterval(()=>{try{vcUI()}catch(e){}},500);
 
 ov.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b)return;
@@ -5741,7 +5793,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v98 (เกม v98) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v99 (เกม v99) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
