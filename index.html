@@ -448,12 +448,12 @@ function storyResult(win){
 }
 function showStory(){
   STORY_RUN=null;
-  let h='<h2 style="margin:0">📖 โหมดเนื้อเรื่อง</h2><div class="coin">⭐ '+storyStars()+' / '+STAGE_ORDER.length*3+'</div>';
+  let h='<h2 style="margin:0">'+BI('story')+' โหมดเนื้อเรื่อง</h2><div class="coin">'+TI('star_on')+storyStars()+' / '+STAGE_ORDER.length*3+'</div>';
   CHAPTERS.forEach((c,ci)=>{const ids=STAGE_ORDER.filter(id=>STAGES[id].ch===ci),open=stageOpen(ids[0]);
-    h+='<div class="sub">'+c.ic+' '+c.n+(open?'':' 🔒 (ผ่านบทก่อนหน้า)')+'</div>';if(!open)return;
+    h+='<div class="sub">'+TK('map',c.map,c.ic)+c.n+(open?'':' 🔒 (ผ่านบทก่อนหน้า)')+'</div>';if(!open)return;
     ids.forEach(id=>{const st=STAGES[id],op=stageOpen(id),sv=(S.story||{})[id]||0,dk=DIFF[st.diff];
-      h+='<div class="card btn'+(op?'':' off')+'" data-a="stg" data-i="'+id+'"><div class="row"><b>'+id+' '+st.n+'</b><span class="tag'+(sv?' ok':'')+'">'+(op?'⭐'.repeat(sv)+'☆'.repeat(3-sv):'🔒')+'</span></div>'+
-        '<small>🎯 '+stageGoalText(st)+'<br>'+dk.ic+' '+dk.n+(st.hpM?' (ซอมบี้อึด x'+st.hpM+')':'')+' · ★ผ่าน ★เลือด 50%+ ★'+s3Text(st)+'</small></div>'})});
+      h+='<div class="card btn'+(op?'':' off')+'" data-a="stg" data-i="'+id+'"><div class="row"><b>'+TI('st_'+st.k)+id+' '+st.n+'</b><span style="white-space:nowrap">'+(op?STARS(sv,'1.3em'):TI('room_priv'))+'</span></div>'+
+        '<small>🎯 '+stageGoalText(st)+'<br>'+TK('diff',st.diff,dk.ic)+dk.n+(st.hpM?' (ซอมบี้อึด x'+st.hpM+')':'')+' · ★ผ่าน ★เลือด 50%+ ★'+s3Text(st)+'</small></div>'})});
   h+='<button class="big sec" data-a="menu">← กลับ</button>';page(h);
 }
 function showStageIntro(id){VN={id,i:0};vnShow()}
@@ -481,6 +481,7 @@ const QT={ // n=[รายวัน,รายสัปดาห์]
   evo:{t:'วิวัฒนาการอาวุธ {n} ครั้ง',n:[2,10],r:[100,520]},
   dun:{t:'พิชิตดันเจี้ยนอเวจี {n} ครั้ง',n:[0,1],r:[0,700]}
 };
+const QTI={kills:'hud_kill',kchar:'chars',map:'map',mis:'miss',boss:'q_boss',surv:'hud_time',story:'q_story',chest:'q_chest',evo:'evo',dun:'crypt'};
 function weekKey(){return 'w'+Math.floor((Date.now()+7*3600e3+3*864e5)/(7*864e5))}
 function seedRnd(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}let a=h>>>0;return()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296}}
 function mkQuest(type,w,rnd){const q=QT[type],o={type,n:q.n[w],c:0,r:q.r[w],ok:0};
@@ -506,12 +507,12 @@ function questRun(){ // เรียกตอนจบรอบ
   return d}
 function questClaimable(){const[a,b]=questsNow();return a.l.concat(b.l).filter(q=>q.c>=q.n&&!q.ok).length+(a.l.every(q=>q.ok)&&!a.bn?1:0)}
 function showQuests(){
-  const[dq,wq]=questsNow();let h='<h2 style="margin:0">📋 กระดานเควส</h2><div class="coin">🪙 '+S.coins+'</div>';
-  const row=(q,b,i)=>'<div class="card'+(q.ok?' done':'')+'"><div class="row"><b>'+(q.ok?'✅ ':'')+qText(q)+'</b>'+(q.ok?'<span class="tag ok">รับแล้ว</span>':q.c>=q.n?'<span class="tag" data-a="qclaim" data-i="'+b+i+'">รับ +'+q.r+' 🪙</span>':'<span class="tag no">'+q.c+'/'+q.n+'</span>')+'</div>'+
-    (b==='d'&&!q.ok&&q.c<q.n&&!S.qd.rr?'<small><span class="tag" data-a="qrr" data-i="'+i+'">🔄 เปลี่ยนเควสนี้ (ฟรีวันละ 1 ครั้ง)</span></small>':'')+'</div>';
-  h+='<div class="sub">☀️ รายวัน (รีเซ็ตเที่ยงคืน)</div>';dq.l.forEach((q,i)=>h+=row(q,'d',i));
-  const all=dq.l.every(q=>q.ok);h+='<div class="card'+(dq.bn?' done':'')+'"><div class="row"><b>🎁 ทำเควสรายวันครบ 3 อย่าง</b>'+(dq.bn?'<span class="tag ok">รับแล้ว</span>':all?'<span class="tag" data-a="qbonus">รับ +250 🪙</span>':'<span class="tag no">'+dq.l.filter(q=>q.ok).length+'/3</span>')+'</div></div>';
-  h+='<div class="sub">📅 รายสัปดาห์ (รีเซ็ตวันจันทร์)</div>';wq.l.forEach((q,i)=>h+=row(q,'w',i));
+  const[dq,wq]=questsNow();let h='<h2 style="margin:0">'+BI('quests')+' กระดานเควส</h2><div class="coin">🪙 '+S.coins+'</div>';
+  const row=(q,b,i)=>'<div class="card'+(q.ok?' done':'')+'"><div class="row"><b>'+(q.ok?'✅ ':TI(QTI[q.type]||'quests'))+qText(q)+'</b>'+(q.ok?'<span class="tag ok">รับแล้ว</span>':q.c>=q.n?'<span class="tag" data-a="qclaim" data-i="'+b+i+'">รับ +'+q.r+' 🪙</span>':'<span class="tag no">'+q.c+'/'+q.n+'</span>')+'</div>'+
+    (b==='d'&&!q.ok&&q.c<q.n&&!S.qd.rr?'<small><span class="tag" data-a="qrr" data-i="'+i+'">'+TI('reroll')+'เปลี่ยนเควสนี้ (ฟรีวันละ 1 ครั้ง)</span></small>':'')+'</div>';
+  h+='<div class="sub">'+TI('q_day')+'รายวัน (รีเซ็ตเที่ยงคืน)</div>';dq.l.forEach((q,i)=>h+=row(q,'d',i));
+  const all=dq.l.every(q=>q.ok);h+='<div class="card'+(dq.bn?' done':'')+'"><div class="row"><b>'+TI('gift')+'ทำเควสรายวันครบ 3 อย่าง</b>'+(dq.bn?'<span class="tag ok">รับแล้ว</span>':all?'<span class="tag" data-a="qbonus">รับ +250 🪙</span>':'<span class="tag no">'+dq.l.filter(q=>q.ok).length+'/3</span>')+'</div></div>';
+  h+='<div class="sub">'+TI('q_week')+'รายสัปดาห์ (รีเซ็ตวันจันทร์)</div>';wq.l.forEach((q,i)=>h+=row(q,'w',i));
   h+='<div class="sub">🧑‍🤝‍🧑 เควสตัวละคร</div>';(S.chars||[]).forEach(id=>{const c=CHARS[id],st=cqState(id),nx=CQ[st.t];
     h+='<div class="card'+(st.t>=3?' done':'')+'"><div class="row"><b>'+c.ic+' '+c.n+' — ขั้น '+st.t+'/3</b>'+(st.t>=3?'<span class="tag ok">ครบ (ดาเมจ +8%)</span>':'<span class="tag no">'+cqProg(id)+'</span>')+'</div>'+(nx?'<small>ถัดไป: '+nx.t+' → +'+nx.r+' 🪙'+(st.t===2?' + ดาเมจถาวร +8% ของตัวนี้':'')+'</small>':'')+'</div>'});
   h+='<button class="big sec" data-a="menu">← กลับ</button>';page(h);
@@ -1548,7 +1549,7 @@ function showPath(){let h='<h2 style="margin:0">🧬 เส้นทางอา
   if(m)h+='<div class="card'+(G.mevo?' done':'')+'"><b>'+m.n+'</b><small>'+(G.mevo?'✅ วิวัฒนาการแล้ว':'อาวุธหลัก '+Math.min(5,G.mainLv)+'/5 '+(G.mainLv>=5?'✓':'✗')+' · '+ITN[m.p]+' '+(G[m.p]?'✓':'✗')+' · แล้วฆ่าบอสเปิดหีบ')+'</small></div>';
   EVO.forEach(e=>{if(!G[e.w]&&!G.evo[e.w])return;h+='<div class="card'+(G.evo[e.w]?' done':'')+'"><b>'+e.n+'</b><small>'+(G.evo[e.w]?'✅ วิวัฒนาการแล้ว':wn(e.w)[1]+' '+G[e.w]+'/5 '+(G[e.w]>=5?'✓':'✗')+' · '+ITN[e.p]+' '+(G[e.p]?'✓':'✗'))+'</small></div>'});
   FUS.forEach(f=>{if(!G.evo[f.a]&&!G.evo[f.b]&&!G.fus[f.k])return;h+='<div class="card'+(G.fus[f.k]?' done':'')+'"><b>'+f.n+'</b><small>'+(G.fus[f.k]?'✅ รวมแล้ว':'ต้องวิวัฒนาการ '+wn(f.a)[1]+' '+(G.evo[f.a]?'✓':'✗')+' และ '+wn(f.b)[1]+' '+(G.evo[f.b]?'✓':'✗'))+'</small></div>'});
-  const c=COMP[S.sel],rn=(G.relic||0);if(c)h+='<div class="card'+(G.comp?' done':'')+'"><b>'+c.ic+' คู่หู: '+c.n+'</b><small>'+(G.comp?'✅ ออกมาแล้ว':'เรลิก 🔷 '+Math.min(3,rn)+'/3 · ได้จากฆ่าบอส / ก๊อบลินทองอีลีท / บอสดันเจี้ยน (ได้ครบ 3)')+'</small></div>';
+  const c=COMP[S.sel],rn=(G.relic||0);if(c)h+='<div class="card'+(G.comp?' done':'')+'"><b>'+CI(S.sel)+'คู่หู: '+c.n+'</b><small>'+(G.comp?'✅ ออกมาแล้ว':'เรลิก 🔷 '+Math.min(3,rn)+'/3 · ได้จากฆ่าบอส / ก๊อบลินทองอีลีท / บอสดันเจี้ยน (ได้ครบ 3)')+'</small></div>';
   const el=Object.keys(ELM).filter(k=>G.el&&G.el[k]);h+='<div class="card"><b>🌈 ธาตุ</b><small>'+(el.length?el.map(k=>ELM[k].ic+' '+ELM[k].n+' LV'+G.el[k]).join(' · '):'ยังไม่มี (เลือกได้ตอนอัปเลเวล)')+'<br>คอมโบ: 🔥+❄️ แตกกระจาย · 🔥+☠️ ระเบิดแก๊ส · ❄️+⚡ แข็งทันที</small></div>';
   h+='<button class="big sec" data-a="pback">← กลับ</button>';page(h)}
 // v14: รอยเลือด/รอยไหม้รวมกันจำกัดจำนวน (เดิมรอยเลือดทุกการฆ่าสะสมได้ 130+ จุด)
@@ -2093,22 +2094,25 @@ function updMis(dt){
   else if(m.t<=0)misDone(false);
 }
 const PACTS=[
-  {id:'hp',c:'☠️ เลือดสูงสุด −25%',b:'🪙 เหรียญจบรอบ x1.5',f:()=>{P.max=Math.round(P.max*.75);P.hp=Math.min(P.hp,P.max);G.cm*=1.5}},
-  {id:'zs',c:'🧟 ซอมบี้เร็วขึ้น 15%',b:'💥 ดาเมจ +25%',f:()=>{G.zsm*=1.15;G.dmg*=1.25}},
-  {id:'heal',c:'💔 หัวใจที่เก็บไม่ฟื้นเลือด',b:'⚡ ยิงเร็ว +20%',ok:()=>!G.noHeal,f:()=>{G.noHeal=1;G.rate*=1.2}},
-  {id:'sp',c:'👥 ซอมบี้เกิดเยอะขึ้น 25%',b:'⭐ XP +40% และเหรียญ x1.2',f:()=>{G.spm*=1.25;G.xpm*=1.4;G.cm*=1.2}},
-  {id:'slow',c:'🐌 วิ่งช้าลง 10%',b:'🎁 อัปเกรดฟรี 2 ครั้ง',f:()=>{P.spd*=.9;G.pend+=2}}
+  {id:'hp',ci:'c_hp',bi:'hud_coin',c:'☠️ เลือดสูงสุด −25%',b:'🪙 เหรียญจบรอบ x1.5',f:()=>{P.max=Math.round(P.max*.75);P.hp=Math.min(P.hp,P.max);G.cm*=1.5}},
+  {id:'zs',ci:'c_zfast',bi:'b_dmg',c:'🧟 ซอมบี้เร็วขึ้น 15%',b:'💥 ดาเมจ +25%',f:()=>{G.zsm*=1.15;G.dmg*=1.25}},
+  {id:'heal',ci:'c_noheal',bi:'b_rate',c:'💔 หัวใจที่เก็บไม่ฟื้นเลือด',b:'⚡ ยิงเร็ว +20%',ok:()=>!G.noHeal,f:()=>{G.noHeal=1;G.rate*=1.2}},
+  {id:'sp',ci:'c_horde',bi:'hud_star',c:'👥 ซอมบี้เกิดเยอะขึ้น 25%',b:'⭐ XP +40% และเหรียญ x1.2',f:()=>{G.spm*=1.25;G.xpm*=1.4;G.cm*=1.2}},
+  {id:'slow',ci:'c_slow',bi:'b_free',c:'🐌 วิ่งช้าลง 10%',b:'🎁 อัปเกรดฟรี 2 ครั้ง',f:()=>{P.spd*=.9;G.pend+=2}}
 ];
 function openPact(){
   state='lvl';sfx('pact');
   const pool=PACTS.filter(p=>!p.ok||p.ok()).sort(()=>Math.random()-.5).slice(0,2);
   ov.style.display='block';
-  page('<h2>📜 สัญญาต้องสาป</h2><div style="opacity:.85;margin:0 0 8px">รับคำสาปเพื่อแลกพร หรือไม่รับแล้วเลือกอัปเกรดฟรีตามปกติ</div>');
-  const pg=ov.firstChild,back=()=>{ov.style.display='none';state='play';last=performance.now()};
-  pool.forEach(p=>{const d=document.createElement('div');d.className='card btn';
-    d.innerHTML=EJ('<b style="color:#f99">'+p.c+'</b><small style="color:#9f9">แลกกับ '+p.b+'</small>');
-    d.onclick=()=>{p.f();G.pacts++;G.pactL.push(p.c.split(' ')[0]);G.ban={s:'📜 รับสัญญา: '+p.b,t:2.5};back();openNext()};pg.appendChild(d)});
-  const sk=document.createElement('div');sk.className='card btn';sk.innerHTML=EJ('<b>🙅 ไม่รับ</b><small>รับอัปเกรดฟรีตามปกติแทน</small>');
+  page('<h2>'+TI('pact_scroll')+'สัญญาต้องสาป</h2><div style="opacity:.85;margin:0 0 8px">รับคำสาปเพื่อแลกพร หรือไม่รับแล้วเลือกอัปเกรดฟรีตามปกติ</div><div id="pactRow" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;width:100%"></div>');
+  const pg=ov.firstChild,row=document.getElementById('pactRow')||pg,back=()=>{ov.style.display='none';state='play';last=performance.now()};
+  const tx=t=>t.replace(/^\S+\s/,'');
+  pool.forEach(p=>{const d=document.createElement('div');d.className='btn pactc';
+    d.style.cssText='height:min(64vh,330px);width:calc(min(64vh,330px)*.75);flex:none;background:url(img/ui/card_pact.png) center/100% 100% no-repeat;border:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:calc(min(64vh,330px)*.2) calc(min(64vh,330px)*.1) calc(min(64vh,330px)*.13);box-sizing:border-box;text-align:center;cursor:pointer;filter:drop-shadow(0 4px 8px #000a)';
+    const I=(n,z)=>'<img src="img/ui/'+n+'.png" style="width:'+z+';height:'+z+';flex:none;object-fit:contain" alt="">';
+    d.innerHTML=I(p.ci,'min(14vh,60px)')+'<b style="display:block;width:100%;color:#ff8a8a;font-size:13px;line-height:1.2">'+tx(p.c)+'</b><small style="color:#e8d3b0;opacity:.8">แลกกับ</small>'+I(p.bi,'min(9vh,40px)')+'<b style="display:block;width:100%;color:#b6ff9a;font-size:12px;line-height:1.2">'+tx(p.b)+'</b>';
+    d.onclick=()=>{p.f();G.pacts++;G.pactL.push(p.c.split(' ')[0]);G.ban={s:'📜 รับสัญญา: '+p.b,t:2.5};back();openNext()};row.appendChild(d)});
+  const sk=document.createElement('div');sk.className='card btn';sk.innerHTML=EJ('<b>'+TI('it_no')+'ไม่รับ</b><small>รับอัปเกรดฟรีตามปกติแทน</small>');
   sk.onclick=()=>{back();G.pend++;openNext()};pg.appendChild(sk);
 }
 // ลูกศรชี้เป้าที่อยู่นอกจอ (ใช้ร่วมกัน)
@@ -2139,7 +2143,7 @@ const COMP={
   nara:{n:'นกฮูกน้ำแข็ง',ic:'🦉',d:'บินตาม ปาขนน้ำแข็งทำให้ซอมบี้แข็ง กระพือปีกหน่วงซอมบี้รอบตัว'},
   priest:{n:'วิญญาณอัศวินแสง',ic:'⚔️',d:'พุ่งเข้าฟันซอมบี้ แรงขึ้นกับตัวใหญ่ ปกป้องรอบตัวคุณ'}
 };
-const COMPIMG={};Object.keys(COMP).forEach(id=>{const im=new Image();im.onload=()=>{COMPIMG[id]=im};im.src='img/comp_'+id+'.png'});
+const COMPIMG={};Object.keys(COMP).forEach(id=>{const im=new Image();im.onload=()=>{COMPIMG[id]=im;HUDI['comp_'+id]=im};im.src='img/comp_'+id+'.png'});
 // v45: ภาพอาวุธเสริม img/wpn_<ชื่อ>.png (ไม่มีไฟล์ = วาดแบบเดิม)
 const WIMG={};['blade','nade','ltn','sg','mine','drone','bmr','flame','dragon'].forEach(k=>{const im=new Image();im.onload=()=>{WIMG[k]=im};im.src='img/wpn_'+k+'.png'});
 let RELIMG=null;{const im=new Image();im.onload=()=>{RELIMG=im};im.src='img/relic.png'}
@@ -3510,11 +3514,11 @@ function showTutAsk(){const nw=!(S.st&&S.st.games>0);
 const LGR=[{c:200},{c:300},{f:1,w:3},{c:500},{p:1},{c:800},{ch:'berserk',c:300}];
 function lgText(r){const own=r.ch&&(S.chars||[]).includes(r.ch);return [r.ch?(own?'🪙 1500<br>🧩 ×2':'🔥 นักล่าคลั่ง<br>ฟรี!'):'',r.c&&!r.ch?'🪙 '+r.c:'',r.f?'🪶 ขนนก ×1':'',r.w?'🎒 ตั๋ว ×'+r.w:'',r.p?'🧩 สกิน ×'+r.p:''].filter(Boolean).join('<br>')}
 function lgCan(){S.lg=S.lg||{last:'',n:0};return S.lg.last!==dayKey()}
-function showLogin(){LG_SEEN=1;const lg=S.lg||{last:'',n:0},can=lgCan(),cur=lg.n%7;let h='<h2 style="margin:0">🎁 ล็อกอินรายวัน</h2><div class="sub">เข้าเกมวันละครั้งรับของ · ขาดวันไหนไม่เป็นไร นับต่อจากเดิม · ครบ 7 วันเริ่มรอบใหม่</div>';
+function showLogin(){LG_SEEN=1;const lg=S.lg||{last:'',n:0},can=lgCan(),cur=lg.n%7;let h='<h2 style="margin:0">'+BI('gift')+' ล็อกอินรายวัน</h2><div class="sub">เข้าเกมวันละครั้งรับของ · ขาดวันไหนไม่เป็นไร นับต่อจากเดิม · ครบ 7 วันเริ่มรอบใหม่</div>';
   h+='<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;max-width:720px;margin:8px auto">';
   LGR.forEach((r,i)=>{const today=can&&i===cur,done=can?i<cur:i<((lg.n-1)%7+1);
     h+='<div style="margin:0;padding:8px 4px;text-align:center;border-radius:12px;background:'+(i===6?'linear-gradient(#5a4a12cc,#2a2208cc)':'#0b1a10cc')+';border:2px solid '+(today?'#ffd75a':done?'#4a6a4a':'#5c7c5c')+';'+(today?'box-shadow:0 0 18px #ffd75a88;':'')+(done?'opacity:.55;':'')+'display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:86px"><b style="font-size:13px;white-space:nowrap">วันที่ '+(i+1)+'</b><div style="font-size:12px;line-height:1.45;margin-top:4px;white-space:nowrap">'+lgText(r)+'</div>'+(done?'<div style="font-size:16px;margin-top:2px">✅</div>':'')+(i===6&&!done?'<small style="color:#ffd75a;margin-top:auto">รางวัลใหญ่</small>':'')+'</div>'});
-  h+='</div>'+(can?'<button class="big" data-a="lgc">🎁 รับรางวัลวันที่ '+(cur+1)+'</button>':'<div style="margin:4px auto;padding:6px 14px;border-radius:12px;background:#0b1a10cc;border:2px solid #4a6a4a;font-size:14px;white-space:nowrap">✅ วันนี้รับแล้ว · พรุ่งนี้รับวันที่ '+(lg.n%7+1)+'</div>')+
+  h+='</div>'+(can?'<button class="big" data-a="lgc">'+BI('gift')+'รับรางวัลวันที่ '+(cur+1)+'</button>':'<div style="margin:4px auto;padding:6px 14px;border-radius:12px;background:#0b1a10cc;border:2px solid #4a6a4a;font-size:14px;white-space:nowrap">✅ วันนี้รับแล้ว · พรุ่งนี้รับวันที่ '+(lg.n%7+1)+'</div>')+
     '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-width:720px;margin:6px auto;text-align:left">'+
     [['🪶','ขนนกฟีนิกซ์',S.fthV||0,'ชุบชีวิตฟรีรอบถัดไป'],['🎒','ตั๋วช่องอาวุธ',S.wslV||0,'เพิ่มช่องที่หน้าตัวละคร'],['🧩','ชิ้นส่วนสกิน',S.skp||0,'แลกสกินที่หน้าสกิน']].map(q=>'<div style="padding:5px 8px;border-radius:10px;background:#0006;border:1px solid #4a6a4a"><div style="font-size:13px;white-space:nowrap"><b>'+q[0]+' '+q[1]+': '+q[2]+'</b></div><div style="font-size:11px;color:#bcd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+q[3]+'</div></div>').join('')+'</div>'+
     '<button class="big sec" data-a="lgx">← กลับ</button>';page(h)}
@@ -4051,21 +4055,29 @@ const ICK={map:{forest:'forest',city:'city',hosp:'hosp',deadport:'port',darkgrav
 function EI(kind,key,fb){const n=ICK[kind][key];return n?'<i class="ei" style="--ic:url(img/ui/ic_'+n+'.png)"></i>':fb}
 function keyOf(d,o){return Object.keys(d).find(k=>d[k]===o)}
 // v104: ไอคอนรูปเล็กในข้อความ/แท็ก (แทนอิโมจิ)
-function TI(n){return '<i class="ti" style="--ic:url(img/ui/'+(n.indexOf('hud_')===0?'':'ic_')+n+'.png)"></i>'}
+const UIF=/^(hud|c|b|ev|st|it|star|pact|card|e)_/;
+function TI(n){return '<i class="ti" style="--ic:url(img/ui/'+(UIF.test(n)?'':'ic_')+n+'.png)"></i>'}
+function CI(id){return '<i class="ti" style="--ic:url(img/comp_'+id+'.png)"></i>'}
+function STARS(n,z){z=z||'1.4em';let h='';for(let i=0;i<3;i++)h+='<i class="ti" style="width:'+z+';height:'+z+';margin:0 1px;--ic:url(img/ui/star_'+(i<n?'on':'off')+'.png)"></i>';return h}
 function TK(kind,key,fb){const n=ICK[kind]&&ICK[kind][key];return n?TI(n):fb+' '}
 const SCRI='<i class="ei co" style="--ic:url(img/ui/hud_scrap.png)"></i>';
 // v104: ปุ่มลอยเป็นรูปไอคอนทั้งปุ่ม (กรอบเหล็ก) · glow = สีเรืองบอกสถานะ
 function icBtn(b,n,glow){if(!b)return;if(b._ic!==n){b._ic=n;b.textContent='';b.style.background='url(img/ui/ic_'+n+'.png) center/contain no-repeat';b.style.border='none';b.style.borderRadius='10px'}
   const f=(glow?'drop-shadow(0 0 5px '+glow+') ':'')+'drop-shadow(0 2px 3px #0009)';if(b._gl!==f){b._gl=f;b.style.filter=f}}
 // v104: ข้อความ HUD บนแคนวาส แทนอิโมจิบางตัวด้วยรูป
-const HUDI={};['coin','scrap','kill','time','relic','star','truck','wave'].forEach(k=>{const im=new Image();im.onload=()=>{HUDI[k]=im};im.src='img/ui/hud_'+k+'.png'});
-const HUDM=[['☠️',''],['⏱️','time'],['⏱','time'],['☠','kill'],['⭐','star'],['🔷','relic'],['⚙️','scrap'],['🚚','truck'],['🧟','wave'],['🪙','coin']];
-function hudSplit(s){const o=[];let b='';for(let i=0;i<s.length;){let h=null;for(const m of HUDM)if(s.startsWith(m[0],i)){h=m;break}
+const HUDI={};
+const HUDM=[['☠️','st_threat'],['⏱️','hud_time'],['⏱','hud_time'],['☠','hud_kill'],['⭐','hud_star'],['🔷','hud_relic'],['⚙️','hud_scrap'],['🚚','hud_truck'],['🧟','hud_wave'],['🪙','hud_coin'],
+  ['🌫️','ev_fog'],['🌧️','ev_rain'],['🌕','ev_blood'],['📦','ev_supply'],['👑','ev_elite'],['🎯','ev_mission'],['✨','st_revive'],['🪶','e_feather'],['📜','pact_scroll'],['💔','c_noheal'],['👥','c_horde'],['🐌','c_slow'],
+  ['⏰','it_timeup'],['🏅','ic_medal'],['🎁','ic_gift'],['📻','ic_radio'],['🔥','st_burn'],['❄️','st_freeze'],['💊','it_medkit'],['🚌','it_bus'],['📖','ic_story'],
+  ['👟','e_boots'],['🛡️','e_armor'],['🎲','e_crit'],['💚','e_regen'],['🔋','e_bat'],['💪','e_str'],['⛽','e_fuel']];
+HUDM.forEach(m=>{const f=m[1];if(HUDI[f]!==undefined)return;HUDI[f]=null;const im=new Image();im.onload=()=>{HUDI[f]=im};im.src='img/ui/'+f+'.png'});
+HUDI.truck=null;{const im=new Image();im.onload=()=>{HUDI.truck=im};im.src='img/ui/hud_truck.png'}
+function hudSplit(s){const o=[];let b='';for(let i=0;i<s.length;){if(s[i]==='\u0001'){if(b)o.push(b);b='';o.push(HUDI['comp_'+S.sel]);i++;continue}let h=null;for(const m of HUDM)if(s.startsWith(m[0],i)){h=m;break}
     if(h){if(h[1]&&HUDI[h[1]]){if(b)o.push(b);b='';o.push(HUDI[h[1]])}else b+=h[0];i+=h[0].length}else{b+=s[i];i++}}if(b)o.push(b);return o}
-function hudText(s,x,y,st){const g=hudSplit(s);if(g.length===1&&typeof g[0]==='string'){if(st)ctx.strokeText(s,x,y);ctx.fillText(s,x,y);return}
+function hudText(s,x,y,st,sh){const g=hudSplit(s);if(g.length===1&&typeof g[0]==='string'){if(st)ctx.strokeText(s,x,y);ctx.fillText(s,x,y);return}
   const fs=parseFloat((ctx.font.match(/([\d.]+)px/)||[0,14])[1]),z=fs*1.45,gp=fs*.1;let w=0;for(const p of g)w+=typeof p==='string'?ctx.measureText(p).width:z+gp;
   const al=ctx.textAlign;let cx=al==='center'?x-w/2:al==='right'?x-w:x;ctx.save();ctx.textAlign='left';
-  for(const p of g){if(typeof p==='string'){if(st)ctx.strokeText(p,cx,y);ctx.fillText(p,cx,y);cx+=ctx.measureText(p).width}else{ctx.drawImage(p,cx,y-fs*.36-z/2,z,z);cx+=z+gp}}ctx.restore()}
+  for(const p of g){if(typeof p==='string'){if(st)ctx.strokeText(p,cx,y);ctx.fillText(p,cx,y);cx+=ctx.measureText(p).width}else{if(!sh)ctx.drawImage(p,cx,y-fs*.36-z/2,z,z);cx+=z+gp}}ctx.restore()}
 const COINI='<i class="ei co" style="--ic:url(img/ui/ic_coin.png)"></i>';
 function BI(n){return '<i class="bi" style="--ic:url(img/ui/ic_'+n+'.png)"></i>'}
 function MI(n){return n[0]==='!'?'<i class="mi em">'+n.slice(1)+'</i>':'<i class="mi" style="--ic:url(img/ui/ic_'+n+'.png)"></i>'}
@@ -4073,7 +4085,7 @@ function showMenu(){
   state='menu';STORY_RUN=null;pickCfg();
   const C=CHARS[S.sel];
   page('<h1 style="margin:0"><img src="img/ui/logo.png" alt="ZOMBIE RUN" style="height:min(120px,26vh);filter:drop-shadow(0 4px 8px #000)"></h1>'+
-    '<div class="coin">🪙 '+S.coins+' <span class="tag" data-a="login" style="font-size:14px;vertical-align:middle">🎁 รายวัน'+(lgCan()?' <span style="color:#f66">●</span>':'')+'</span></div>'+
+    '<div class="coin">🪙 '+S.coins+' <span class="tag" data-a="login" style="font-size:14px;vertical-align:middle">'+TI('gift')+'รายวัน'+(lgCan()?' <span style="color:#f66">●</span>':'')+'</span></div>'+
     '<div>ตัวละคร: '+C.ic+' '+C.n+' | สถิติ: '+fmt(S.st.best)+'</div>'+
     '<div style="font-size:14px;color:#8cf">'+EI('map',M.id,M.ic)+M.n+' | '+EI('diff',keyOf(DIFF,D),D.ic)+D.n+' | '+EI('mode',keyOf(MODES,MO),MO.ic)+MO.n+'</div>'+
     menuCards()+
@@ -4083,7 +4095,7 @@ function showMenu(){
     '<button class="big sec sm" data-a="shop">'+BI('shop')+'ร้านอัป</button>'+
     '<button class="big sec sm" data-a="chars">'+BI('chars')+'ตัวละคร</button>'+
     '<button class="big sec sm" data-a="miss">'+BI('miss')+'ภารกิจ</button>'+
-    '<button class="big sec sm" data-a="quest">📋 เควส'+(questClaimable()?' <span style="color:#f66">●'+questClaimable()+'</span>':'')+'</button>'+
+    '<button class="big sec sm" data-a="quest">'+BI('quests')+'เควส'+(questClaimable()?' <span style="color:#f66">●'+questClaimable()+'</span>':'')+'</button>'+
     '<button class="big sec sm" data-a="evo">'+BI('evo')+'วิวัฒนาการ</button>'+
     '<button class="big sec sm" data-a="lb">'+BI('lb')+'อันดับ</button>'+
     '<button class="big sec sm" data-a="stats">'+BI('stats')+'สถิติ</button>'+
@@ -4138,7 +4150,7 @@ function showEvo(){
   h+='<div class="sub">🌟 ผสมขั้นสุด (ต้องวิวัฒนาการครบทั้ง 2 อย่าง แล้วเปิดหีบ) — รวมเหลือ 1 ช่อง</div>';
   FUS.forEach(f=>{const e1=EVO.find(e=>e.w===f.a),e2=EVO.find(e=>e.w===f.b);h+='<div class="card"><b>'+f.n+'</b><small>'+e1.n+' + '+e2.n+' — '+f.d+'</small></div>'});
   h+='<div class="sub">🔷 เรลิก 3 ชิ้น = คู่หูประจำตัว (ดรอปจากบอส ตัวทอง หีบ)</div>';
-  Object.keys(COMP).forEach(id=>{const c=COMP[id];h+='<div class="card"><b>'+c.ic+' '+c.n+' ('+CHARS[id].n+')</b><small>'+c.d+'</small></div>'});
+  Object.keys(COMP).forEach(id=>{const c=COMP[id];h+='<div class="card"><b>'+CI(id)+c.n+' ('+CHARS[id].n+')</b><small>'+c.d+'</small></div>'});
   h+='<button class="big sec" data-a="menu">← กลับ</button>';
   page(h);
 }
@@ -4179,7 +4191,7 @@ function showChars(){
 }
 function showMiss(){
   let done=0;ACH.forEach(a=>{if(S.ach[a.id])done++});
-  let h='<h2 style="margin:0">🏅 ภารกิจ ('+done+'/'+ACH.length+')</h2>';
+  let h='<h2 style="margin:0">'+BI('medal')+' ภารกิจ ('+done+'/'+ACH.length+')</h2>';
   ACH.forEach(a=>{
     const ok=S.ach[a.id];
     h+='<div class="card'+(ok?' done':'')+'"><div class="row"><b>'+(ok?'✅ ':'⬜ ')+a.n+'</b><span class="tag'+(ok?' ok':'')+'">+'+a.r+' 🪙</span></div></div>';
@@ -5126,7 +5138,7 @@ function gameOver0(win,how){
   LAST=(G.mode==='daily'?'📅 ท้าทายรายวัน '+G.daily.date+' | ':'')+'🧟 Zombie Run | '+M0.n+' '+D.n+' | รอด '+fmt(s)+' ฆ่า '+G.kills+' ตัว | คะแนน '+score.toLocaleString()+(win?' (ชนะ!)':how==='heli'?' (ถอนตัวสำเร็จ 🚁)':'')+' มาท้าสู้กันไหม?';
   checkAch();save();
   let h='<h1 style="margin:0">'+(sr?(win?'🏆 ผ่านด่าน '+G.stgId+'!':'💀 ด่าน '+G.stgId+' ล้มเหลว'):win?'🏆 ชนะแล้ว! คุณรอดมาได้':how==='heli'?'🚁 ถอนตัวสำเร็จ!':'💀 จบรอบ')+'</h1>'+
-    (sr&&win?'<div style="font-size:30px">'+'⭐'.repeat(sr.stars)+'☆'.repeat(3-sr.stars)+'</div><div style="font-size:13px;color:#bcd">★ ผ่านด่าน '+(sr.hp?'★':'☆')+' เลือด 50%+ '+(sr.s3?'★':'☆')+' '+s3Text(G.stg)+'</div>'+(sr.unl?'<div class="card" style="border-color:'+PCOL[sr.unl]+'"><b>🎉 ปลดล็อกตัวละครใหม่: '+CHARS[sr.unl].ic+' '+CHARS[sr.unl].n+'</b><small>ไปเลือกได้ที่หน้า 👤 ตัวละคร</small></div>':''):'')+
+    (sr&&win?'<div>'+STARS(sr.stars,'46px')+'</div><div style="font-size:13px;color:#bcd">★ ผ่านด่าน '+(sr.hp?'★':'☆')+' เลือด 50%+ '+(sr.s3?'★':'☆')+' '+s3Text(G.stg)+'</div>'+(sr.unl?'<div class="card" style="border-color:'+PCOL[sr.unl]+'"><b>🎉 ปลดล็อกตัวละครใหม่: '+CHARS[sr.unl].ic+' '+CHARS[sr.unl].n+'</b><small>ไปเลือกได้ที่หน้า 👤 ตัวละคร</small></div>':''):'')+
     '<div>'+EI('map',M0.id,M0.ic)+M0.n+' | '+EI('diff',keyOf(DIFF,D),D.ic)+D.n+' | '+EI('mode',keyOf(MODES,MO),MO.ic)+MO.n+'</div>'+
     '<div>รอดชีวิต '+fmt(s)+' | ฆ่า '+G.kills+' ตัว | LV '+G.lv+'</div>'+
     '<div>บอสที่ฆ่าได้: '+G.bossKills+' | วิวัฒนาการ: '+G.evoN+'</div>'+
@@ -5138,10 +5150,10 @@ function gameOver0(win,how){
     (G.ex?'<div>📡 อะไหล่ที่เก็บได้: '+G.ex.count+'/3'+(win?' | ป้องกันจุดอพยพสำเร็จ':G.ex.phase==='defend'?' | ป้องกันได้ '+fmt(Math.floor(45-G.ex.defend))+'/0:45':G.t>=G.goal?' | หมดเวลา':'')+'</div>':'')+
     '<div class="coin" style="color:#8cf">คะแนน '+score.toLocaleString()+(rk>=0?' (อันดับ '+(rk+1)+' 🏆)':'')+'</div>'+
     '<div class="coin">+'+rc+' 🪙'+(bonus?' (รวมโบนัสชนะ '+bonus+')':'')+' | รวม '+S.coins+'</div>';
-  if(G.newAch.length)h+='<div class="card done"><b>🏅 ภารกิจสำเร็จ</b><small>'+G.newAch.join('<br>')+'</small></div>';
-  if(qd.length||cqd.length)h+='<div class="card done"><b>📋 เควสสำเร็จ</b><small>'+qd.concat(cqd).join('<br>')+(qd.length?'<br>ไปกดรับรางวัลที่ 📋 เควส':'')+'</small></div>';
+  if(G.newAch.length)h+='<div class="card done"><b>'+TI('medal')+'ภารกิจสำเร็จ</b><small>'+G.newAch.join('<br>')+'</small></div>';
+  if(qd.length||cqd.length)h+='<div class="card done"><b>'+TI('quests')+'เควสสำเร็จ</b><small>'+qd.concat(cqd).join('<br>')+(qd.length?'<br>ไปกดรับรางวัลที่ 📋 เควส':'')+'</small></div>';
   if(sr&&win){const i=STAGE_ORDER.indexOf(G.stgId),nx=STAGE_ORDER[i+1];if(nx)h+='<button class="big" data-a="stg" data-i="'+nx+'">▶️ ด่านถัดไป '+nx+'</button>'}
-  if(sr)h+='<button class="big'+(win?' sec':'')+'" data-a="stg" data-i="'+G.stgId+'">🔁 '+(win?'เล่นด่าน '+G.stgId+' อีกครั้ง':'ลองด่าน '+G.stgId+' อีกครั้ง')+'</button><button class="big sec" data-a="story">📖 เลือกด่าน</button>';
+  if(sr)h+='<button class="big'+(win?' sec':'')+'" data-a="stg" data-i="'+G.stgId+'">🔁 '+(win?'เล่นด่าน '+G.stgId+' อีกครั้ง':'ลองด่าน '+G.stgId+' อีกครั้ง')+'</button><button class="big sec" data-a="story">'+BI('story')+'เลือกด่าน</button>';
   h+=(sr?'':'<button class="big" data-a="start">'+BI('retry')+'เล่นใหม่ ('+(MO.ic||'')+' '+MO.n+')</button>')+'<button class="big sec" data-a="share">'+BI('share')+'แชร์คะแนน</button>'+
      '<div class="grid2"><button class="big sec sm" data-a="mode">'+BI('map')+'แผนที่</button><button class="big sec sm" data-a="shop">'+BI('shop')+'ร้านอัป</button>'+
      '<button class="big sec sm" data-a="lb">'+BI('lb')+'อันดับ</button><button class="big sec sm" data-a="menu">เมนูหลัก</button></div>';
@@ -5467,7 +5479,7 @@ function draw(){
   WKEYS.forEach(k=>{if(G[k])wi+=(G.evo[k]?'★'+wn(k)[0]:wn(k)[0]+G[k])+' '});
   if(G.mevo)wi='⭐'+wi;
   let pi='';
-  if(G.boots)pi+='👟'+G.boots+' ';if(G.armor)pi+='🛡️'+G.armor+' ';if(G.crit)pi+='🎲'+G.crit+' ';if(G.regen)pi+='💚'+G.regen+' ';if(G.clk)pi+='⏱️'+G.clk+' ';if(G.bat)pi+='🔋'+G.bat+' ';if(G.str)pi+='💪'+G.str+' ';if(G.fuel)pi+='⛽'+G.fuel+' ';if(G.relic&&!G.comp)pi+='🔷'+G.relic+'/3 ';if(G.comp)pi+=COMP[S.sel].ic+' ';{const fl=FUS.filter(f=>G.fus[f.k]).map(f=>f.n.split(' ')[0]).join('');if(fl)pi+=fl+' '}if(G.ulv)pi+='⭐ULT'+(G.ulv+1)+' ';if(G.pacts)pi+='📜'+G.pactL.join('');
+  if(G.boots)pi+='👟'+G.boots+' ';if(G.armor)pi+='🛡️'+G.armor+' ';if(G.crit)pi+='🎲'+G.crit+' ';if(G.regen)pi+='💚'+G.regen+' ';if(G.clk)pi+='⏱️'+G.clk+' ';if(G.bat)pi+='🔋'+G.bat+' ';if(G.str)pi+='💪'+G.str+' ';if(G.fuel)pi+='⛽'+G.fuel+' ';if(G.relic&&!G.comp)pi+='🔷'+G.relic+'/3 ';if(G.comp)pi+=(HUDI['comp_'+S.sel]?'\u0001':COMP[S.sel].ic)+' ';{const fl=FUS.filter(f=>G.fus[f.k]).map(f=>f.n.split(' ')[0]).join('');if(fl)pi+=fl+' '}if(G.ulv)pi+='⭐ULT'+(G.ulv+1)+' ';if(G.pacts)pi+='📜'+G.pactL.join('');
   ctx.font='bold 13px sans-serif';
   if(wi)ctx.fillText(wi,12,84);
   if(pi)hudText(pi,12,102);
@@ -5515,7 +5527,7 @@ function draw(){
   if(G.ammo){const q=FXS[AMSP[G.ammo.k]];if(q&&q.f[3].complete){const hx=W_/2-50,hy=H_*.34;ctx.drawImage(q.f[(G.t*8|0)&3],hx-34,hy-18,36,36);ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(hx+4,hy-4,100,8);ctx.fillStyle=G.ammo.t<5?'#f66':'#8df';ctx.fillRect(hx+4,hy-4,100*G.ammo.t/G.ammo.m,8)}}
   if(G.ban.t>0&&!ovQ){ctx.globalAlpha=Math.min(1,G.ban.t);let bf=22;ctx.font='bold 22px sans-serif';const bw=ctx.measureText(G.ban.s).width,bm=W_*.9;if(bw>bm){bf=Math.max(13,Math.floor(22*bm/bw));ctx.font='bold '+bf+'px sans-serif'}ctx.textAlign='center';
     const by=Math.max(H_*.28,(G.ex||G.stg)?140:120);  // v87: ย่อให้พอดีจอ และเลื่อนลงไม่ทับข้อความมุมซ้ายบน
-    ctx.fillStyle='#000';ctx.fillText(G.ban.s,W_/2+2,by+2);ctx.fillStyle='#fd4';ctx.fillText(G.ban.s,W_/2,by);ctx.globalAlpha=1}
+    ctx.fillStyle='#000';hudText(G.ban.s,W_/2+2,by+2,0,1);ctx.fillStyle='#fd4';hudText(G.ban.s,W_/2,by);ctx.globalAlpha=1}
   if(G.ex)drawExtractionArrow();
   if(G.quest && G.quest.active)drawQuestArrow(); // [เพิ่มใหม่] วาดลูกศรชี้เป้าเควส
   drawV37Arrows();drawStoryArrows();
@@ -5916,7 +5928,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v104 (เกม v104) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v105 (เกม v105) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
