@@ -4885,7 +4885,7 @@ setInterval(()=>{try{vcUI()}catch(e){}},500);
 // ===================== v102: รายชื่อห้องสาธารณะ (Firebase Realtime Database) =====================
 // ตัวเกมยังเล่นแบบเครื่องต่อเครื่อง (PeerJS) เหมือนเดิม · Firebase ใช้แค่ "ประกาศ/ค้นหาห้อง"
 // ใส่ค่า config จาก Firebase Console ตรงนี้ (ค่าพวกนี้เปิดเผยได้ ไม่ใช่รหัสลับ — ความปลอดภัยคุมด้วย Rules)
-const FB_CFG=window.ZFB_CFG||null; /* ตัวอย่าง: {apiKey:"...",authDomain:"xxx.firebaseapp.com",databaseURL:"https://xxx-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"xxx",appId:"..."} */
+const FB_CFG=window.ZFB_CFG||{apiKey:"AIzaSyAjApijOTpCd-CGDyiiqlXnycd0deJnAXc",authDomain:"zombie-run-30d30.firebaseapp.com",databaseURL:"https://zombie-run-30d30-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"zombie-run-30d30",storageBucket:"zombie-run-30d30.firebasestorage.app",messagingSenderId:"898997023159",appId:"1:898997023159:web:ea5212e70a744f8cd63832"}; /* ตัวอย่าง: {apiKey:"...",authDomain:"xxx.firebaseapp.com",databaseURL:"https://xxx-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"xxx",appId:"..."} */
 const FB={db:null,ref:null,watch:null,rooms:{},ready:false,err:'',hb:null,loading:null};
 function fbOK(){return !!(FB_CFG&&FB_CFG.databaseURL)}
 function fbLib(){if(window.firebase&&window.firebase.database)return Promise.resolve();if(FB.loading)return FB.loading;
@@ -5870,7 +5870,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v102 (เกม v102) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v102.1 (เกม v102.1) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
