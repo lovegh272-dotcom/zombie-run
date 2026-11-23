@@ -1,4 +1,4 @@
-const C = 'zrun-v101';
+const C = 'zrun-v102';
 const FILES = ['./', 'index.html', 'manifest.json', 'icon.svg', 'icon-192.png', 'icon-512.png', 'img/z_goblin.png', 'img/z_screamer.png', 'img/z_shield.png', 'img/z_healer.png', 'img/z_necromancer.png'];
 self.addEventListener('install', e => {
   // ถ้าไฟล์ไหนไม่มี จะข้ามไปโดยไม่ทำให้การติดตั้งล้ม

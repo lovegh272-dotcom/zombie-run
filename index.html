@@ -4291,7 +4291,7 @@ function restoreSave(txt){
 }
 // ===================== v89: ออนไลน์ (เฟส 1: ห้อง + เชื่อมต่อ 2 เครื่อง) =====================
 // ใช้ PeerJS (WebRTC แบบ P2P) โหลดจาก CDN ตอนกดเข้าเมนูออนไลน์เท่านั้น · โฮสต์ = เครื่องที่สร้างห้อง
-const NET_VER='101',NET_PFX='zrun-v1-',NET_MAX=2,NET_ABC='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const NET_VER='102',NET_PFX='zrun-v1-',NET_MAX=2,NET_ABC='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const NET_ICE={config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}]}};
 const NET={peer:null,conns:[],role:null,code:'',me:null,pl:{},st:'idle',err:'',ping:0,pt:null,to:null,jc:'',inGame:0,sq:0};
 function netNick(){let n='';try{n=localStorage.znick||''}catch(e){}if(!n){n='ผู้เล่น'+(100+Math.floor(Math.random()*900));try{localStorage.znick=n}catch(e){}}return n}
@@ -4310,8 +4310,8 @@ function netToast(s){let el=document.getElementById('netT');if(!el){el=document.
 function netOwned(){return Object.keys(CHARS).filter(id=>S.chars.includes(id))}
 function netSend(c,m){try{if(c&&c.open)c.send(m)}catch(e){}}
 function netAll(m,skip){for(const c of NET.conns)if(c!==skip)netSend(c,m)}
-function netLobby(){if(NET.role==='host')netAll({t:'lobby',pl:NET.pl,code:NET.code,cfg:NET.cfg});netRender()}
-function netLeave(quiet){try{vcEnd()}catch(e){}
+function netLobby(){if(NET.role==='host'){netAll({t:'lobby',pl:NET.pl,code:NET.code,cfg:NET.cfg,pub:NET.pub?1:0});try{fbSync()}catch(e){}}netRender()}
+function netLeave(quiet){try{vcEnd()}catch(e){}try{fbUnpublish();fbUnwatch()}catch(e){}NET.pub=false;NET.ban={};
   clearInterval(NET.pt);clearTimeout(NET.to);
   if(NET.role==='guest')netAll({t:'bye'});
   for(const c of NET.conns){try{c.close()}catch(e){}}
@@ -4326,12 +4326,12 @@ async function netHost(){netLeave(true);NET.err='';NET.role='host';NET.st='loadi
   if(NET.role!=='host')return;
   const open=n=>{const code=Array.from({length:4},()=>NET_ABC[Math.floor(Math.random()*NET_ABC.length)]).join('');
     const p=new Peer(NET_PFX+code,NET_ICE);NET.peer=p;
-    p.on('open',id=>{if(NET.peer!==p)return;NET.code=code;NET.me=id;NET.st='lobby';NET.pl={};NET.cfg={map:MAPS[S.map]&&S.maps.includes(S.map)&&!MAPS[S.map].hidden?S.map:'forest',diff:DIFF[S.diff]?S.diff:'normal'};NET.pl[id]={n:netNick(),ch:S.sel,rd:false,host:1,ms:0,dev:devIcon()?1:0};netLobby();if(typeof sfx==='function')sfx('pickup')});
+    p.on('open',id=>{if(NET.peer!==p)return;NET.code=code;NET.me=id;NET.st='lobby';NET.pl={};NET.cfg={map:MAPS[S.map]&&S.maps.includes(S.map)&&!MAPS[S.map].hidden?S.map:'forest',diff:DIFF[S.diff]?S.diff:'normal'};NET.pub=!!NET.wantPub;NET.wantPub=0;NET.pl[id]={n:netNick(),ch:S.sel,rd:false,host:1,ms:0,dev:devIcon()?1:0};netLobby();if(NET.pub)fbPublish();if(typeof sfx==='function')sfx('pickup')});
     p.on('connection',c=>netAccept(c));p.on('call',c=>vcOnCall(c));
     p.on('disconnected',()=>{if(NET.peer===p&&!p.destroyed){try{p.reconnect()}catch(e){}}});
     p.on('error',e=>{if(NET.peer!==p)return;if(e.type==='unavailable-id'&&n<5){try{p.destroy()}catch(_){}open(n+1)}else if(e.type!=='peer-unavailable')netFail(netErrTxt(e))})};
   open(0)}
-function netAccept(c){
+function netAccept(c){if(NET.ban&&NET.ban[c.peer]){c.on('open',()=>{netSend(c,{t:'kick'});setTimeout(()=>{try{c.close()}catch(e){}},300)});return}
   if(NET.conns.length>=NET_MAX-1||NET.st!=='lobby'){c.on('open',()=>{netSend(c,{t:'full'});setTimeout(()=>{try{c.close()}catch(e){}},400)});return}
   NET.conns.push(c);
   c.on('data',d=>netOnHost(c,d));
@@ -4378,7 +4378,8 @@ function netOnGuest(d){if(!d||typeof d!=='object')return;
   if(d.t==='pz'){netPzRecv(d);return}
   if(d.t==='vc'||d.t==='spk'){vcMsg(d);return}
   if(netGameMsgGuest(d))return;
-  if(d.t==='lobby'){NET.pl=d.pl||{};NET.code=d.code||NET.code;if(d.cfg)NET.cfg=d.cfg;netRender()}
+  if(d.t==='lobby'){NET.pl=d.pl||{};NET.code=d.code||NET.code;if(d.cfg)NET.cfg=d.cfg;NET.pub=!!d.pub;netRender()}
+  else if(d.t==='kick'){netFail('🚫 โฮสต์เชิญคุณออกจากห้อง')}
   else if(d.t==='pong'){NET.ping=Math.round(performance.now()-d.ts);netAll({t:'lat',ms:NET.ping})}
   else if(d.t==='full')netFail('ห้องเต็มแล้ว (เล่นได้ '+NET_MAX+' คน)');
   else if(d.t==='ver')netFail('เวอร์ชันเกมไม่ตรงกัน (โฮสต์ v'+d.v+' / เรา v'+NET_VER+') · ปิดแอปแล้วเปิดใหม่ทั้งสองเครื่อง');
@@ -4387,7 +4388,14 @@ function netOnGuest(d){if(!d||typeof d!=='object')return;
 
 // ---------- คำสั่งจากปุ่ม ----------
 function netAct(a,i){const c0=NET.conns[0];
-  if(a==='on_host')netHost();
+  if(a==='on_host'){NET.wantPub=0;netHost()}
+  else if(a==='on_hostpub'){fbUnwatch();NET.wantPub=1;netHost()}
+  else if(a==='on_rooms'){NET.err='';NET.st='rooms';showRooms();fbWatch(()=>{if(NET.st==='rooms'&&state==='menu'&&document.getElementById('onl'))showRooms()})}
+  else if(a==='on_rback'){fbUnwatch();NET.st='idle';showOnline()}
+  else if(a==='on_room'){fbUnwatch();netJoin(i)}
+  else if(a==='on_quick')netQuick();
+  else if(a==='on_pub'&&NET.role==='host'&&NET.st==='lobby'){NET.pub=!NET.pub;if(NET.pub)fbPublish();else fbUnpublish();netLobby()}
+  else if(a==='on_kick'&&NET.role==='host'){const c=NET.conns.find(q=>q.peer===i);if(c){NET.ban=NET.ban||{};NET.ban[i]=1;const nm=(NET.pl[i]||{}).n;netSend(c,{t:'kick'});setTimeout(()=>{try{c.close()}catch(e){}},300);netToast('🚫 เชิญ '+(nm||'ผู้เล่น')+' ออกจากห้อง')}}
   else if(a==='on_join'){NET.err='';NET.st='join';netRender();setTimeout(()=>{const f=document.getElementById('netCode');if(f)f.focus()},120)}
   else if(a==='on_go'){const f=document.getElementById('netCode');netJoin(f?f.value:'')}
   else if(a==='on_leave'||a==='on_back'){netLeave(true);NET.err='';NET.st='idle';NET.started=0;netRender()}
@@ -4426,21 +4434,23 @@ function netRender(){netLobChat();if(state!=='menu'||ov.style.display!=='block'|
   showOnline(true);netLobChat()}
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='netLobbyIn')NET.draft=e.target.value});
 
-function showOnline(re){if(!re&&NET.st==='fail'){NET.st='idle';NET.err=''}state='menu';
+function showOnline(re){if(NET.st==='rooms')return showRooms();if(!re&&NET.st==='fail'){NET.st='idle';NET.err=''}state='menu';
   const st=NET.st,H='<h2 id="onl" style="margin:0">🌐 เล่นออนไลน์</h2>';let h=H;
   const modeCard='<div class="card"><b>🛡️ โหมด: ป้องกันรถ (ไม่จำกัดคลื่น)</b><small>เล่นด้วยกัน 2 คน · ช่วยกันสร้างป้องกัน · ล้มแล้วเพื่อนชุบได้ (ยืนข้างๆ 3 วิ)</small></div>';
   if(st==='idle'){
     h+=modeCard+'<div class="card"><div class="row"><span>ชื่อของคุณ</span><b>'+netEsc(netNick())+'</b></div><span class="tag" data-a="on_name">✏️ เปลี่ยนชื่อ</span></div>'+
-      '<button class="big" data-a="on_host">🏠 สร้างห้อง</button><button class="big" data-a="on_join">🔑 เข้าห้องเพื่อน</button>'+
-      '<div class="sub" style="max-width:360px">ต้องต่ออินเทอร์เน็ตทั้งสองเครื่อง · เครื่องที่สร้างห้องคือ "โฮสต์" (ควรเป็นเครื่องที่เน็ตแรงกว่า) · ระหว่างเล่นอย่าสลับแอป ไม่งั้นหลุด</div>'+
+      '<button class="big" data-a="on_quick">⚡ เล่นด่วน (หาห้องว่างให้)</button><button class="big" data-a="on_rooms">🔍 หาห้อง</button>'+
+      '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="big sec" data-a="on_hostpub" style="flex:1;min-width:150px">🌍 สร้างห้องสาธารณะ</button><button class="big sec" data-a="on_host" style="flex:1;min-width:150px">🔒 สร้างห้องส่วนตัว</button></div>'+
+      '<button class="big sec" data-a="on_join">🔑 เข้าห้องด้วยรหัส</button>'+
+      '<div class="sub" style="max-width:380px">🌍 ห้องสาธารณะ = ใครก็หาเจอและกดเข้าได้ · 🔒 ห้องส่วนตัว = เข้าได้ด้วยรหัสเท่านั้น · ระหว่างเล่นอย่าสลับแอป ไม่งั้นหลุด</div>'+
       '<button class="big sec" data-a="menu">← กลับ</button>'}
   else if(st==='join'){
     h+='<div class="card"><b>🔑 ใส่รหัสห้อง 4 ตัวจากเพื่อน</b>'+
       '<input id="netCode" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" value="'+netEsc(NET.jc||'')+'" style="display:block;width:100%;box-sizing:border-box;margin:8px 0 2px;font:inherit;font-size:34px;letter-spacing:12px;text-align:center;text-transform:uppercase;padding:8px;border-radius:12px;border:2px solid #6cf;background:#0b1520;color:#fff"></div>'+
       (NET.err?'<div style="color:#f88">'+netEsc(NET.err)+'</div>':'')+
       '<button class="big" data-a="on_go">✅ เข้าห้อง</button><button class="big sec" data-a="on_back">✖ ยกเลิก</button>'}
-  else if(st==='loading'||st==='connecting'){
-    h+='<div class="card" style="text-align:center"><b>⏳ '+(st==='loading'?(NET.role==='host'?'กำลังสร้างห้อง...':'กำลังเตรียมระบบออนไลน์...'):'กำลังเชื่อมต่อห้อง '+netEsc(NET.jc)+'...')+'</b><small>ใช้เวลาไม่เกิน 15 วินาที</small></div>'+
+  else if(st==='loading'||st==='connecting'||st==='quick'){
+    h+='<div class="card" style="text-align:center"><b>⏳ '+(st==='quick'?'⚡ กำลังหาห้องว่าง...':st==='loading'?(NET.role==='host'?'กำลังสร้างห้อง...':'กำลังเตรียมระบบออนไลน์...'):'กำลังเชื่อมต่อห้อง '+netEsc(NET.jc)+'...')+'</b><small>ใช้เวลาไม่เกิน 15 วินาที</small></div>'+
       '<button class="big sec" data-a="on_back">✖ ยกเลิก</button>'}
   else if(st==='fail'){
     h+='<div class="card" style="border-color:#f66"><b>⚠️ เชื่อมต่อไม่สำเร็จ</b><small>'+netEsc(NET.err)+'</small></div>'+
@@ -4448,10 +4458,10 @@ function showOnline(re){if(!re&&NET.st==='fail'){NET.st='idle';NET.err=''}state=
   else if(st==='lobby'){
     const ks=Object.keys(NET.pl),me=NET.pl[NET.me]||{},full=ks.length>=2,allRd=full&&ks.every(k=>NET.pl[k].rd);
     h+='<div class="card" style="text-align:center"><small>รหัสห้อง</small><div style="font-size:44px;font-weight:900;letter-spacing:10px;color:#ffd75a;line-height:1.1">'+netEsc(NET.code)+'</div>'+
-      (NET.role==='host'?'<span class="tag" data-a="on_copy">📤 ส่งรหัสให้เพื่อน</span>':'<small>📶 ปิง '+(NET.ping||'-')+' ms</small>')+'</div>';
+      (NET.role==='host'?'<span class="tag" data-a="on_copy">📤 ส่งรหัสให้เพื่อน</span><span class="tag'+(NET.pub?' ok':'')+'" data-a="on_pub">'+(NET.pub?'🌍 สาธารณะ':'🔒 ส่วนตัว')+'</span>':'<small>📶 ปิง '+(NET.ping||'-')+' ms · '+(NET.pub?'🌍 ห้องสาธารณะ':'🔒 ห้องส่วนตัว')+'</small>')+'</div>';
     h+=modeCard;
     for(const k of ks){const p=NET.pl[k],C=CHARS[p.ch]||CHARS.soldier;
-      h+='<div class="card'+(k===NET.me?' sel':'')+'"><div class="row"><b>'+(p.host?'👑 ':'')+C.ic+' '+netEsc(p.n)+(k===NET.me?' (คุณ)':'')+'</b><span class="tag'+(p.rd?' ok':'')+'">'+(p.rd?'✅ พร้อม':'⏳ ยังไม่พร้อม')+'</span></div><small>'+C.n+(p.host?' · โฮสต์':' · ปิง '+(p.ms||'-')+' ms')+'</small></div>'}
+      h+='<div class="card'+(k===NET.me?' sel':'')+'"><div class="row"><b>'+(p.host?'👑 ':'')+C.ic+' '+netEsc(p.n)+(k===NET.me?' (คุณ)':'')+'</b><span>'+(NET.role==='host'&&k!==NET.me?'<span class="tag" data-a="on_kick" data-i="'+netEsc(k)+'" style="margin-right:4px">🚫 เตะ</span>':'')+'<span class="tag'+(p.rd?' ok':'')+'">'+(p.rd?'✅ พร้อม':'⏳ ยังไม่พร้อม')+'</span></span></div><small>'+C.n+(p.host?' · โฮสต์':' · ปิง '+(p.ms||'-')+' ms')+'</small></div>'}
     if(!full)h+='<div class="card" style="opacity:.7;text-align:center"><b>⌛ รอเพื่อนเข้าห้อง...</b><small>ให้เพื่อนกด 🌐 เล่นออนไลน์ > 🔑 เข้าห้องเพื่อน แล้วใส่รหัสด้านบน</small></div>';
     {const cf=NET.cfg||{},M0=MAPS[cf.map]||MAPS.forest,D0=DIFF[cf.diff]||DIFF.normal;
       h+='<div class="card" style="padding:8px 10px"><div class="row"><b>🗺️ '+M0.ic+' '+M0.n+'</b><b>'+D0.ic+' '+D0.n+'</b></div>';
@@ -4486,7 +4496,7 @@ function netStartGame(cfg){
   NET.prev={mode:S.mode,diff:S.diff,map:S.map};S.mode='defendless';NET.tp=0;
   if(NET.role==='guest'){S.diff=DIFF[cfg.diff]?cfg.diff:S.diff;NET.map=cfg.map}else{if(MAPS[cfg.map]&&S.maps.includes(cfg.map))S.map=cfg.map;if(DIFF[cfg.diff])S.diff=cfg.diff}
   NET.inGame=1;NET.bub={};NET.sq=0;NET.bidc=0;NET.lph='';NET.glv=null;NET.gpend=0;NET.myUps={};NET.hd=0;NET.hrv=0;NET.lban='';NET.overMsg='';NET.zm=new Map();NET.zid=0;NET.sn=0;NET.snT=0;NET.inT=0;NET.lsh=0;NET.hold=0;NET.down=0;NET.lastS=performance.now();NET.wph='';
-  BUD=null;HB=null;start();
+  BUD=null;HB=null;start();try{if(NET.role==='host')fbSync()}catch(e){}
   const ks=Object.keys(NET.pl);
   if(NET.role==='host'){const gk=netGuestKey(),g=NET.pl[gk]||{},st=g.st||netStats(g.ch);
     BUD=netMate({on:1,x:P.x+44,y:P.y,tx:P.x+44,ty:P.y,ch:g.ch||'soldier',n:g.n||'เพื่อน',hp:st.hp,max:st.hp,dm:st.dm,rate:st.rate,rg:st.rg,pc:st.pc,st:0,sh:0,id:gk,shield:0,sk:[0,0,0,0]});
@@ -4498,7 +4508,7 @@ function netStartGame(cfg){
     P.x+=44;const st=netStats(S.sel);P.hp=P.max=st.hp;Z.length=0}
   G.ban={s:'🤝 เล่นด้วยกัน! ช่วยกันปกป้องรถ'+(NET.role==='host'?' · คุณเป็นคนสร้างป้องกัน':' · โฮสต์เป็นคนสร้างป้องกัน'),t:4}}
 function netRestore(){NET.tp=0;try{netPzHide()}catch(e){}if(NET.prev){S.mode=NET.prev.mode;S.diff=NET.prev.diff;if(NET.prev.map)S.map=NET.prev.map;NET.prev=null}}
-function netEndGame(){NET.inGame=0;try{netChatClose();netChatBtn();netLogDraw()}catch(e){}NET.hd=0;NET.gpend=0;{const e=document.getElementById('netUp');if(e)e.remove()}BUD=null;HB=null;NET.map=null;netRestore();
+function netEndGame(){NET.inGame=0;setTimeout(()=>{try{fbSync()}catch(e){}},50);try{netChatClose();netChatBtn();netLogDraw()}catch(e){}NET.hd=0;NET.gpend=0;{const e=document.getElementById('netUp');if(e)e.remove()}BUD=null;HB=null;NET.map=null;netRestore();
   for(const k in NET.pl)NET.pl[k].rd=false;NET.started=0;if(NET.role==='host')netAll({t:'lobby',pl:NET.pl,code:NET.code})}
 function netQuitToRoom(msg){ // ผู้เข้าร่วม: โฮสต์หลุด/ออก ระหว่างเล่น
   NET.inGame=0;NET.gpend=0;{const e=document.getElementById('netUp');if(e)e.remove()}BUD=null;HB=null;netRestore();state='menu';ov.style.display='block';try{syncMbg()}catch(e){}}
@@ -4757,7 +4767,7 @@ function netBubble(x,y,key){const b=NET.bub[key];if(!b||!G||G.t>b.t||b.t-G.t>3.6
 const DEV={god:0,nocd:0,sp:1,scrap:0,bld:0,bfz:0};
 function devIcon(){try{return devOn()&&localStorage.zdevI==='1'}catch(e){return false}}
 function devHostOK(){const ks=Object.keys(NET.pl||{});return ks.length>0&&ks.every(k=>NET.pl[k].dev)}
-function devAllowed(){if(!devIcon())return false;if(!NET.inGame&&NET.st!=='lobby')return true;if(NET.role==='host')return true;return devHostOK()}
+function devAllowed(){if(!devIcon())return false;if(NET.pub&&(NET.inGame||NET.st==='lobby'))return false;if(!NET.inGame&&NET.st!=='lobby')return true;if(NET.role==='host')return true;return devHostOK()}
 function devInGame(){return state!=='menu'&&!!G&&!!P}
 function devBtnSync(){let b=document.getElementById('devI');const on=devAllowed()&&(state==='menu'||state==='play'||state==='paused'||state==='build'||state==='lvl');
   if(!b){b=document.createElement('button');b.id='devI';b.textContent='🛠';
@@ -4870,6 +4880,47 @@ function vcUI(){const inG=NET.inGame&&(state==='play'||state==='paused'),inRoom=
   if(lm){lm.style.display=inRoom?'':'none';lm.textContent=micTxt;lm.style.background=micBg;lm.style.borderColor=micBd}
   if(lv){lv.style.display=inRoom&&(VC.fr||VC.frOn)?'':'none';lv.textContent=muTxt;lv.style.borderColor=muBd}}
 setInterval(()=>{try{vcUI()}catch(e){}},500);
+
+
+// ===================== v102: รายชื่อห้องสาธารณะ (Firebase Realtime Database) =====================
+// ตัวเกมยังเล่นแบบเครื่องต่อเครื่อง (PeerJS) เหมือนเดิม · Firebase ใช้แค่ "ประกาศ/ค้นหาห้อง"
+// ใส่ค่า config จาก Firebase Console ตรงนี้ (ค่าพวกนี้เปิดเผยได้ ไม่ใช่รหัสลับ — ความปลอดภัยคุมด้วย Rules)
+const FB_CFG=window.ZFB_CFG||null; /* ตัวอย่าง: {apiKey:"...",authDomain:"xxx.firebaseapp.com",databaseURL:"https://xxx-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"xxx",appId:"..."} */
+const FB={db:null,ref:null,watch:null,rooms:{},ready:false,err:'',hb:null,loading:null};
+function fbOK(){return !!(FB_CFG&&FB_CFG.databaseURL)}
+function fbLib(){if(window.firebase&&window.firebase.database)return Promise.resolve();if(FB.loading)return FB.loading;
+  const V='10.12.2',L=u=>new Promise((res,rej)=>{const sc=document.createElement('script');sc.src=u;sc.onload=res;sc.onerror=()=>{sc.remove();rej(new Error('lib'))};document.head.appendChild(sc)});
+  FB.loading=L('https://www.gstatic.com/firebasejs/'+V+'/firebase-app-compat.js').then(()=>L('https://www.gstatic.com/firebasejs/'+V+'/firebase-database-compat.js')).catch(e=>{FB.loading=null;throw e});return FB.loading}
+async function fbInit(){if(FB.db)return true;if(!fbOK()){FB.err='ยังไม่ได้ตั้งค่าเซิร์ฟเวอร์ห้อง (Firebase)';return false}
+  try{await fbLib();const app=firebase.apps&&firebase.apps.length?firebase.app():firebase.initializeApp(FB_CFG);FB.db=firebase.database(app);FB.ready=true;return true}
+  catch(e){FB.err='เชื่อมต่อเซิร์ฟเวอร์ห้องไม่ได้ (เช็กอินเทอร์เน็ต)';return false}}
+// ---------- โฮสต์: ประกาศห้อง ----------
+function fbRoomData(){const cf=NET.cfg||{},me=NET.pl[NET.me]||{};return{n:String(me.n||'ผู้เล่น').slice(0,16),ch:me.ch||'soldier',map:cf.map||'forest',diff:cf.diff||'normal',pl:Object.keys(NET.pl).length,max:NET_MAX,v:NET_VER,st:NET.inGame?'play':'lobby',ts:firebase.database.ServerValue.TIMESTAMP}}
+async function fbPublish(){if(NET.role!=='host'||!NET.pub||!NET.code)return;if(!(await fbInit()))return;
+  try{const r=FB.db.ref('rooms/'+NET.code);if(FB.ref&&FB.ref.key!==NET.code)fbUnpublish();FB.ref=r;r.onDisconnect().remove();await r.set(fbRoomData());
+    clearInterval(FB.hb);FB.hb=setInterval(()=>{if(FB.ref&&NET.pub&&NET.role==='host')FB.ref.update({ts:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{})},60000)}catch(e){}}
+function fbSync(){if(!FB.ref||NET.role!=='host')return;if(!NET.pub){fbUnpublish();return}try{FB.ref.update(fbRoomData()).catch(()=>{})}catch(e){}}
+function fbUnpublish(){clearInterval(FB.hb);FB.hb=null;const r=FB.ref;FB.ref=null;if(r){try{r.onDisconnect().cancel();r.remove().catch(()=>{})}catch(e){}}}
+// ---------- ผู้เล่น: ดูรายการห้อง ----------
+function fbJoinable(){const now=Date.now(),L=[];for(const k in FB.rooms){const r=FB.rooms[k];if(!r||r.v!==NET_VER||r.st!=='lobby'||(r.pl||0)>=(r.max||2))continue;if(r.ts&&now-r.ts>180000)continue;L.push(Object.assign({code:k},r))}
+  return L.sort((a,b)=>(b.ts||0)-(a.ts||0))}
+async function fbWatch(cb){if(!(await fbInit())){cb&&cb();return false}fbUnwatch();
+  try{const q=FB.db.ref('rooms').orderByChild('ts').limitToLast(40);FB.watch=q;q.on('value',sn=>{FB.rooms=sn.val()||{};FB.err='';cb&&cb()},e=>{FB.err='อ่านรายการห้องไม่ได้';cb&&cb()})}catch(e){FB.err='อ่านรายการห้องไม่ได้';cb&&cb();return false}return true}
+function fbUnwatch(){if(FB.watch){try{FB.watch.off()}catch(e){}FB.watch=null}}
+// ---------- หน้า "หาห้อง" ----------
+function showRooms(){NET.st='rooms';state='menu';let h='<h2 id="onl" style="margin:0">🔍 หาห้อง</h2>';
+  if(!fbOK())h+='<div class="card" style="border-color:#f9c74f"><b>⚙️ ยังไม่ได้ตั้งค่าเซิร์ฟเวอร์ห้อง</b><small>ต้องใส่ค่า Firebase ในเกมก่อน (FB_CFG) · ระหว่างนี้ใช้ "เข้าห้องด้วยรหัส" ได้ตามปกติ</small></div>';
+  else if(!FB.ready&&!FB.err)h+='<div class="card" style="text-align:center"><b>⏳ กำลังโหลดรายการห้อง...</b></div>';
+  else if(FB.err)h+='<div class="card" style="border-color:#f66"><b>⚠️ '+netEsc(FB.err)+'</b></div>';
+  else{const L=fbJoinable();
+    if(!L.length)h+='<div class="card" style="text-align:center;opacity:.85"><b>ยังไม่มีห้องว่างตอนนี้</b><small>สร้างห้องสาธารณะเองเลย แล้วรอคนเข้า</small></div>';
+    for(const r of L){const M0=MAPS[r.map]||MAPS.forest,D0=DIFF[r.diff]||DIFF.normal,C=CHARS[r.ch]||CHARS.soldier;
+      h+='<div class="card" data-a="on_room" data-i="'+netEsc(r.code)+'" style="cursor:pointer"><div class="row"><b>'+C.ic+' '+netEsc(r.n)+'</b><span class="tag ok">เข้าห้อง ('+(r.pl||1)+'/'+(r.max||2)+')</span></div><small>'+M0.ic+' '+M0.n+' · '+D0.ic+' '+D0.n+' · 🛡️ ป้องกันรถ</small></div>'}}
+  h+='<button class="big" data-a="on_hostpub">🌍 สร้างห้องสาธารณะ</button><button class="big sec" data-a="on_rback">← กลับ</button>';
+  page(h)}
+async function netQuick(){NET.err='';NET.st='quick';netRender();if(!(await fbWatch()))return netFail(FB.err||'เชื่อมต่อเซิร์ฟเวอร์ห้องไม่ได้');
+  await new Promise(r=>setTimeout(r,1200));const L=fbJoinable();fbUnwatch();
+  if(L.length){netToast('⚡ เจอห้องของ '+L[0].n);netJoin(L[0].code)}else{netToast('⚡ ยังไม่มีห้องว่าง · สร้างห้องสาธารณะให้แล้ว รอคนเข้า');NET.wantPub=1;netHost()}}
 
 ov.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b)return;
@@ -5819,7 +5870,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v101 (เกม v101) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v102 (เกม v102) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
