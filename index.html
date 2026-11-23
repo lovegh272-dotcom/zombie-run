@@ -1771,7 +1771,7 @@ function muzzle(){
   return {x:P.x+(left?-x:x),y:P.y+y};
 }
 function useSkill(i){
-  if(state!=='play')return;if(NETG()){netToast('สกิลในโหมดออนไลน์จะมาใน v92');return}const s=SK[i];if(!s||s.t>0)return;
+  if(state!=='play')return;if(NETG()){netToast('สกิลในโหมดออนไลน์จะมาใน v92');return}if(NET.hd)return;const s=SK[i];if(!s||s.t>0)return;
   s.t=s.cd*G.cdMul;sfx('skill');if(i>0)P.aft=G.t+.35;
   {const pc=PCOL[S.sel]||'#3a8cff',rgb=hexRGB(pc);
    FX.push({x:P.x,y:P.y,r:0,max:i===3?340:i===1?200:120,t:0,c:rgb});burst(P.x,P.y,pc,i===3?26:12);
@@ -3126,6 +3126,7 @@ function update(dt){
   if(keys['w']||keys['arrowup'])my-=1;if(keys['s']||keys['arrowdown'])my+=1;
   if(keys['a']||keys['arrowleft'])mx-=1;if(keys['d']||keys['arrowright'])mx+=1;
   let m=Math.hypot(mx,my);if(m>1){mx/=m;my/=m;m=1}
+  if(NET.hd){mx=my=0;m=0}  // v91: ล้มอยู่ เดินไม่ได้
   if(m>0.1){P.fx=mx/m;P.fy=my/m}
   {const w0=Math.floor(P.wk/Math.PI);P.wk+=m*dt*14;if(m>.3&&Math.floor(P.wk/Math.PI)!==w0)sfx('step')}
   P.wm=Math.max(0,Math.min(1,(P.wm||0)+(m-(P.wm||0))*Math.min(1,dt*12)));P.mf=Math.max(0,P.mf-dt); // v16: wm = ความแรงท่าเดิน (นุ่มเข้า-ออก)
@@ -3350,7 +3351,7 @@ function update(dt){
     const rf=G.range/(380*(CHARS[id].range||1)),rng=id==='sniper'?G.range*1.6:id==='berserk'?150*rf:id==='shot'?230*rf:G.range;
     let n=null,nd=rng;const man=manual();
     if(!man)for(const z of Z){const d=Math.hypot(z.x-P.x,z.y-P.y);if(d<nd){nd=d;n=z}}
-    if(man?AIM.on:n){  // v17: โหมดยิงเอง ยิงเฉพาะตอนกดค้าง ไปทิศ AIM.a
+    if(!NET.hd&&(man?AIM.on:n)){  // v17: โหมดยิงเอง ยิงเฉพาะตอนกดค้าง ไปทิศ AIM.a
       const base=man?AIM.a:Math.atan2(n.y-P.y,n.x-P.x);P.aim=base;P.mf=.07;
       const bm=(G.sbuf>0?1.35:1)*(G.scrit>0?2:1),bc=G.scrit>0?'#ff4':null,mp=muzzle(),nb0=B.length;
       if(id==='blader'){  // ปาดาวกระจายเป็นพัด
@@ -3514,7 +3515,7 @@ function update(dt){
     const z=Z[i],T=z.T;
     if(z.hp<=0){z.dead=1;killZ(z);Z[i]=Z[Z.length-1];Z.pop();continue}
     z.flash=Math.max(0,z.flash-dt);z.bh=Math.max(0,z.bh-dt);
-        let TX=P.x,TY=P.y,tB=false;if(BUD&&!BUD.down&&(BUD.x-z.x)**2+(BUD.y-z.y)**2<(P.x-z.x)**2+(P.y-z.y)**2){TX=BUD.x;TY=BUD.y;tB=true}  // v90: ไล่คนที่ใกล้กว่า
+        let TX=P.x,TY=P.y,tB=false;if(BUD&&!BUD.down&&(NET.hd||(BUD.x-z.x)**2+(BUD.y-z.y)**2<(P.x-z.x)**2+(P.y-z.y)**2)){TX=BUD.x;TY=BUD.y;tB=true}  // v90: ไล่คนที่ใกล้กว่า
         const a=Math.atan2(TY-z.y,TX-z.x),d=Math.hypot(TX-z.x,TY-z.y);z.na=a;
     z.ph+=dt*5;
     let spd=fr?0:T.spd*(1+(D.sp-1)*.4)*G.zsm*(G.ev==='blood'?1.12:1),ang=a;
@@ -3690,14 +3691,14 @@ D.dm = Math.min(D.dm*1.2, DIFF[G.dk].dm*3);
     for(let i=TXT.length-1;i>=0;i--){const t=TXT[i];t.y-=40*dt;if((t.l-=dt)<=0)TXT.splice(i,1)}
   for(let i=DECALS.length-1;i>=0;i--){if((DECALS[i].t-=dt)<=0)DECALS.splice(i,1)}
   if(G.ult&&G.ult.t>0&&G.ult.k==='berserk'&&P.hp<1)P.hp=1;
-  if(P.hp<=0){
+  if(P.hp<=0&&!(G.rev<=0&&netHostDown())){
     if(G.rev>0){
       G.rev--;P.hp=P.max*.5;P.inv=3;P.shield=3;EB.length=0;G.shake=14;sfx('boom');
       FX.push({x:P.x,y:P.y,r:0,max:350,t:0,c:'120,255,160'});
       Z.forEach(z=>{if(z.T.kind==='boss')return;const d=Math.hypot(z.x-P.x,z.y-P.y);
         if(d<350){const a=Math.atan2(z.y-P.y,z.x-P.x);z.x+=Math.cos(a)*220;z.y+=Math.sin(a)*220}});
       G.ban={s:'✨ ชุบชีวิต!',t:2};
-    }else if(!G.rvAsk&&(G.fth||!G.rvPaid)){G.rvAsk=1;reviveOffer()}else gameOver(false);
+    }else if(!G.rvAsk&&(G.fth||!G.rvPaid)&&!NET.inGame){G.rvAsk=1;reviveOffer()}else gameOver(false);
   }
 }
 
@@ -4080,6 +4081,8 @@ function defSpawnOne(){const d=G.def,a=Math.random()*6.28,c={x:d.x+Math.cos(a)*8
 function updDef(dt){const d=G.def;if(d.hit>0)d.hit-=dt;
   // ผู้เล่นชนสิ่งก่อสร้างทึบ (ยกเว้นประตู)
   for(const o of d.blds){const b=DEFB[o.k];if(b.solid&&o.k!=='gate'&&!o.hid)boxPush(P,P.r||14,o)}
+  if(d.ph==='build'&&d.hp<d.max){let n=0;if(P.hp>0&&!NET.hd&&Math.hypot(P.x-d.x,P.y-d.y)<100)n++;if(BUD&&!BUD.down&&Math.hypot(BUD.x-d.x,BUD.y-d.y)<100)n++;  // v91: ยืนใกล้รถช่วงพัก = ซ่อมรถ 1%/วิ ต่อคน
+    if(n){d.hp=Math.min(d.max,d.hp+d.max*.01*n*dt);d.rpT=(d.rpT||0)-dt;if(d.rpT<=0){d.rpT=.8;addTxt(d.x+(Math.random()-.5)*40,d.y-50,'🔧+','#6cf')}}}
   if(d.ph==='build'){d.t-=dt;if(d.t<=0){d.wave++;d.ph='wave';d.q=d.plan.length;d.st=0;d.hw0=d.hp;
       G.ban={s:'🧟 คลื่นที่ '+d.wave+(d.end?'':'/10')+' มาแล้ว!'+(d.wave%5===0?' (มีบอส!)':''),t:2.5};sfx('event');
       if(d.wave%5===0){if(d.end&&d.wave%10===0&&typeof spawnDis==='function'){spawnDis(['dtitan','dhive','dstorm'][(d.wave/10-1)%3])}else spawnBoss();if(G.boss){G.boss.hp*=defScale(d.wave)*.6;G.boss.max=G.boss.hp}}}}
@@ -4478,7 +4481,7 @@ function restoreSave(txt){
 }
 // ===================== v89: ออนไลน์ (เฟส 1: ห้อง + เชื่อมต่อ 2 เครื่อง) =====================
 // ใช้ PeerJS (WebRTC แบบ P2P) โหลดจาก CDN ตอนกดเข้าเมนูออนไลน์เท่านั้น · โฮสต์ = เครื่องที่สร้างห้อง
-const NET_VER='90',NET_PFX='zrun-v1-',NET_MAX=2,NET_ABC='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const NET_VER='91',NET_PFX='zrun-v1-',NET_MAX=2,NET_ABC='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const NET_ICE={config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}]}};
 const NET={peer:null,conns:[],role:null,code:'',me:null,pl:{},st:'idle',err:'',ping:0,pt:null,to:null,jc:'',inGame:0,sq:0};
 function netNick(){let n='';try{n=localStorage.znick||''}catch(e){}if(!n){n='ผู้เล่น'+(100+Math.floor(Math.random()*900));try{localStorage.znick=n}catch(e){}}return n}
@@ -4523,11 +4526,11 @@ function netAccept(c){
   NET.conns.push(c);
   c.on('data',d=>netOnHost(c,d));
   const gone=()=>{const i=NET.conns.indexOf(c);if(i<0)return;NET.conns.splice(i,1);const p=NET.pl[c.peer];delete NET.pl[c.peer];
-    for(const k in NET.pl)NET.pl[k].rd=false;if(p)netToast('🚪 '+p.n+' ออกจากห้อง');if(NET.inGame&&BUD){BUD=null;G.ban={s:'🚪 '+(p?p.n:'เพื่อน')+' หลุดจากเกม · เล่นต่อคนเดียว',t:3}}netLobby()};
+    for(const k in NET.pl)NET.pl[k].rd=false;if(p)netToast('🚪 '+p.n+' ออกจากห้อง');if(NET.inGame&&BUD){BUD=null;if(NET.hd){NET.hd=0;setTimeout(()=>{if(state==='play')gameOver(false)},50)}G.ban={s:'🚪 '+(p?p.n:'เพื่อน')+' หลุดจากเกม · เล่นต่อคนเดียว',t:3}}netLobby()};
   c.on('close',gone);c.on('error',gone)}
 function netOnHost(c,d){if(!d||typeof d!=='object')return;const me=NET.pl[c.peer];
   if(NET.inGame&&netGameMsgHost(c,d))return;
-  if(d.t==='gq'){if(BUD){G.ban={s:'🚪 '+BUD.n+' จบรอบไปก่อน · เล่นต่อคนเดียว',t:3};BUD=null}return}
+  if(d.t==='gq'){if(BUD){G.ban={s:'🚪 '+BUD.n+' จบรอบไปก่อน · เล่นต่อคนเดียว',t:3};BUD=null;if(NET.hd){NET.hd=0;gameOver(false)}}return}
   if(d.t==='hello'){if(d.v!==NET_VER){netSend(c,{t:'ver',v:NET_VER});setTimeout(()=>{try{c.close()}catch(e){}},400);return}
     NET.pl[c.peer]={n:String(d.n||'เพื่อน').slice(0,16),ch:CHARS[d.ch]?d.ch:'soldier',rd:false,ms:0,st:d.st||null};netToast('👋 '+NET.pl[c.peer].n+' เข้าห้องแล้ว');if(typeof sfx==='function')sfx('pickup');netLobby()}
   else if(!me)return;
@@ -4635,7 +4638,7 @@ function netGuestKey(){return Object.keys(NET.pl).find(k=>k!==NET.me)}
 function netStartGame(cfg){
   NET.prev={mode:S.mode,diff:S.diff};S.mode='defendless';
   if(NET.role==='guest'){S.diff=DIFF[cfg.diff]?cfg.diff:S.diff;NET.map=cfg.map}
-  NET.inGame=1;NET.sq=0;NET.lban='';NET.overMsg='';NET.zm=new Map();NET.zid=0;NET.sn=0;NET.snT=0;NET.inT=0;NET.lsh=0;NET.hold=0;NET.down=0;NET.lastS=performance.now();NET.wph='';
+  NET.inGame=1;NET.sq=0;NET.hd=0;NET.hrv=0;NET.lban='';NET.overMsg='';NET.zm=new Map();NET.zid=0;NET.sn=0;NET.snT=0;NET.inT=0;NET.lsh=0;NET.hold=0;NET.down=0;NET.lastS=performance.now();NET.wph='';
   BUD=null;HB=null;start();
   const ks=Object.keys(NET.pl);
   if(NET.role==='host'){const gk=netGuestKey(),g=NET.pl[gk]||{},st=g.st||netStats(g.ch);
@@ -4646,18 +4649,28 @@ function netStartGame(cfg){
     P.x+=44;const st=netStats(S.sel);P.hp=P.max=st.hp;Z.length=0}
   G.ban={s:'🤝 เล่นด้วยกัน! ช่วยกันปกป้องรถ'+(NET.role==='host'?' · คุณเป็นคนสร้างป้องกัน':' · โฮสต์เป็นคนสร้างป้องกัน'),t:4}}
 function netRestore(){if(NET.prev){S.mode=NET.prev.mode;S.diff=NET.prev.diff;NET.prev=null}}
-function netEndGame(){NET.inGame=0;BUD=null;HB=null;NET.map=null;netRestore();
+function netEndGame(){NET.inGame=0;NET.hd=0;BUD=null;HB=null;NET.map=null;netRestore();
   for(const k in NET.pl)NET.pl[k].rd=false;NET.started=0;if(NET.role==='host')netAll({t:'lobby',pl:NET.pl,code:NET.code})}
 function netQuitToRoom(msg){ // ผู้เข้าร่วม: โฮสต์หลุด/ออก ระหว่างเล่น
   NET.inGame=0;BUD=null;HB=null;netRestore();state='menu';ov.style.display='block';try{syncMbg()}catch(e){}}
 
 // ---------- โฮสต์: ทุกเฟรมหลัง update() ----------
+function netHN(){const m=NET.pl[NET.me];return m?m.n:'โฮสต์'}
+function netHostDown(){if(!NETH()||!BUD||BUD.down)return false;
+  if(!NET.hd){NET.hd=1;NET.hrv=0;P.hp=0;P.inv=99;P.shield=0;G.shake=12;sfx('hurt');addTxt(P.x,P.y-40,'💀 ล้ม!','#f66')}return true}
+function netHostUp(why){NET.hd=0;NET.hrv=0;P.hp=Math.max(1,P.max*.5);P.inv=2;sfx('lvl');FX.push({x:P.x,y:P.y,r:0,max:120,t:0,c:'120,255,160'});G.ban={s:why,t:2}}
 function budHurt(a){const b=BUD;if(!b||b.down||b.inv>0)return;b.hp-=a*D.dm;b.hit=.15;if(b.hp<=0){b.hp=0;b.down=1;b.rv=0;addTxt(b.x,b.y-40,'💀 '+b.n+' ล้ม!','#f66');sfx('hurt')}}
 function netHU(dt){const b=BUD;if(!b)return;
   b.x+=(b.tx-b.x)*Math.min(1,dt*14);b.y+=(b.ty-b.y)*Math.min(1,dt*14);b.wk+=b.wm*dt*14;b.mf=Math.max(0,b.mf-dt);b.inv=Math.max(0,b.inv-dt);if(b.hit>0)b.hit-=dt;
   const d=G.def;if(d&&NET.wph==='wave'&&d.ph==='build'){b.hp=Math.min(b.max,b.hp+b.max*.3);if(b.down){b.down=0;b.hp=Math.max(b.hp,b.max*.5);b.inv=2;G.ban={s:'✨ '+b.n+' ฟื้นแล้ว (ผ่านคลื่น)',t:2}}}
+  if(d&&NET.wph==='wave'&&d.ph==='build'&&NET.hd)netHostUp('✨ '+netHN()+' ฟื้นแล้ว (ผ่านคลื่น)');
   if(d)NET.wph=d.ph;
-  if(b.down){const near=Math.hypot(P.x-b.x,P.y-b.y)<75&&P.hp>0;b.rv=near?b.rv+dt:Math.max(0,b.rv-dt*.5);
+  if(NET.hd){if(b.down){NET.hd=0;G.ban={s:'💀 ล้มทั้งทีม!',t:2};gameOver(false);return}
+    const near=Math.hypot(P.x-b.x,P.y-b.y)<75;NET.hrv=near?NET.hrv+dt:Math.max(0,NET.hrv-dt*.5);if(NET.hrv>=3)netHostUp('✨ '+b.n+' ชุบ '+netHN()+' สำเร็จ!')}
+  if(!b.down){for(let i=GEM.length-1;i>=0;i--){const g=GEM[i],q=Math.hypot(b.x-g.x,b.y-g.y);if(q<90){const a=Math.atan2(b.y-g.y,b.x-g.x);g.x+=Math.cos(a)*520*dt;g.y+=Math.sin(a)*520*dt}
+      if(q<20){G.xp+=g.v*G.xpm;GEM.splice(i,1);while(G.xp>=G.need){G.xp-=G.need;G.lv++;G.need=Math.floor(10+G.lv*8);G.pend++}openNext()}}
+    for(let i=HEART.length-1;i>=0;i--){const h=HEART[i];if(Math.hypot(b.x-h.x,b.y-h.y)<26){b.hp=Math.min(b.max,b.hp+b.max*.15);HEART.splice(i,1);burst(b.x,b.y,'#f55',10);addTxt(b.x,b.y-24,'+HP','#6f6')}}}
+  if(b.down){const near=Math.hypot(P.x-b.x,P.y-b.y)<75&&P.hp>0&&!NET.hd;b.rv=near?b.rv+dt:Math.max(0,b.rv-dt*.5);
     if(b.rv>=3){b.down=0;b.rv=0;b.hp=b.max*.5;b.inv=2;sfx('lvl');FX.push({x:b.x,y:b.y,r:0,max:120,t:0,c:'120,255,160'});G.ban={s:'✨ ชุบ '+b.n+' สำเร็จ!',t:2}}}
   else{b.st-=dt;if(b.st<=0){let n=null,nd=b.rg;for(const z of Z){if(z.hp<=0||z.T.cust)continue;const q=Math.hypot(z.x-b.x,z.y-b.y);if(q<nd){nd=q;n=z}}
       if(n){const a=Math.atan2(n.y-b.y,n.x-b.x),k=G.dmg0?G.dmg/G.dmg0:1,kr=G.rate0?G.rate/G.rate0:1;b.aim=a;b.mf=.07;b.sh++;
@@ -4670,7 +4683,9 @@ function netSnap(){const c=NET.conns[0];if(!c||!c.open||!BUD)return;const b=BUD,
     zs.push([z.nid,netTK(z.T),r0(z.x),r0(z.y),Math.ceil(z.hp),Math.ceil(z.max),z.bv||0,r0((z.na||0)*100),(z.arm?1:0)|(z.elite?2:0)|(z.enraged?4:0)])}
   const bl=[];for(let i=B.length-1;i>=0&&bl.length<140;i--){const q=B[i];if(Math.abs(q.x-b.x)>R||Math.abs(q.y-b.y)>R*.85)continue;bl.push([r0(q.x),r0(q.y),r0(q.vx),r0(q.vy),q.c||'#fb6'])}
   const eb=[];for(let i=0;i<EB.length&&eb.length<90;i++){const q=EB[i];if(Math.abs(q.x-b.x)>R||Math.abs(q.y-b.y)>R*.85)continue;eb.push([r0(q.x),r0(q.y),r0(q.vx),r0(q.vy),q.c||0])}
-  const m={t:'s',tm:+G.t.toFixed(2),p:[r0(P.x),r0(P.y),r0(P.aim*100),r0(P.fx*100),r0(P.fy*100),r0((P.wm||0)*100),P.mf>0?1:0,Math.ceil(Math.max(0,P.hp)),Math.ceil(P.max)],
+  const gm=[];for(let i=0;i<GEM.length&&gm.length<120;i++){const q=GEM[i];if(Math.abs(q.x-b.x)>R||Math.abs(q.y-b.y)>R*.85)continue;gm.push([r0(q.x),r0(q.y),q.v])}
+  const ht=[];for(const q of HEART){if(Math.abs(q.x-b.x)>R||Math.abs(q.y-b.y)>R*.85)continue;ht.push([r0(q.x),r0(q.y)])}
+  const m={gm,ht,t:'s',tm:+G.t.toFixed(2),p:[r0(P.x),r0(P.y),r0(P.aim*100),r0(P.fx*100),r0(P.fy*100),r0((P.wm||0)*100),P.mf>0?1:0,Math.ceil(Math.max(0,P.hp)),Math.ceil(P.max),NET.hd?1:0,r0(NET.hrv*100)],
     b:[Math.ceil(b.hp),Math.ceil(b.max),b.down,b.sh,r0(b.rv*100)],z:zs,bl,eb,k:G.kills,lv:G.lv,xp:Math.floor(G.xp),nd:G.need};
   if(d)m.d=[Math.ceil(d.hp),Math.ceil(d.max),d.scrap,d.wave,d.ph,+d.t.toFixed(1),d.end?1:0,d.hit>0?1:0];
   if(G.ban&&G.ban.t>0&&G.ban.s!==NET.lban){NET.lban=G.ban.s;m.ban=[G.ban.s,+G.ban.t.toFixed(1)]}
@@ -4681,7 +4696,7 @@ setInterval(()=>{try{if(NETH()&&state!=='play')netAll({t:'hold'})}catch(e){}},50
 
 // ---------- ผู้เข้าร่วม: รับภาพจากโฮสต์ ----------
 function netApply(s){if(!NETG())return;NET.lastS=performance.now();NET.hold=0;
-  G.t=s.tm;const p=s.p,h=HB;if(h){if(!h.seen){h.x=p[0];h.y=p[1];h.seen=1}h.tx=p[0];h.ty=p[1];h.aim=p[2]/100;h.fx=p[3]/100;h.fy=p[4]/100;h.wm=p[5]/100;if(p[6])h.mf=.07;h.hp=p[7];h.max=p[8]}
+  G.t=s.tm;const p=s.p,h=HB;if(h){if(!h.seen){h.x=p[0];h.y=p[1];h.seen=1}h.tx=p[0];h.ty=p[1];h.aim=p[2]/100;h.fx=p[3]/100;h.fy=p[4]/100;h.wm=p[5]/100;if(p[6])h.mf=.07;h.hp=p[7];h.max=p[8];h.down=p[9]||0;h.rv=(p[10]||0)/100}
   const b=s.b;P.hp=b[0];P.max=b[1];NET.down=b[2];NET.rv=b[4]/100;if(b[3]!==NET.lsh){NET.lsh=b[3];P.mf=.07}
   const seen=++NET.sq,zm=NET.zm;
   for(const r of s.z){let z=zm.get(r[0]);const T=TYPES[NET.tk?NET.tk[r[1]]:Object.keys(TYPES)[r[1]]]||TYPES.normal;
@@ -4689,6 +4704,8 @@ function netApply(s){if(!NETG())return;NET.lastS=performance.now();NET.hold=0;
     z.tx=r[2];z.ty=r[3];if(r[4]<z.hp)z.flash=.12;z.hp=r[4];z.max=r[5];z.bv=r[6];z.na=r[7]/100;z.arm=r[8]&1;z.elite=r[8]&2?1:0;z.enraged=!!(r[8]&4);z._s=seen}
   for(let i=Z.length-1;i>=0;i--){const z=Z[i];if(z._s!==seen){zm.delete(z.nid);if(z.hp<z.max*.35)burst(z.x,z.y,'#7a2',6);Z[i]=Z[Z.length-1];Z.pop()}}
   while(B.length)BPOOL.push(B.pop());for(const r of s.bl)newB(r[0],r[1],r[2],r[3],.5,0,0,r[4]);
+  if(s.gm){GEM.length=0;for(const r of s.gm)GEM.push({x:r[0],y:r[1],v:r[2]})}
+  if(s.ht){HEART.length=0;for(const r of s.ht)HEART.push({x:r[0],y:r[1]})}
   EB.length=0;for(const r of s.eb){const e={x:r[0],y:r[1],vx:r[2],vy:r[3],l:2};if(r[4])e.c=r[4];EB.push(e)}
   G.kills=s.k;G.lv=s.lv;G.xp=s.xp;G.need=s.nd;G.boss=Z.find(z=>z.T.kind==='boss')||null;
   const d=G.def;if(d&&s.d){const q=s.d;if(q[0]<d.hp)d.hit=.2;d.hp=q[0];d.max=q[1];d.scrap=q[2];d.wave=q[3];d.ph=q[4];d.t=q[5];d.end=!!q[6]}
@@ -4727,7 +4744,7 @@ function netDrawMates(){const o=NET.role==='host'?BUD:HB;if(!o)return;
   ctx.save();ctx.textAlign='center';ctx.font='bold 13px sans-serif';ctx.lineWidth=3;ctx.strokeStyle='#000';
   const nm=(o.down?'💀 ':'')+o.n;ctx.strokeText(nm,o.x,o.y-46);ctx.fillStyle=NET.role==='host'?'#9df':'#ffd75a';ctx.fillText(nm,o.x,o.y-46);
   const w=40,f=Math.max(0,Math.min(1,o.hp/(o.max||1)));ctx.fillStyle='#000b';ctx.fillRect(o.x-w/2,o.y-41,w,5);ctx.fillStyle=f>.35?'#6f6':'#f55';ctx.fillRect(o.x-w/2,o.y-41,w*f,5);
-  if(o.down&&NET.role==='host'){ctx.strokeStyle='#6f9';ctx.lineWidth=4;ctx.beginPath();ctx.arc(o.x,o.y,30,-1.57,-1.57+6.28*Math.min(1,o.rv/3));ctx.stroke();
+  if(o.down){ctx.strokeStyle='#6f9';ctx.lineWidth=4;ctx.beginPath();ctx.arc(o.x,o.y,30,-1.57,-1.57+6.28*Math.min(1,o.rv/3));ctx.stroke();
     ctx.globalAlpha=.6;ctx.setLineDash&&ctx.setLineDash([6,6]);ctx.lineWidth=2;ctx.beginPath();ctx.arc(o.x,o.y,75,0,6.28);ctx.stroke();ctx.setLineDash&&ctx.setLineDash([])}
   ctx.restore()}
 // ลูกศรชี้เพื่อนเมื่ออยู่นอกจอ + ป้ายสถานะ (วาดทับจอ)
@@ -4736,14 +4753,14 @@ function netHUD(){const o=NET.role==='host'?BUD:HB;ctx.save();ctx.textAlign='cen
     ctx.font='bold 13px sans-serif';ctx.fillStyle='#000a';ctx.beginPath();ctx.arc(ex,ey,20,0,6.28);ctx.fill();ctx.font='20px sans-serif';ctx.fillText(o.down?'💀':(CHARS[o.ch]||CHARS.soldier).ic,ex,ey+7)}}
   const fs=Math.round(Math.min(20,H_*.05));ctx.font='bold '+fs+'px sans-serif';ctx.lineWidth=4;ctx.strokeStyle='#000';
   let msg='';
-  if(NET.role==='host'&&BUD&&BUD.down)msg='🆘 '+BUD.n+' ล้ม! ไปยืนข้างๆ 3 วิเพื่อชุบ';
-  if(NET.role==='guest'){if(NET.down)msg='💀 คุณล้ม! รอเพื่อนมายืนข้างๆ เพื่อชุบ'+(NET.rv>0?' '+Math.round(NET.rv/3*100)+'%':'');else if(NET.hold)msg='⏸ รอโฮสต์...'}
+  if(NET.role==='host'){if(NET.hd)msg='💀 คุณล้ม! รอ '+(BUD?BUD.n:'เพื่อน')+' มายืนข้างๆ เพื่อชุบ'+(NET.hrv>0?' '+Math.round(NET.hrv/3*100)+'%':'');else if(BUD&&BUD.down)msg='🆘 '+BUD.n+' ล้ม! ไปยืนข้างๆ 3 วิเพื่อชุบ'}
+  if(NET.role==='guest'){if(NET.down)msg='💀 คุณล้ม! รอเพื่อนมายืนข้างๆ เพื่อชุบ'+(NET.rv>0?' '+Math.round(NET.rv/3*100)+'%':'');else if(HB&&HB.down)msg='🆘 '+HB.n+' ล้ม! ไปยืนข้างๆ 3 วิเพื่อชุบ';else if(NET.hold)msg='⏸ รอโฮสต์...'}
   if(msg){const y=H_*.3;ctx.strokeText(msg,W_/2,y);ctx.fillStyle='#fff';ctx.fillText(msg,W_/2,y)}
   ctx.restore()}
 
 // ---------- ข้อความระหว่างเกม ----------
 function netGameMsgHost(c,d){if(!BUD)return;
-  if(d.t==='i'){BUD.tx=+d.x||BUD.tx;BUD.ty=+d.y||BUD.ty;BUD.fx=+d.fx||0;BUD.fy=+d.fy||0;BUD.wm=+d.wm||0;return true}
+  if(d.t==='i'){if(Number.isFinite(+d.x))BUD.tx=+d.x;if(Number.isFinite(+d.y))BUD.ty=+d.y;BUD.fx=+d.fx||0;BUD.fy=+d.fy||0;BUD.wm=+d.wm||0;return true}
   return false}
 function netGameMsgGuest(d){
   if(d.t==='go'){netStartGame(d);return true}
@@ -5449,7 +5466,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v90 (เกม v90) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v91 (เกม v91) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
