@@ -4893,19 +4893,19 @@ function fbLib(){if(window.firebase&&window.firebase.database)return Promise.res
   FB.loading=L('https://www.gstatic.com/firebasejs/'+V+'/firebase-app-compat.js').then(()=>L('https://www.gstatic.com/firebasejs/'+V+'/firebase-database-compat.js')).catch(e=>{FB.loading=null;throw e});return FB.loading}
 async function fbInit(){if(FB.db)return true;if(!fbOK()){FB.err='ยังไม่ได้ตั้งค่าเซิร์ฟเวอร์ห้อง (Firebase)';return false}
   try{await fbLib();const app=firebase.apps&&firebase.apps.length?firebase.app():firebase.initializeApp(FB_CFG);FB.db=firebase.database(app);FB.ready=true;return true}
-  catch(e){FB.err='เชื่อมต่อเซิร์ฟเวอร์ห้องไม่ได้ (เช็กอินเทอร์เน็ต)';return false}}
+  catch(e){FB.err='เชื่อมต่อเซิร์ฟเวอร์ห้องไม่ได้ ('+((e&&(e.code||e.message))||'?')+')';try{netToast('⚠️ '+FB.err)}catch(_){}return false}}
 // ---------- โฮสต์: ประกาศห้อง ----------
 function fbRoomData(){const cf=NET.cfg||{},me=NET.pl[NET.me]||{};return{n:String(me.n||'ผู้เล่น').slice(0,16),ch:me.ch||'soldier',map:cf.map||'forest',diff:cf.diff||'normal',pl:Object.keys(NET.pl).length,max:NET_MAX,v:NET_VER,st:NET.inGame?'play':'lobby',ts:firebase.database.ServerValue.TIMESTAMP}}
-async function fbPublish(){if(NET.role!=='host'||!NET.pub||!NET.code)return;if(!(await fbInit()))return;
+async function fbPublish(){if(NET.role!=='host'||!NET.pub||!NET.code)return;if(!(await fbInit())){netToast('⚠️ '+FB.err);return}
   try{const r=FB.db.ref('rooms/'+NET.code);if(FB.ref&&FB.ref.key!==NET.code)fbUnpublish();FB.ref=r;r.onDisconnect().remove();await r.set(fbRoomData());
-    clearInterval(FB.hb);FB.hb=setInterval(()=>{if(FB.ref&&NET.pub&&NET.role==='host')FB.ref.update({ts:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{})},60000)}catch(e){}}
+    clearInterval(FB.hb);FB.hb=setInterval(()=>{if(FB.ref&&NET.pub&&NET.role==='host')FB.ref.update({ts:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{})},60000);NET.pubOk=1;netToast('🌍 ประกาศห้องแล้ว · คนอื่นหาเจอใน 🔍 หาห้อง')}catch(e){NET.pubOk=0;FB.err='ประกาศห้องไม่สำเร็จ ('+((e&&(e.code||e.message))||'?')+')';netToast('⚠️ '+FB.err)}}
 function fbSync(){if(!FB.ref||NET.role!=='host')return;if(!NET.pub){fbUnpublish();return}try{FB.ref.update(fbRoomData()).catch(()=>{})}catch(e){}}
 function fbUnpublish(){clearInterval(FB.hb);FB.hb=null;const r=FB.ref;FB.ref=null;if(r){try{r.onDisconnect().cancel();r.remove().catch(()=>{})}catch(e){}}}
 // ---------- ผู้เล่น: ดูรายการห้อง ----------
 function fbJoinable(){const now=Date.now(),L=[];for(const k in FB.rooms){const r=FB.rooms[k];if(!r||r.v!==NET_VER||r.st!=='lobby'||(r.pl||0)>=(r.max||2))continue;if(r.ts&&now-r.ts>180000)continue;L.push(Object.assign({code:k},r))}
   return L.sort((a,b)=>(b.ts||0)-(a.ts||0))}
 async function fbWatch(cb){if(!(await fbInit())){cb&&cb();return false}fbUnwatch();
-  try{const q=FB.db.ref('rooms').orderByChild('ts').limitToLast(40);FB.watch=q;q.on('value',sn=>{FB.rooms=sn.val()||{};FB.err='';cb&&cb()},e=>{FB.err='อ่านรายการห้องไม่ได้';cb&&cb()})}catch(e){FB.err='อ่านรายการห้องไม่ได้';cb&&cb();return false}return true}
+  try{const q=FB.db.ref('rooms').orderByChild('ts').limitToLast(40);FB.watch=q;q.on('value',sn=>{FB.rooms=sn.val()||{};FB.err='';cb&&cb()},e=>{FB.err='อ่านรายการห้องไม่ได้ ('+((e&&(e.code||e.message))||'?')+')';cb&&cb()})}catch(e){FB.err='อ่านรายการห้องไม่ได้';cb&&cb();return false}return true}
 function fbUnwatch(){if(FB.watch){try{FB.watch.off()}catch(e){}FB.watch=null}}
 // ---------- หน้า "หาห้อง" ----------
 function showRooms(){NET.st='rooms';state='menu';let h='<h2 id="onl" style="margin:0">🔍 หาห้อง</h2>';
