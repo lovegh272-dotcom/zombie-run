@@ -1130,14 +1130,15 @@ function showPauseMenu(){PSET=false;page('<h1>'+BI('pause')+' หยุดเก
 function togglePause(){PSET=false;
   if(state==='play'){
     state='paused';duckBGM(true);ov.style.display='block';
-    showPauseMenu();netPz(1);
+    showPauseMenu();netPz(1);if(NET.inGame&&NET.pzBy&&!NET.pzR)netPzNote(NET.pzBy);
   }else if(state==='paused'){duckBGM(false);
     ov.style.display='none';state='play';last=performance.now();netPz(0);netPzHide();
   }
 }
 // v96: ออนไลน์ หยุดทั้งห้อง — ใครกดหยุด เกมหยุดทั้งคู่ · กดเล่นต่อได้ทั้งสองคน
 function netPz(on){try{if(!NET.inGame)return;NET.tp=on?1:0;if(NET.pzR)return;const n=NET.pl[NET.me]?NET.pl[NET.me].n:'';NET.pzBy=n;netAll({t:'pz',on:on?1:0,n});if(on)netPzNote(n)}catch(e){}}
-function netPzNote(n){let el=document.getElementById('pzN');if(!el){el=document.createElement('div');el.id='pzN';el.style.cssText='position:fixed;z-index:30;left:50%;transform:translateX(-50%);bottom:max(10px,env(safe-area-inset-bottom));background:#000d;color:#ffd75a;border:2px solid #ffd75a;border-radius:12px;padding:6px 14px;font-size:15px;font-weight:700;pointer-events:none;white-space:nowrap';document.body.appendChild(el)}
+function netPzNote(n){let el=document.getElementById('pzN');const h=ov.querySelector('h1,h2');if(el&&h&&el.parentNode!==ov&&!ov.contains(el)){el.remove();el=null}
+  if(!el){el=document.createElement('div');el.id='pzN';el.style.cssText='color:#ffd75a;font-size:15px;font-weight:700;margin:2px 0 8px;text-align:center';if(h)h.insertAdjacentElement('afterend',el);else{el.style.cssText+=';position:fixed;z-index:30;left:50%;transform:translateX(-50%);top:max(10px,env(safe-area-inset-top));background:#000d;border:2px solid #ffd75a;border-radius:12px;padding:6px 14px;pointer-events:none';document.body.appendChild(el)}}
   el.textContent='⏸ '+(n||'')+' กดหยุดเกม · กด ▶ เล่นต่อ ได้ทั้งสองคน';el.style.display='block'}
 function netPzHide(){const el=document.getElementById('pzN');if(el)el.style.display='none'}
 function netPzRecv(d){if(!NET.inGame)return;NET.pzR=1;
@@ -4291,7 +4292,7 @@ function restoreSave(txt){
 }
 // ===================== v89: ออนไลน์ (เฟส 1: ห้อง + เชื่อมต่อ 2 เครื่อง) =====================
 // ใช้ PeerJS (WebRTC แบบ P2P) โหลดจาก CDN ตอนกดเข้าเมนูออนไลน์เท่านั้น · โฮสต์ = เครื่องที่สร้างห้อง
-const NET_VER='102',NET_PFX='zrun-v1-',NET_MAX=2,NET_ABC='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const NET_VER='103',NET_PFX='zrun-v1-',NET_MAX=2,NET_ABC='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const NET_ICE={config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}]}};
 const NET={peer:null,conns:[],role:null,code:'',me:null,pl:{},st:'idle',err:'',ping:0,pt:null,to:null,jc:'',inGame:0,sq:0};
 function netNick(){let n='';try{n=localStorage.znick||''}catch(e){}if(!n){n='ผู้เล่น'+(100+Math.floor(Math.random()*900));try{localStorage.znick=n}catch(e){}}return n}
@@ -4429,7 +4430,7 @@ function netLobChat(){let el=document.getElementById('netLC');const on=!NET.inGa
 function netLobChatMin(){const el=document.getElementById('netLC');if(!el)return;if(NET.lcMin===undefined){try{NET.lcMin=localStorage.zlcMin==='1'}catch(e){NET.lcMin=false}}
   const l=el.querySelector('#netLobLog'),i=el.querySelector('#netLobbyIn'),s=el.querySelector('#netLobSend'),m=el.querySelector('#netLobMin'),un=NET.chat.length-(NET.lcSeen||0);
   if(NET.lcMin){l.style.display='none';i.style.display='none';s.style.display='none';m.textContent='💬'+(un>0?' '+un:'');m.style.padding='6px 10px';el.style.width='auto'}
-  else{l.style.display='flex';i.style.display='';s.style.display='';m.textContent='▾';m.style.padding='0 8px';el.style.width='min(36vw,310px)';NET.lcSeen=NET.chat.length}}
+  else{l.style.display='flex';i.style.display='';s.style.display='';m.textContent='▾';m.style.padding='0 8px';NET.lcSeen=NET.chat.length;chatPlace()}}
 function netRender(){netLobChat();if(state!=='menu'||ov.style.display!=='block'||!document.getElementById('onl'))return;
   showOnline(true);netLobChat()}
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='netLobbyIn')NET.draft=e.target.value});
@@ -4496,7 +4497,7 @@ function netStartGame(cfg){
   NET.prev={mode:S.mode,diff:S.diff,map:S.map};S.mode='defendless';NET.tp=0;
   if(NET.role==='guest'){S.diff=DIFF[cfg.diff]?cfg.diff:S.diff;NET.map=cfg.map}else{if(MAPS[cfg.map]&&S.maps.includes(cfg.map))S.map=cfg.map;if(DIFF[cfg.diff])S.diff=cfg.diff}
   NET.inGame=1;NET.bub={};NET.sq=0;NET.bidc=0;NET.lph='';NET.glv=null;NET.gpend=0;NET.myUps={};NET.hd=0;NET.hrv=0;NET.lban='';NET.overMsg='';NET.zm=new Map();NET.zid=0;NET.sn=0;NET.snT=0;NET.inT=0;NET.lsh=0;NET.hold=0;NET.down=0;NET.lastS=performance.now();NET.wph='';
-  BUD=null;HB=null;start();try{if(NET.role==='host')fbSync()}catch(e){}
+  BUD=null;HB=null;start();try{fbUnwatch();if(NET.role==='host')fbUnpublish()}catch(e){}
   const ks=Object.keys(NET.pl);
   if(NET.role==='host'){const gk=netGuestKey(),g=NET.pl[gk]||{},st=g.st||netStats(g.ch);
     BUD=netMate({on:1,x:P.x+44,y:P.y,tx:P.x+44,ty:P.y,ch:g.ch||'soldier',n:g.n||'เพื่อน',hp:st.hp,max:st.hp,dm:st.dm,rate:st.rate,rg:st.rg,pc:st.pc,st:0,sh:0,id:gk,shield:0,sk:[0,0,0,0]});
@@ -4508,14 +4509,14 @@ function netStartGame(cfg){
     P.x+=44;const st=netStats(S.sel);P.hp=P.max=st.hp;Z.length=0}
   G.ban={s:'🤝 เล่นด้วยกัน! ช่วยกันปกป้องรถ'+(NET.role==='host'?' · คุณเป็นคนสร้างป้องกัน':' · โฮสต์เป็นคนสร้างป้องกัน'),t:4}}
 function netRestore(){NET.tp=0;try{netPzHide()}catch(e){}if(NET.prev){S.mode=NET.prev.mode;S.diff=NET.prev.diff;if(NET.prev.map)S.map=NET.prev.map;NET.prev=null}}
-function netEndGame(){NET.inGame=0;setTimeout(()=>{try{fbSync()}catch(e){}},50);try{netChatClose();netChatBtn();netLogDraw()}catch(e){}NET.hd=0;NET.gpend=0;{const e=document.getElementById('netUp');if(e)e.remove()}BUD=null;HB=null;NET.map=null;netRestore();
+function netEndGame(){NET.inGame=0;setTimeout(()=>{try{if(NET.role==='host'&&NET.pub&&NET.st==='lobby')fbPublish()}catch(e){}},50);try{netChatClose();netChatBtn();netLogDraw()}catch(e){}NET.hd=0;NET.gpend=0;{const e=document.getElementById('netUp');if(e)e.remove()}BUD=null;HB=null;NET.map=null;netRestore();
   for(const k in NET.pl)NET.pl[k].rd=false;NET.started=0;if(NET.role==='host')netAll({t:'lobby',pl:NET.pl,code:NET.code})}
 function netQuitToRoom(msg){ // ผู้เข้าร่วม: โฮสต์หลุด/ออก ระหว่างเล่น
   NET.inGame=0;NET.gpend=0;{const e=document.getElementById('netUp');if(e)e.remove()}BUD=null;HB=null;netRestore();state='menu';ov.style.display='block';try{syncMbg()}catch(e){}}
 
 // ---------- โฮสต์: ทุกเฟรมหลัง update() ----------
 const NET_GK=['dmg','rate','multi','pierce','range','mevo','mc','shot','sbuf','scrit','ult','bigT','bzc','bzr','nad','ammo','blade','nade','ltn','sg','ba','nt','ltt','sgt','evo',
-  'bds','bhs','bkd','bsh','bsa','bst','drm','drt','gq','gsh','gst','nsh','nshd','ppl','psh','pst','snc','ssh','sst','ulm','ulv','wsd','wsh','uses','cdMul','comp','relic'];
+  'bds','bhs','bkd','bsh','bsa','bst','drm','drt','gq','gsh','gst','nsh','nshd','ppl','psh','pst','snc','ssh','sst','ulm','ulv','wsd','wsh','uses','cdMul','comp','relic','bzT0','bzA','bzAR','bzN','bzNR','ghT','adr'];
 const NET_SKK=['bds','bhs','bkd','bsh','bsa','bst','drm','drt','gq','gsh','gst','nsh','nshd','ppl','psh','pst','snc','ssh','sst','ulm','ulv','wsd','wsh','uses','cdMul'];
 function netClone(v){if(v===undefined||v===null||typeof v!=='object')return v;if(Array.isArray(v))return [];if(v instanceof Set)return new Set();try{return JSON.parse(JSON.stringify(v))}catch(e){return null}}
 function netBudFire(dt){const b=BUD,g=b.g;if(!g)return;const hv={},sP=P,sSel=S.sel,shd=NET.hd,sh0=G.shake,m0=b.mf;
@@ -4567,6 +4568,12 @@ function netCompS(c){if(!c)return 0;const r=v=>Math.round(v||0);const o={ang:+(c
   if(c.w)o.w={x:r(c.w.x),y:r(c.w.y),f:c.w.f||1,dv:c.w.dv||0,ph:+(c.w.ph||0).toFixed(2),at:+(c.w.at||0).toFixed(2),ad:c.w.ad||0,vx:r(c.w.vx),vy:r(c.w.vy)};
   if(c.br)o.br={a:+c.br.a.toFixed(2),t:+c.br.t.toFixed(2)};if(c.o&&c.o.length)o.o=c.o.map(m=>({x:r(m.x),y:r(m.y),tx:r(m.tx),ty:r(m.ty),t:+m.t.toFixed(2)}));else o.o=[];return o}
 const NET_CR={blader:3.4,storm:2,shot:1.6};
+// v103: สถานะภาพร่างแปลง/ออร่าของผู้เล่น (ส่งให้อีกเครื่องวาด)
+const NET_VK=['bigT','bzr','bzA','bzAR','bzN','bzNR','ghT','adr'];
+function netVisOf(g){if(!g)return 0;const o=NET_VK.map(k=>+(+(g[k]||0)).toFixed(2));o.push(g.ult&&g.ult.t>0?g.ult.k:'',g.ult&&g.ult.t>0?+g.ult.t.toFixed(1):0,+(G.t-(g.bzT0||G.t)).toFixed(2));return o}
+function netVisApply(dst,v,isG){if(!v)return;NET_VK.forEach((k,i)=>{dst[k]=v[i]});const n=NET_VK.length;dst.ult=v[n]?{k:v[n],t:v[n+1],tk:1,n:0}:(isG?{t:0,tk:0,k:'',n:0}:null);dst.bzT0=G.t-(v[n+2]||0)}
+function netVisTick(o,dt){if(!o)return;for(const k of ['bigT','bzr','bzA','bzN','ghT','adr'])if(o[k]>0)o[k]=Math.max(0,o[k]-dt);if(o.ult&&o.ult.t>0)o.ult.t=Math.max(0,o.ult.t-dt)}
+function netAura(o,v){const u=v&&v.ult;if(!u||!(u.t>0))return;const col=hexRGB(PCOL[o.ch]||'#3a8cff');const g=ctx.createRadialGradient(o.x,o.y,10,o.x,o.y,90);g.addColorStop(0,'rgba('+col+',.45)');g.addColorStop(1,'rgba('+col+',0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(o.x,o.y,90,0,6.28);ctx.fill()}
 function netHN(){const m=NET.pl[NET.me];return m?m.n:'โฮสต์'}
 function netHostDown(){if(!NETH()||!BUD||BUD.down)return false;
   if(!NET.hd){NET.hd=1;NET.hrv=0;P.hp=0;P.inv=99;P.shield=0;G.shake=12;sfx('hurt');addTxt(P.x,P.y-40,'💀 ล้ม!','#f66')}return true}
@@ -4585,6 +4592,7 @@ function netHU(dt){const b=BUD;if(!b)return;
   if(b.down){const near=Math.hypot(P.x-b.x,P.y-b.y)<75&&P.hp>0&&!NET.hd;b.rv=near?b.rv+dt:Math.max(0,b.rv-dt*.5);
     if(b.rv>=3){b.down=0;b.rv=0;b.hp=b.max*.5;b.inv=2;sfx('lvl');FX.push({x:b.x,y:b.y,r:0,max:120,t:0,c:'120,255,160'});G.ban={s:'✨ ชุบ '+b.n+' สำเร็จ!',t:2}}}
   else netBudFire(dt);
+  if(b.g)netVisTick(b.g,dt);
   if(b.shield>0)b.shield-=dt;
   NET.snT-=dt;if(NET.snT<=0){NET.snT=1/15;netSnap()}}
 function netTK(T){if(!NET.tk){NET.tk=Object.keys(TYPES);NET.tk.forEach((k,i)=>{TYPES[k]._ti=i})}
@@ -4604,7 +4612,7 @@ function netSnap(){const c=NET.conns[0];if(!c||!c.open||!BUD)return;const b=BUD,
   const xl=[];for(const q of G.fxl){if(q._s)continue;q._s=1;if(xl.length<20&&inR(q)){const o={};for(const kk in q){const v=q[kk];if(kk==='_s')continue;if(v===null||typeof v!=='object'||Array.isArray(v))o[kk]=v}xl.push(o)}}
   const vx=[];if(G.vfx)for(const q of G.vfx){if(q._s)continue;q._s=1;if(vx.length<14&&inR(q)){const at=q.att==='P'?'H':(q.att&&q.att===BUD)?'M':0;vx.push([q.id,q.u?1:0,q.row,r0(q.x),r0(q.y),r0(q.s),q.a===undefined?null:+q.a.toFixed(2),q.d,at,q.loop?1:0,q.by||0,q.al,q.big?1:0])}}
   const rlx=[];for(const q of G.rl){if(q._s)continue;q._s=1;if(rlx.length<8)rlx.push([r0(q.x1),r0(q.y1),r0(q.x2),r0(q.y2),q.l,q.w])}
-  const m={cp:netCompS(G.comp),bcp:netCompS(b.g&&b.g.comp),gm,ht,fx,bo,im,xl,vx,rl:rlx,ng:ndl,t:'s',tm:+G.t.toFixed(2),p:[r0(P.x),r0(P.y),r0(P.aim*100),r0(P.fx*100),r0(P.fy*100),r0((P.wm||0)*100),P.mf>0?1:0,Math.ceil(Math.max(0,P.hp)),Math.ceil(P.max),NET.hd?1:0,r0(NET.hrv*100),P.shield>0?1:0,G.blade||0,r0((G.ba||0)*100),G.evo&&G.evo.blade?1:0],
+  const m={vh:netVisOf(G),vb:netVisOf(b.g),cp:netCompS(G.comp),bcp:netCompS(b.g&&b.g.comp),gm,ht,fx,bo,im,xl,vx,rl:rlx,ng:ndl,t:'s',tm:+G.t.toFixed(2),p:[r0(P.x),r0(P.y),r0(P.aim*100),r0(P.fx*100),r0(P.fy*100),r0((P.wm||0)*100),P.mf>0?1:0,Math.ceil(Math.max(0,P.hp)),Math.ceil(P.max),NET.hd?1:0,r0(NET.hrv*100),P.shield>0?1:0,G.blade||0,r0((G.ba||0)*100),G.evo&&G.evo.blade?1:0],
     b:[Math.ceil(b.hp),Math.ceil(b.max),b.down,b.sh,r0(b.rv*100),b.shield>0?1:0,(b.g&&b.g.blade)||0,r0(((b.g&&b.g.ba)||0)*100)],z:zs,bl,eb,k:G.kills,lv:G.lv,xp:Math.floor(G.xp),nd:G.need};
   if(d)m.d=[Math.ceil(d.hp),Math.ceil(d.max),d.scrap,d.wave,d.ph,+d.t.toFixed(1),d.end?1:0,d.hit>0?1:0,d.alv||0];
   if(G.ban&&G.ban.t>0&&G.ban.s!==NET.lban){NET.lban=G.ban.s;m.ban=[G.ban.s,+G.ban.t.toFixed(1)]}
@@ -4626,7 +4634,7 @@ function netApply(s){if(!NETG())return;NET.lastS=performance.now();NET.hold=0;
   if(s.fx)for(const r of s.fx)FX.push({x:r[0],y:r[1],r:0,max:r[2],t:0,c:r[3]});
   if(s.bo)for(const r of s.bo){const pts=[];for(let i=2;i+1<r.length;i+=2)pts.push({x:r[i],y:r[i+1]});if(pts.length)BOLT.push({pts,l:r[1]||.25,ev:!!r[0]})}
   if(s.im)for(const r of s.im)if(IMP.length<24)IMP.push({x:r[0],y:r[1],t:0,k:r[2],s:r[3],a:r[4],L:r[5],d:r[6]});
-  G.comp=s.bcp||null;if(HB)HB.comp=s.cp||null;
+  G.comp=s.bcp||null;if(HB)HB.comp=s.cp||null;if(s.vb)netVisApply(G,s.vb,true);if(HB&&s.vh){HB.vis=HB.vis||{};netVisApply(HB.vis,s.vh,false)}
   if(s.xl)for(const o of s.xl)if(G.fxl.length<80)G.fxl.push(o);
   if(s.vx){G.vfx=G.vfx||[];for(const r of s.vx){const im=r[1]?VFXU[r[0]]:VFXI[r[0]];if(!im)continue;if(G.vfx.length>70)G.vfx.shift();G.vfx.push({im,row:r[2],x:r[3],y:r[4],s:r[5],a:r[6]===null?undefined:r[6],t:0,d:r[7]||.5,att:r[8]==='H'?HB:r[8]==='M'?'P':undefined,loop:!!r[9],by:r[10],al:r[11]===undefined?1:r[11],big:!!r[12]})}}
   if(s.rl)for(const r of s.rl)G.rl.push({x1:r[0],y1:r[1],x2:r[2],y2:r[3],l:r[4],w:r[5]});
@@ -4658,7 +4666,7 @@ function netGU(dt){G.fr++;G.t+=dt;G.ban.t-=dt;G.shake=Math.max(0,G.shake-dt*30);
   const k=Math.min(1,dt*12);for(const z of Z){if(z.tx!==undefined){z.x+=(z.tx-z.x)*k;z.y+=(z.ty-z.y)*k}z.ph+=dt*5;z.flash=Math.max(0,z.flash-dt)}
   for(const q of B){q.x+=q.vx*dt;q.y+=q.vy*dt}for(const q of EB){q.x+=q.vx*dt;q.y+=q.vy*dt}
   const h=HB;if(h){h.x+=(h.tx-h.x)*Math.min(1,dt*14);h.y+=(h.ty-h.y)*Math.min(1,dt*14);h.wk+=h.wm*dt*14;h.mf=Math.max(0,h.mf-dt);h.hif=Math.max(0,(h.hif||0)-dt);if(h.bl)h.ba+=dt*(h.bev?5:3.2)}
-  if(G.blade>0)G.ba+=dt*3.2;
+  if(G.blade>0)G.ba+=dt*3.2;netVisTick(G,dt);if(HB)netVisTick(HB.vis,dt);
   {const r1=NET_CR[S.sel];if(r1&&G.comp)G.comp.ang=(G.comp.ang||0)+dt*r1;const h2=HB;if(h2&&h2.comp){const r2=NET_CR[h2.ch];if(r2)h2.comp.ang=(h2.comp.ang||0)+dt*r2}}
   if(d&&d.hit>0)d.hit-=dt;
   for(let i=PART.length-1;i>=0;i--){const p=PART[i];p.x+=p.vx*dt;p.y+=p.vy*dt;if((p.l-=dt)<=0){PART[i]=PART[PART.length-1];PART.pop();POOL.push(p)}}
@@ -4671,8 +4679,9 @@ function netGU(dt){G.fr++;G.t+=dt;G.ban.t-=dt;G.shake=Math.max(0,G.shake-dt*30);
 
 // ---------- วาดเพื่อนร่วมทีม (ใช้โค้ดวาดตัวละครเดิม) ----------
 function netDrawMates(){const o=NET.role==='host'?BUD:HB;if(!o)return;
-  const sP=P,sSel=S.sel,sv={warp:G.warp,bigT:G.bigT,bzr:G.bzr,ghT:G.ghT,adr:G.adr,bzN:G.bzN,comp:G.comp};
-  NET.ssel=sSel;P=o;S.sel=CHARS[o.ch]?o.ch:'soldier';G.warp=null;G.bigT=0;G.bzr=0;G.ghT=0;G.adr=0;G.bzN=0;
+  const sP=P,sSel=S.sel,sv={warp:G.warp,comp:G.comp,bzT0:G.bzT0,bzNR:G.bzNR,bzAR:G.bzAR};NET_VK.forEach(k=>{sv[k]=G[k]});
+  const vs=NET.role==='host'?o.g:o.vis;NET.ssel=sSel;P=o;S.sel=CHARS[o.ch]?o.ch:'soldier';G.warp=null;NET_VK.forEach(k=>{G[k]=(vs&&vs[k])||0});G.bzT0=(vs&&vs.bzT0)||G.t;
+  try{ctx.save();netAura(o,vs)}catch(_){}finally{ctx.restore()}
   if(NET.role==='host'){if(o.g&&o.g.blade)drawBladesAt(o.x,o.y,o.g.blade,o.g.ba,false)}else if(o.bl)drawBladesAt(o.x,o.y,o.bl,o.ba,o.bev);
   const si=o.inv;if(o.down)o.inv=1;
   try{G.comp=NET.role==='host'?(o.g&&o.g.comp)||null:o.comp||null;if(G.comp)try{drawV44Comp()}catch(_){}ctx.save();drawPBody()}catch(e){}finally{ctx.restore();P=sP;S.sel=sSel;NET.ssel=null;Object.assign(G,sv);o.inv=si;ctx.globalAlpha=1}
@@ -4739,8 +4748,17 @@ function netChatBtn(){let b=document.getElementById('chb');const on=NET.inGame&&
   const pb=document.getElementById('pb'),r=pb&&pb.getBoundingClientRect();if(r&&r.width){b.style.top=r.top+'px';b.style.left=(r.left-54)+'px'}else{b.style.top='10px';b.style.right='170px'}}
 function netChatToggle(){if(document.getElementById('netChatP'))netChatClose();else netChatOpen()}
 function netChatClose(){const p=document.getElementById('netChatP');if(p){const i=p.querySelector('input');if(i)i.blur();p.remove()}netLogDraw()}
+// v103: ช่องแชทไม่บังเมนู — วางในพื้นที่ว่างด้านซ้ายของเมนู และเลื่อนขึ้นเหนือคีย์บอร์ด
+function chatGutter(){let L=1e9;ov.querySelectorAll('.card,button.big,h1,h2').forEach(e=>{const r=e.getBoundingClientRect();if(r.width>40&&r.height>0)L=Math.min(L,r.left)});return L<1e8?L:0}
+function chatKb(){const v=window.visualViewport;if(!v)return 0;return Math.max(0,innerHeight-(v.height+v.offsetTop))}
+function chatPlace(){const kb=chatKb(),bt='calc(max(8px,env(safe-area-inset-bottom)) + '+kb+'px)';
+  const menu=ov.style.display==='block',gw=menu?chatGutter():0,sl=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sal'))||0;
+  const p=document.getElementById('netChatP');if(p){p.style.bottom=bt;if(menu&&gw>200){p.style.left='max(8px,env(safe-area-inset-left))';p.style.transform='none';p.style.width=(gw-20)+'px'}else{p.style.left='50%';p.style.transform='translateX(-50%)';p.style.width='min(94vw,520px)'}}
+  const c=document.getElementById('netLC');if(c&&c.style.display!=='none'){c.style.bottom=bt;if(!NET.lcMin){const w=gw>170?Math.min(310,gw-20):Math.min(310,innerWidth*.36);c.style.width=w+'px'}}
+  const lg=document.getElementById('netLog');if(lg&&p&&menu&&gw>200){lg.style.maxWidth=(gw-20)+'px'}}
+if(window.visualViewport){visualViewport.addEventListener('resize',chatPlace);visualViewport.addEventListener('scroll',chatPlace)}addEventListener('resize',chatPlace);setInterval(()=>{try{chatPlace()}catch(e){}},500);
 function netChatOpen(){netChatClose();const p=document.createElement('div');p.id='netChatP';
-  p.style.cssText='position:fixed;z-index:13;left:50%;transform:translateX(-50%);bottom:max(8px,env(safe-area-inset-bottom));width:min(94vw,520px);background:#0b1520ee;border:2px solid #7cf;border-radius:14px;padding:6px;box-shadow:0 4px 16px #000a';
+  p.style.cssText='position:fixed;z-index:35;left:50%;transform:translateX(-50%);bottom:max(8px,env(safe-area-inset-bottom));width:min(94vw,520px);background:#0b1520ee;border:2px solid #7cf;border-radius:14px;padding:6px;box-shadow:0 4px 16px #000a';
   const BS='font:inherit;font-size:14px;font-weight:700;color:#fff;background:#1d3a55;border:2px solid #7cf;border-radius:10px;padding:6px 9px;margin:0;white-space:nowrap;flex:none';
   p.innerHTML='<div id="netQC" style="display:none;flex-wrap:wrap;gap:5px;justify-content:center;margin-bottom:6px">'+NET_QC.map((q,i)=>'<button data-q="'+i+'" style="'+BS+'">'+q+'</button>').join('')+'</div>'+
     '<div style="display:flex;gap:6px;align-items:center"><button data-t="1" title="แชทด่วน" style="'+BS+';background:#33415a">⚡</button><input id="netChatIn" maxlength="80" enterkeyhint="send" autocomplete="off" placeholder="พิมพ์ข้อความ..." style="flex:1;min-width:0;font:inherit;font-size:16px;padding:7px 10px;border-radius:10px;border:2px solid #7cf;background:#06101a;color:#fff"><button data-s="1" style="'+BS+';background:#2f7cc4">ส่ง</button><button data-x="1" style="'+BS+';background:#444">✖</button></div>';
@@ -4752,7 +4770,7 @@ function netChatOpen(){netChatClose();const p=document.createElement('div');p.id
     else if(t.dataset.s)send();else if(t.dataset.x)netChatClose()});
   p.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')send();else if(e.key==='Escape')netChatClose()});
   p.addEventListener('keyup',e=>e.stopPropagation());
-  document.body.appendChild(p);netLogDraw();setTimeout(()=>{const i=document.getElementById('netChatIn');if(i)try{i.focus()}catch(_){}},50)}
+  document.body.appendChild(p);chatPlace();netLogDraw();setTimeout(()=>{const i=document.getElementById('netChatIn');if(i)try{i.focus()}catch(_){}},50)}
 // บอลลูนข้อความบนหัว (วาดในโลกเกม)
 function netBubble(x,y,key){const b=NET.bub[key];if(!b||!G||G.t>b.t||b.t-G.t>3.6)return;let s=b.s;if(s.length>26)s=s.slice(0,25)+'…';
   ctx.save();ctx.font='bold 14px sans-serif';const w=ctx.measureText(s).width+16,h=24,bx=x-w/2,by=y-80,a=Math.min(1,(b.t-G.t)/.4);ctx.globalAlpha=a;
@@ -4836,19 +4854,25 @@ function devTick(){if(!devInGame())return;
 // กด 🎤 เปิด/ปิดไมค์ของเรา · 🔊/🔇 เปิด/ปิดเสียงเพื่อน · เสียงแต่ละฝั่งเป็นสายแยก (ฝั่งที่เปิดไมค์เป็นคนโทรหาอีกฝั่ง)
 const VC={on:0,st:null,out:null,inn:null,au:null,mute:0,fr:0,frOn:0,spk:0,mateSpk:0,an:null,ac:null,mt:null,need:0,busy:0};
 function vcPeerId(){if(!NET.conns.length)return null;return NET.role==='host'?NET.conns[0].peer:NET_PFX+NET.code}
-async function vcToggle(){if(VC.busy)return;if(VC.on)return vcStop(true);
+function vcGameAudio(){try{if(typeof AC!=='undefined'&&AC&&AC.state!=='running')AC.resume()}catch(e){}vcDuck()}
+function vcDuck(){try{if(typeof AC==='undefined'||!AC)return;const on=VC.on||(VC.mateSpk&&!VC.mute),k=on?.3:1;  // v103: ลดเสียงเกมระหว่างไมค์เปิด/เพื่อนพูด
+  if(VC.dk===k)return;VC.dk=k;if(sfxBus)sfxBus.gain.setTargetAtTime(.72*sfxVol*k,AC.currentTime,.15);if(musicBus)musicBus.gain.setTargetAtTime(.62*bgmVol*(ducked?.35:1)*k,AC.currentTime,.15)}catch(e){}}
+function vcTrack(on){try{if(VC.st)VC.st.getAudioTracks().forEach(t=>{t.enabled=!!on})}catch(e){}}
+async function vcToggle(){if(VC.busy)return;
+  if(VC.on){VC.on=0;vcTrack(false);if(VC.spk){VC.spk=0;netAll({t:'spk',v:0})}netAll({t:'vc',on:0});netToast('🎤 ปิดไมค์แล้ว');vcGameAudio();vcUI();return}
+  if(VC.st&&VC.st.getAudioTracks().some(t=>t.readyState==='live')){VC.on=1;vcTrack(true);if(!VC.out)vcCall();netAll({t:'vc',on:1});netToast('🎤 เปิดไมค์แล้ว');vcGameAudio();vcUI();return}
   if(!NET.peer||!NET.conns.length||!NET.conns[0].open){netToast('🎤 ยังไม่มีเพื่อนในห้อง');return}
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){netToast('🎤 เบราว์เซอร์นี้ใช้ไมค์ไม่ได้');return}
   VC.busy=1;vcUI();
   try{VC.st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false})}
   catch(e){VC.busy=0;vcUI();netToast('🎤 เปิดไมค์ไม่ได้: '+(e&&e.name==='NotAllowedError'?'ยังไม่ได้อนุญาตไมโครโฟน (ตั้งค่า > Safari > ไมโครโฟน)':(e&&e.message)||'ไม่ทราบสาเหตุ'));return}
-  VC.busy=0;VC.on=1;vcCall();vcMeter();netAll({t:'vc',on:1});
+  VC.busy=0;VC.on=1;vcCall();vcMeter();netAll({t:'vc',on:1});setTimeout(vcGameAudio,300);setTimeout(vcGameAudio,1500);
   try{if(!localStorage.zvcTip){localStorage.zvcTip='1';netToast('🎧 ใส่หูฟังจะชัดและไม่มีเสียงสะท้อน')}else netToast('🎤 เปิดไมค์แล้ว')}catch(e){}
   if(VC.au&&VC.need)vcResume();vcUI()}
 function vcCall(){const id=vcPeerId();if(!id||!VC.st||!NET.peer)return;try{if(VC.out)VC.out.close()}catch(e){}
   try{const c=NET.peer.call(id,VC.st);VC.out=c;if(c){c.on('close',()=>{if(VC.out===c)VC.out=null});c.on('error',()=>{})}}catch(e){}}
 function vcStop(send){try{if(VC.st)VC.st.getTracks().forEach(t=>t.stop())}catch(e){}VC.st=null;try{if(VC.out)VC.out.close()}catch(e){}VC.out=null;
-  clearInterval(VC.mt);VC.mt=null;VC.an=null;if(VC.spk){VC.spk=0;if(send)netAll({t:'spk',v:0})}VC.on=0;if(send){netAll({t:'vc',on:0});netToast('🎤 ปิดไมค์แล้ว')}vcUI()}
+  clearInterval(VC.mt);VC.mt=null;VC.an=null;if(VC.spk){VC.spk=0;if(send)netAll({t:'spk',v:0})}VC.on=0;if(send){netAll({t:'vc',on:0});netToast('🎤 ปิดไมค์แล้ว')}vcUI();setTimeout(vcGameAudio,300);setTimeout(vcGameAudio,1200)}
 function vcEnd(){vcStop(false);try{if(VC.inn)VC.inn.close()}catch(e){}VC.inn=null;vcPlay(null);VC.frOn=0;VC.mateSpk=0;vcUI()}
 function vcOnCall(call){try{if(VC.inn&&VC.inn!==call)VC.inn.close()}catch(e){}VC.inn=call;call.answer();
   call.on('stream',rs=>vcPlay(rs));call.on('close',()=>{if(VC.inn===call){VC.inn=null;vcPlay(null)}});call.on('error',()=>{})}
@@ -4861,8 +4885,9 @@ function vcMuteToggle(){if(VC.need){vcResume();return}VC.mute=VC.mute?0:1;if(VC.
 function vcMeter(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const ac=(typeof AC!=='undefined'&&AC)||VC.ac||(VC.ac=new C());if(ac.state==='suspended')ac.resume();
   const src=ac.createMediaStreamSource(VC.st),an=ac.createAnalyser();an.fftSize=512;src.connect(an);VC.an=an;const buf=new Uint8Array(an.fftSize);let quiet=0;
   clearInterval(VC.mt);VC.mt=setInterval(()=>{if(!VC.an)return;an.getByteTimeDomainData(buf);let s=0;for(let i=0;i<buf.length;i++){const v=(buf[i]-128)/128;s+=v*v}const rms=Math.sqrt(s/buf.length);
+    if(!VC.on){return}
     if(rms>.035){quiet=0;if(!VC.spk){VC.spk=1;netAll({t:'spk',v:1});vcUI()}}else if(VC.spk&&++quiet>6){VC.spk=0;netAll({t:'spk',v:0});vcUI()}},120)}catch(e){}}
-function vcMsg(d){if(d.t==='vc'){VC.frOn=d.on?1:0;if(!d.on)VC.mateSpk=0;netToast(d.on?'🎤 เพื่อนเปิดไมค์':'🎤 เพื่อนปิดไมค์')}else if(d.t==='spk')VC.mateSpk=d.v?1:0;vcUI()}
+function vcMsg(d){setTimeout(vcDuck,0);if(d.t==='vc'){VC.frOn=d.on?1:0;if(!d.on)VC.mateSpk=0;netToast(d.on?'🎤 เพื่อนเปิดไมค์':'🎤 เพื่อนปิดไมค์')}else if(d.t==='spk')VC.mateSpk=d.v?1:0;vcUI()}
 // ปุ่ม: ในเกม (แถบบนขวา ข้าง 💬) + ในห้องรอ (แถวช่องพิมพ์แชท)
 function vcBtn(id,txt,fn){let b=document.getElementById(id);if(!b){b=document.createElement('button');b.id=id;b.textContent=txt;
     b.style.cssText='position:fixed;z-index:12;width:44px;height:44px;border-radius:12px;border:2px solid #7cf;background:#0d2236dd;color:#fff;font-size:20px;padding:0;filter:drop-shadow(0 2px 3px #0009)';
@@ -4879,7 +4904,8 @@ function vcUI(){const inG=NET.inGame&&(state==='play'||state==='paused'),inRoom=
   const lm=document.getElementById('vcL'),lv=document.getElementById('vcLM');
   if(lm){lm.style.display=inRoom?'':'none';lm.textContent=micTxt;lm.style.background=micBg;lm.style.borderColor=micBd}
   if(lv){lv.style.display=inRoom&&(VC.fr||VC.frOn)?'':'none';lv.textContent=muTxt;lv.style.borderColor=muBd}}
-setInterval(()=>{try{vcUI()}catch(e){}},500);
+setInterval(()=>{try{vcUI();vcDuck()}catch(e){}},500);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(vcGameAudio,200)});['touchend','click'].forEach(t=>document.addEventListener(t,()=>{try{if(typeof AC!=='undefined'&&AC&&AC.state!=='running')AC.resume()}catch(e){}},{passive:true}));
 
 
 // ===================== v102: รายชื่อห้องสาธารณะ (Firebase Realtime Database) =====================
@@ -4897,16 +4923,18 @@ async function fbInit(){if(FB.db)return true;if(!fbOK()){FB.err='ยังไม
 // ---------- โฮสต์: ประกาศห้อง ----------
 function fbRoomData(){const cf=NET.cfg||{},me=NET.pl[NET.me]||{};return{n:String(me.n||'ผู้เล่น').slice(0,16),ch:me.ch||'soldier',map:cf.map||'forest',diff:cf.diff||'normal',pl:Object.keys(NET.pl).length,max:NET_MAX,v:NET_VER,st:NET.inGame?'play':'lobby',ts:firebase.database.ServerValue.TIMESTAMP}}
 async function fbPublish(){if(NET.role!=='host'||!NET.pub||!NET.code)return;if(!(await fbInit())){netToast('⚠️ '+FB.err);return}
-  try{const r=FB.db.ref('rooms/'+NET.code);if(FB.ref&&FB.ref.key!==NET.code)fbUnpublish();FB.ref=r;r.onDisconnect().remove();await r.set(fbRoomData());
+  fbOn();try{const r=FB.db.ref('rooms/'+NET.code);if(FB.ref&&FB.ref.key!==NET.code)fbUnpublish();FB.ref=r;r.onDisconnect().remove();await r.set(fbRoomData());
     clearInterval(FB.hb);FB.hb=setInterval(()=>{if(FB.ref&&NET.pub&&NET.role==='host')FB.ref.update({ts:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{})},60000);NET.pubOk=1;netToast('🌍 ประกาศห้องแล้ว · คนอื่นหาเจอใน 🔍 หาห้อง')}catch(e){NET.pubOk=0;FB.err='ประกาศห้องไม่สำเร็จ ('+((e&&(e.code||e.message))||'?')+')';netToast('⚠️ '+FB.err)}}
 function fbSync(){if(!FB.ref||NET.role!=='host')return;if(!NET.pub){fbUnpublish();return}try{FB.ref.update(fbRoomData()).catch(()=>{})}catch(e){}}
-function fbUnpublish(){clearInterval(FB.hb);FB.hb=null;const r=FB.ref;FB.ref=null;if(r){try{r.onDisconnect().cancel();r.remove().catch(()=>{})}catch(e){}}}
+function fbUnpublish(){clearInterval(FB.hb);FB.hb=null;const r=FB.ref;FB.ref=null;if(r){try{r.onDisconnect().cancel();r.remove().catch(()=>{}).then(fbIdle)}catch(e){fbIdle()}}}
 // ---------- ผู้เล่น: ดูรายการห้อง ----------
 function fbJoinable(){const now=Date.now(),L=[];for(const k in FB.rooms){const r=FB.rooms[k];if(!r||r.v!==NET_VER||r.st!=='lobby'||(r.pl||0)>=(r.max||2))continue;if(r.ts&&now-r.ts>180000)continue;L.push(Object.assign({code:k},r))}
   return L.sort((a,b)=>(b.ts||0)-(a.ts||0))}
-async function fbWatch(cb){if(!(await fbInit())){cb&&cb();return false}fbUnwatch();
+function fbOn(){try{if(FB.db&&FB.off){FB.db.goOnline();FB.off=0}}catch(e){}}
+function fbIdle(){setTimeout(()=>{try{if(FB.db&&!FB.watch&&!FB.ref&&!FB.off){FB.db.goOffline();FB.off=1}}catch(e){}},1500)}  // v103: ตัดการเชื่อมต่อเมื่อไม่ใช้ (ประหยัดโควตา 100 คน)
+async function fbWatch(cb){if(!(await fbInit())){cb&&cb();return false}fbUnwatch();fbOn();
   try{const q=FB.db.ref('rooms').orderByChild('ts').limitToLast(40);FB.watch=q;q.on('value',sn=>{FB.rooms=sn.val()||{};FB.err='';cb&&cb()},e=>{FB.err='อ่านรายการห้องไม่ได้ ('+((e&&(e.code||e.message))||'?')+')';cb&&cb()})}catch(e){FB.err='อ่านรายการห้องไม่ได้';cb&&cb();return false}return true}
-function fbUnwatch(){if(FB.watch){try{FB.watch.off()}catch(e){}FB.watch=null}}
+function fbUnwatch(){if(FB.watch){try{FB.watch.off()}catch(e){}FB.watch=null}fbIdle()}
 // ---------- หน้า "หาห้อง" ----------
 function showRooms(){NET.st='rooms';state='menu';let h='<h2 id="onl" style="margin:0">🔍 หาห้อง</h2>';
   if(!fbOK())h+='<div class="card" style="border-color:#f9c74f"><b>⚙️ ยังไม่ได้ตั้งค่าเซิร์ฟเวอร์ห้อง</b><small>ต้องใส่ค่า Firebase ในเกมก่อน (FB_CFG) · ระหว่างนี้ใช้ "เข้าห้องด้วยรหัส" ได้ตามปกติ</small></div>';
@@ -5870,7 +5898,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v102.1 (เกม v102.1) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v103 (เกม v103) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
