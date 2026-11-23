@@ -155,6 +155,14 @@ button.big.sm{padding:4px 6px;width:auto;font-size:15px}
 <div id="boot"><div class="bt-logo"></div><div class="bt-tip" id="btTip"></div><div class="bt-bar"><i id="btBar"></i></div><div class="bt-st" id="btSt">กำลังโหลด...</div></div>
 <div id="rot"><div class="ph">📱</div><div>กรุณาหมุนเครื่องเป็นแนวนอน</div></div>
 <script>
+// v94.1: ตัวแจ้งข้อผิดพลาดบนหน้าโหลด (อยู่แยก script เพื่อให้ทำงานแม้โค้ดหลักพัง)
+window.ZERR=[];
+function zErrShow(m){try{ZERR.push(m);const s=document.getElementById('btSt');if(s){s.style.color='#ff8';s.style.fontSize='14px';s.style.whiteSpace='pre-wrap';s.textContent='⚠️ เกิดข้อผิดพลาด (แคปหน้าจอนี้ส่งมาได้เลย)\n'+ZERR.slice(-3).join('\n')}}catch(e){}}
+window.addEventListener('error',function(e){zErrShow((e.message||'error')+' @'+(e.lineno||'?')+':'+(e.colno||'?'))});
+window.addEventListener('unhandledrejection',function(e){var r=e.reason;zErrShow('promise: '+(r&&r.message?r.message:String(r)))});
+setTimeout(function(){var t=document.getElementById('btTip');if(t&&!t.textContent&&!ZERR.length)zErrShow('บูตไม่สำเร็จ (ไม่มีข้อความ error) · '+navigator.userAgent.slice(0,90))},9000);
+</script>
+<script>
 // v53: เก็บรูปทุกรูปที่สร้าง เพื่อถอดรหัสล่วงหน้า (กันเฟรมสะดุดตอนรูปถูกวาดครั้งแรก)
 const ALLIMG=[];{const _I=window.Image;window.Image=function(w,h){const i=new _I(w,h);ALLIMG.push(i);return i};window.Image.prototype=_I.prototype}
 const WARMC=document.createElement('canvas');WARMC.width=WARMC.height=2;const WARMX=WARMC.getContext('2d');let warmI=0;
@@ -200,7 +208,7 @@ d.custom={maps:(s.custom&&s.custom.maps)||{},chars:(s.custom&&s.custom.chars)||{
   return d;
 }
 let S=loadSave();
-function save(){try{localStorage.zsave=JSON.stringify(S)}catch(e){}
+function save(){try{let o=S;try{if(NET&&(NET.inGame||NET.ssel)){o=Object.assign({},S);if(NET.ssel)o.sel=NET.ssel;if(NET.prev){o.mode=NET.prev.mode;o.diff=NET.prev.diff}}}catch(_){}localStorage.zsave=JSON.stringify(o)}catch(e){}
 }
 const lvOf=id=>S.up[id]||0;
 
@@ -4615,9 +4623,9 @@ function netQuitToRoom(msg){ // ผู้เข้าร่วม: โฮสต�
 // ---------- โฮสต์: ทุกเฟรมหลัง update() ----------
 const NET_GK=['dmg','rate','multi','pierce','range','mevo','mc','shot','sbuf','scrit','ult','bigT','bzc','bzr','nad','ammo'];
 function netBudFire(dt){const b=BUD,g=b.g;if(!g)return;const hv={},sP=P,sSel=S.sel,shd=NET.hd,sh0=G.shake,m0=b.mf;
-  for(const k of NET_GK){hv[k]=G[k];G[k]=g[k]}P=b;S.sel=CHARS[b.ch]?b.ch:'soldier';NET.bf=1;NET.hd=0;
+  for(const k of NET_GK){hv[k]=G[k];G[k]=g[k]}NET.ssel=sSel;P=b;S.sel=CHARS[b.ch]?b.ch:'soldier';NET.bf=1;NET.hd=0;
   try{fireMain(dt)}catch(e){console.warn('budfire',e)}
-  finally{for(const k of NET_GK){g[k]=G[k];G[k]=hv[k]}P=sP;S.sel=sSel;NET.bf=0;NET.hd=shd;G.shake=sh0}
+  finally{for(const k of NET_GK){g[k]=G[k];G[k]=hv[k]}P=sP;S.sel=sSel;NET.ssel=null;NET.bf=0;NET.hd=shd;G.shake=sh0}
   if(b.mf>m0)b.sh++}
 // สกิลของเพื่อน (เวอร์ชันออนไลน์): 0 พุ่ง · 1 ระเบิดรอบตัว · 2 โล่ · 3 ท่าไม้ตาย — สี/คูลดาวน์ตามตัวละคร
 function netBudSkill(i){const b=BUD;if(!b||b.down||!(i>=0&&i<=3))return;const g=b.g||{dmg:12},pc=PCOL[b.ch]||'#3a8cff',rgb=hexRGB(pc);
@@ -4742,9 +4750,9 @@ function netGU(dt){G.fr++;G.t+=dt;G.ban.t-=dt;G.shake=Math.max(0,G.shake-dt*30);
 // ---------- วาดเพื่อนร่วมทีม (ใช้โค้ดวาดตัวละครเดิม) ----------
 function netDrawMates(){const o=NET.role==='host'?BUD:HB;if(!o)return;
   const sP=P,sSel=S.sel,sv={warp:G.warp,bigT:G.bigT,bzr:G.bzr,ghT:G.ghT,adr:G.adr,bzN:G.bzN};
-  P=o;S.sel=CHARS[o.ch]?o.ch:'soldier';G.warp=null;G.bigT=0;G.bzr=0;G.ghT=0;G.adr=0;G.bzN=0;
+  NET.ssel=sSel;P=o;S.sel=CHARS[o.ch]?o.ch:'soldier';G.warp=null;G.bigT=0;G.bzr=0;G.ghT=0;G.adr=0;G.bzN=0;
   const si=o.inv;if(o.down)o.inv=1;
-  try{ctx.save();drawPBody()}catch(e){}finally{ctx.restore();P=sP;S.sel=sSel;Object.assign(G,sv);o.inv=si;ctx.globalAlpha=1}
+  try{ctx.save();drawPBody()}catch(e){}finally{ctx.restore();P=sP;S.sel=sSel;NET.ssel=null;Object.assign(G,sv);o.inv=si;ctx.globalAlpha=1}
   ctx.save();ctx.textAlign='center';ctx.font='bold 13px sans-serif';ctx.lineWidth=3;ctx.strokeStyle='#000';
   if(o.shield>0){ctx.strokeStyle='#6cf';ctx.lineWidth=4;ctx.beginPath();ctx.arc(o.x,o.y,24,0,6.28);ctx.stroke()}
   const nm=(o.down?'💀 ':'')+o.n;ctx.strokeText(nm,o.x,o.y-46);ctx.fillStyle=NET.role==='host'?'#9df':'#ffd75a';ctx.fillText(nm,o.x,o.y-46);
@@ -5589,7 +5597,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v94 (เกม v94) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v94.1 (เกม v94.1) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
@@ -5641,12 +5649,14 @@ function loop(now){
   if(state!=='menu'){const t1=performance.now();draw();if(NET.inGame&&(state==='play'||state==='paused'))netHUD();fd=performance.now()-t1;if(state==='play'){drAcc+=fd;perfSpike(raw*1000)}}
   requestAnimationFrame(loop);
 }
-applyCustom();loadMapImgs();
-if(!CHARS[S.sel])S.sel='soldier';
-if(!MAPS[S.map]||!S.maps.includes(S.map))S.map='forest';
-reset();
-showMenu();
-bootStart();
+try{  // v94.1: บูตแบบปลอดภัย — ถ้าส่วนไหนพัง ยังไปหน้าโหลดต่อได้ และโชว์ข้อความ error
+  applyCustom();loadMapImgs();
+  if(!CHARS[S.sel]||!S.chars.includes(S.sel))S.sel='soldier';
+  if(!MAPS[S.map]||!S.maps.includes(S.map))S.map='forest';
+  if(!MODES[S.mode])S.mode='endless';if(!DIFF[S.diff])S.diff='normal';
+  reset();showMenu();
+}catch(e){zErrShow('boot: '+(e&&e.message)+' '+((e&&e.stack)||'').split('\n').slice(0,2).join(' | '));try{reset();showMenu()}catch(_){}}
+try{bootStart()}catch(e){zErrShow('bootStart: '+(e&&e.message))}
 requestAnimationFrame(loop);
 </script>
 </body>
