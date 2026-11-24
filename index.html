@@ -4035,7 +4035,7 @@ function updBz(dt){if(G.bzr>0)G.bzr-=dt;if(G.bzN>0)G.bzN-=dt;if(G.bzA>0)G.bzA-=d
   if(P.hp>0&&P.hp<P.max*.3&&!(G.bzsT>0)&&state==='play'){G.bzsT=90;G.drt=Math.max(G.drt,3);G.drm=Math.min(G.drm||1,.5);P.inv=Math.max(P.inv,.5);P.hp=Math.min(P.max,P.hp+P.max*.06);
     G.ban={s:'🛡️ โล่ฉุกเฉิน! ลดดาเมจ 50% 3 วิ + ฟื้น 6% (คูลดาวน์ 90 วิ)',t:2};FX.push({x:P.x,y:P.y,r:0,max:130,t:0,c:'255,120,60'});sfx('skill')}}
 function bzGiantDraw(pfl){if(S.sel!=='berserk'||!(G.bigT>0))return false;let im=bzSheet();if(!im)return false;const t0=G.t-(G.bzT0||G.t);let row=1,fr=0;
-  const sa=Math.sin(P.aim),vw=t0<.6?0:(sa>.55?1:sa<-.55?2:0),im2=bzSheet2();if(vw&&im2)im=im2;const cs=im.width/6,mv=Math.hypot(P.vx||0,P.vy||0)>20||(joy&&joy.on);
+  const sa=Math.sin(P.aim),vw=t0<.6?0:(sa>.55?1:sa<-.55?2:0),im2=bzSheet2();if(vw&&im2)im=im2;const cs=im.width/6,mv=P.slot!==undefined?(P.wm||0)>.15:(Math.hypot(P.vx||0,P.vy||0)>20||(joy&&joy.on));
   if(vw&&im2){const atk=G.bzA>0;row=(vw===1?0:2)+(atk?1:0);fr=atk?Math.min(5,Math.floor((1-G.bzA/.32)*6)):mv?Math.floor(G.t*10)%6:0}
   else if(t0<.6){row=0;fr=Math.min(5,Math.floor(t0/.1))}else if(G.bzA>0){row=G.bzAR||2;fr=Math.min(5,Math.floor((1-G.bzA/.32)*6))}else{fr=mv?Math.floor(G.t*10)%6:0}
   const left=!(vw&&im2)&&Math.cos(P.aim)<0,sz=200;ctx.save();const m=ctx.getTransform(),sc=Math.hypot(m.a,m.b);ctx.setTransform(sc,0,0,sc,m.e,m.f);if(left)ctx.scale(-1,1);
@@ -4093,7 +4093,7 @@ function hudText(s,x,y,st,sh){const g=hudSplit(s);if(g.length===1&&typeof g[0]==
 const COINI='<i class="ei co" style="--ic:url(img/ui/menu/ic_coin.png)"></i>';
 function BI(n){return '<i class="bi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
 function MI(n){return n[0]==='!'?'<i class="mi em">'+n.slice(1)+'</i>':'<i class="mi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
-const GAME_VER='v114';
+const GAME_VER='v115';
 function showMenu(){
   state='menu';STORY_RUN=null;pickCfg();
   const C=CHARS[S.sel];
@@ -4639,7 +4639,7 @@ const NET_CR={blader:3.4,storm:2,shot:1.6};
 // v103: สถานะภาพร่างแปลง/ออร่าของผู้เล่น (ส่งให้อีกเครื่องวาด)
 const NET_VK=['bigT','bzr','bzA','bzAR','bzN','bzNR','ghT','adr'];
 function netVisOf(g){if(!g)return 0;const o=NET_VK.map(k=>+(+(g[k]||0)).toFixed(2));o.push(g.ult&&g.ult.t>0?g.ult.k:'',g.ult&&g.ult.t>0?+g.ult.t.toFixed(1):0,+(G.t-(g.bzT0||G.t)).toFixed(2));return o}
-function netVisApply(dst,v,isG){if(!v)return;NET_VK.forEach((k,i)=>{dst[k]=v[i]});const n=NET_VK.length;dst.ult=v[n]?{k:v[n],t:v[n+1],tk:1,n:0}:(isG?{t:0,tk:0,k:'',n:0}:null);dst.bzT0=G.t-(v[n+2]||0)}
+function netVisApply(dst,v,isG){if(!v)return;NET_VK.forEach((k,i)=>{if((k==='bzA'||k==='bzN')&&!isG&&v[i]>0&&dst[k]>v[i]&&dst[k+'R']===v[i+1])return;dst[k]=v[i]});const n=NET_VK.length;dst.ult=v[n]?{k:v[n],t:v[n+1],tk:1,n:0}:(isG?{t:0,tk:0,k:'',n:0}:null);dst.bzT0=G.t-(v[n+2]||0)}
 function netVisTick(o,dt){if(!o)return;for(const k of ['bigT','bzr','bzA','bzN','ghT','adr'])if(o[k]>0)o[k]=Math.max(0,o[k]-dt);if(o.ult&&o.ult.t>0)o.ult.t=Math.max(0,o.ult.t-dt)}
 function netAura(o,v){const u=v&&v.ult;if(!u||!(u.t>0))return;const col=hexRGB(PCOL[o.ch]||'#3a8cff');const g=ctx.createRadialGradient(o.x,o.y,10,o.x,o.y,90);g.addColorStop(0,'rgba('+col+',.45)');g.addColorStop(1,'rgba('+col+',0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(o.x,o.y,90,0,6.28);ctx.fill()}
 function netSpecJoin(c){if(!NET.inGame||!c.open||SPECS.some(q=>q.id===c.peer))return;SPECS.push({id:c.peer,c,x:P.x,y:P.y});const cf=NET.cfg||{};netSend(c,{t:'go',map:G.mapId||cf.map,diff:cf.diff,mode:S.mode,slots:NET.slots,mid:1,spec:1})}
@@ -5995,7 +5995,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v114 (เกม v114) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v115 (เกม v115) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
