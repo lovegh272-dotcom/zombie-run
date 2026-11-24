@@ -1,5 +1,5 @@
-const C = 'zrun-v108';
-const FILES = ['./', 'index.html', 'manifest.json', 'icon.svg', 'icon-192.png', 'icon-512.png', 'img/z_goblin.png', 'img/z_screamer.png', 'img/z_shield.png', 'img/z_healer.png', 'img/z_necromancer.png'];
+const C = 'zrun-v109';
+const FILES = ['./', 'index.html', 'manifest.json', 'icon.svg', 'icon-192.png', 'icon-512.png', 'img/zombies/z_goblin.png', 'img/zombies/z_screamer.png', 'img/zombies/z_shield.png', 'img/zombies/z_healer.png', 'img/zombies/z_necromancer.png'];
 self.addEventListener('install', e => {
   // ถ้าไฟล์ไหนไม่มี จะข้ามไปโดยไม่ทำให้การติดตั้งล้ม
   e.waitUntil(caches.open(C).then(c => Promise.all(FILES.map(f => c.add(f).catch(() => {})))));
