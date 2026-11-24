@@ -1072,7 +1072,7 @@ const joy={on:false,id:null,bx:0,by:0,x:0,y:0,dx:0,dy:0},keys={};
 let aimT=null;  // v17: นิ้วที่ใช้เล็ง {id,bx,by,src:'zone'|'fire'|'blast'}
 const AIM={on:false,a:0,mouse:false};  // v17: โหมดยิงเอง (S.am==='man'): on=กำลังกดยิง a=ทิศ
 let KBM=0;  // v116: เล่นด้วยคีย์บอร์ด+เมาส์ (คอม) → เล็งตามเมาส์ ยิงด้วย Space/คลิก
-const manual=()=>(S.am==='man'||KBM)&&!NET.bf;
+const manual=()=>(S.am==='man')&&!NET.bf;
 function applyAimUI(){const f=document.getElementById('sf');if(f)f.style.display=manual()?'flex':'none';if(!manual())AIM.on=false}
 cv.addEventListener('pointerdown',e=>{
   if(manual()&&e.pointerType==='mouse'){AIM.on=true;AIM.mouse=true;AIM.a=Math.atan2(e.clientY-H_/2,e.clientX-W_/2);return}  // เมาส์: ชี้แล้วกดค้างเพื่อยิง
