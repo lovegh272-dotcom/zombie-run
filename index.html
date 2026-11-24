@@ -1071,7 +1071,8 @@ function vib(ms){const now=performance.now();if(navigator.vibrate&&now-lastVib>3
 const joy={on:false,id:null,bx:0,by:0,x:0,y:0,dx:0,dy:0},keys={};
 let aimT=null;  // v17: นิ้วที่ใช้เล็ง {id,bx,by,src:'zone'|'fire'|'blast'}
 const AIM={on:false,a:0,mouse:false};  // v17: โหมดยิงเอง (S.am==='man'): on=กำลังกดยิง a=ทิศ
-const manual=()=>S.am==='man'&&!NET.bf;
+let KBM=0;  // v116: เล่นด้วยคีย์บอร์ด+เมาส์ (คอม) → เล็งตามเมาส์ ยิงด้วย Space/คลิก
+const manual=()=>(S.am==='man'||KBM)&&!NET.bf;
 function applyAimUI(){const f=document.getElementById('sf');if(f)f.style.display=manual()?'flex':'none';if(!manual())AIM.on=false}
 cv.addEventListener('pointerdown',e=>{
   if(manual()&&e.pointerType==='mouse'){AIM.on=true;AIM.mouse=true;AIM.a=Math.atan2(e.clientY-H_/2,e.clientX-W_/2);return}  // เมาส์: ชี้แล้วกดค้างเพื่อยิง
@@ -1093,14 +1094,18 @@ document.addEventListener('pointermove',e=>{
 });
 ['pointerup','pointercancel'].forEach(ev=>document.addEventListener(ev,e=>{
   if(aimT&&e.pointerId===aimT.id){if(aimT.src!=='blast')AIM.on=false;aimT=null}
-  if(AIM.mouse&&e.pointerType==='mouse'){AIM.on=false;AIM.mouse=false}
+  if(AIM.mouse&&e.pointerType==='mouse'){AIM.mouse=false;if(!AIM.kb)AIM.on=false}
   }));
 function endJoy(e){if(e.pointerId===joy.id){joy.on=false;joy.dx=joy.dy=0}}
 cv.addEventListener('pointerup',endJoy);cv.addEventListener('pointercancel',endJoy);
 addEventListener('keydown',e=>{if(e.target&&/^(INPUT|TEXTAREA)$/.test(e.target.tagName))return;const k=e.key.toLowerCase();keys[k]=true;
-  if(k==='1'||k===' ')useSkill(0);if(k==='2')useSkill(1);if(k==='3')useSkill(2);if(k==='4'||k==='q'||k==='e')useSkill(3);
+  if('wasdqerf '.includes(k)&&k.length===1){if(!KBM){KBM=1;try{applyAimUI()}catch(_){}}}
+  if(k===' '){e.preventDefault();if(state==='play'){AIM.on=true;AIM.kb=true}}
+  if(!e.repeat){if(k==='q'||k==='1')useSkill(0);if(k==='e'||k==='2')useSkill(1);if(k==='r'||k==='3')useSkill(2);if(k==='f'||k==='4')useSkill(3)}
   if(k==='p'||k==='escape')togglePause()});
-addEventListener('keyup',e=>{if(e.target&&/^(INPUT|TEXTAREA)$/.test(e.target.tagName))return;keys[e.key.toLowerCase()]=false});
+addEventListener('keyup',e=>{if(e.target&&/^(INPUT|TEXTAREA)$/.test(e.target.tagName))return;const k=e.key.toLowerCase();keys[k]=false;if(k===' '&&AIM.kb){AIM.kb=false;if(!AIM.mouse)AIM.on=false}});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;AIM.kb=false;AIM.on=false});
+addEventListener('mousemove',e=>{if(!KBM&&e.movementX===0&&e.movementY===0)return;if(!KBM&&matchMedia&&matchMedia('(pointer:fine)').matches){KBM=1;try{applyAimUI()}catch(_){}}if(KBM)AIM.a=Math.atan2(e.clientY-H_/2,e.clientX-W_/2)});
 [0,1,2,3].forEach(i=>{
   document.getElementById('s'+i).addEventListener('pointerdown',e=>{e.preventDefault();useSkill(i);
     if(i===1&&S.sel==='sniper'&&G.snc&&e.pointerType!=='mouse'&&!aimT)aimT={id:e.pointerId,bx:e.clientX,by:e.clientY,src:'blast'}});  // v18b: กดค้างที่ปุ่มแล้วลากเพื่อเล็งสกิล
@@ -3122,6 +3127,7 @@ function update(dt){
     gameOver(G.mode!=='extract',G.stg?'story':undefined);
     return;
   }
+  if(KBM&&!G.snc)P.aim=AIM.a;
   let mx=joy.dx,my=joy.dy;
   if(keys['w']||keys['arrowup'])my-=1;if(keys['s']||keys['arrowdown'])my+=1;
   if(keys['a']||keys['arrowleft'])mx-=1;if(keys['d']||keys['arrowright'])mx+=1;
@@ -4093,7 +4099,7 @@ function hudText(s,x,y,st,sh){const g=hudSplit(s);if(g.length===1&&typeof g[0]==
 const COINI='<i class="ei co" style="--ic:url(img/ui/menu/ic_coin.png)"></i>';
 function BI(n){return '<i class="bi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
 function MI(n){return n[0]==='!'?'<i class="mi em">'+n.slice(1)+'</i>':'<i class="mi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
-const GAME_VER='v115';
+const GAME_VER='v116';
 function showMenu(){
   state='menu';STORY_RUN=null;pickCfg();
   const C=CHARS[S.sel];
@@ -4735,7 +4741,7 @@ function netApply(s){if(!NETG())return;NET.lastS=performance.now();NET.hold=0;
   if(s.ban)G.ban={s:s.ban[0],t:s.ban[1]}}
 
 // ---------- ผู้เข้าร่วม: ทุกเฟรม (แทน update) ----------
-function netGU(dt){G.fr++;G.t+=dt;G.ban.t-=dt;G.shake=Math.max(0,G.shake-dt*30);gridBuild();
+function netGU(dt){if(KBM)P.aim=AIM.a;G.fr++;G.t+=dt;G.ban.t-=dt;G.shake=Math.max(0,G.shake-dt*30);gridBuild();
   let mx=joy.dx,my=joy.dy;
   if(keys['w']||keys['arrowup'])my-=1;if(keys['s']||keys['arrowdown'])my+=1;if(keys['a']||keys['arrowleft'])mx-=1;if(keys['d']||keys['arrowright'])mx+=1;
   let m=Math.hypot(mx,my);if(m>1){mx/=m;my/=m;m=1}if(NET.down||P.hp<=0||NET.spec){mx=my=0;m=0}
@@ -5995,7 +6001,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v115 (เกม v115) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v116 (เกม v116) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
