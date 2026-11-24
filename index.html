@@ -4323,7 +4323,7 @@ function restoreSave(txt){
 }
 // ===================== v89: ออนไลน์ (เฟส 1: ห้อง + เชื่อมต่อ 2 เครื่อง) =====================
 // ใช้ PeerJS (WebRTC แบบ P2P) โหลดจาก CDN ตอนกดเข้าเมนูออนไลน์เท่านั้น · โฮสต์ = เครื่องที่สร้างห้อง
-const NET_VER='107',NET_PFX='zrun-v1-',NET_MAX=4,NET_ABC='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const NET_VER='108',NET_PFX='zrun-v1-',NET_MAX=4,NET_ABC='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const NET_ICE={config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}]}};
 const NET={peer:null,conns:[],role:null,code:'',me:null,pl:{},st:'idle',err:'',ping:0,pt:null,to:null,jc:'',inGame:0,sq:0};
 function netNick(){let n='';try{n=localStorage.znick||''}catch(e){}if(!n){n='ผู้เล่น'+(100+Math.floor(Math.random()*900));try{localStorage.znick=n}catch(e){}}return n}
@@ -4364,7 +4364,7 @@ async function netHost(){netLeave(true);NET.err='';NET.role='host';NET.st='loadi
     p.on('error',e=>{if(NET.peer!==p)return;if(e.type==='unavailable-id'&&n<5){try{p.destroy()}catch(_){}open(n+1)}else if(e.type!=='peer-unavailable')netFail(netErrTxt(e))})};
   open(0)}
 function netAccept(c){if(NET.ban&&NET.ban[c.peer]){c.on('open',()=>{netSend(c,{t:'kick'});setTimeout(()=>{try{c.close()}catch(e){}},300)});return}
-  if(NET.conns.length>=NET_MAX-1||NET.st!=='lobby'||NET.inGame){c.on('open',()=>{netSend(c,{t:'full'});setTimeout(()=>{try{c.close()}catch(e){}},400)});return}
+  if(NET.conns.length>=NET_MAX-1||NET.st!=='lobby'||NET.inGame){c.on('open',()=>{netSend(c,{t:NET.inGame?'busy':'full'});setTimeout(()=>{try{c.close()}catch(e){}},400)});return}
   NET.conns.push(c);
   c.on('data',d=>netOnHost(c,d));
   const gone=()=>{const i=NET.conns.indexOf(c);if(i<0)return;NET.conns.splice(i,1);const p=NET.pl[c.peer];delete NET.pl[c.peer];
@@ -4373,7 +4373,7 @@ function netAccept(c){if(NET.ban&&NET.ban[c.peer]){c.on('open',()=>{netSend(c,{t
 function netOnHost(c,d){if(!d||typeof d!=='object')return;const me=NET.pl[c.peer];
   if(d.t==='chat'){if(me)netChatRecv({t:'chat',s:d.s,n:me.n},c);return}
   if(d.t==='pz'){const n=me?me.n:d.n;netAll({t:'pz',on:d.on,n},c);netPzRecv({on:d.on,n});return}
-  if(d.t==='vc'||d.t==='spk'){vcMsg(d,c.peer);return}
+  if(d.t==='vc'||d.t==='spk'){vcMsg(d,c.peer);netAll({t:d.t,on:d.on,v:d.v,f:c.peer},c);return}
   if(d.t==='devf'){if(me){me.dev=d.v?1:0;netLobby()}return}
   if(d.t==='dev'){if(me&&devHostOK()&&devIcon())devExec(String(d.op),d.v,BUDS.find(b=>b.id===c.peer)||{n:me.n},d.on);return}
   if(NET.inGame&&netGameMsgHost(c,d))return;
@@ -4408,11 +4408,12 @@ async function netJoin(code){code=String(code||'').toUpperCase().replace(/[^A-Z0
 function netOnGuest(d){if(!d||typeof d!=='object')return;
   if(d.t==='chat'){netChatRecv(d);return}
   if(d.t==='pz'){netPzRecv(d);return}
-  if(d.t==='vc'||d.t==='spk'){vcMsg(d,NET_PFX+NET.code);return}
+  if(d.t==='vc'||d.t==='spk'){vcMsg(d,d.f||NET_PFX+NET.code);return}
   if(netGameMsgGuest(d))return;
-  if(d.t==='lobby'){NET.pl=d.pl||{};NET.code=d.code||NET.code;if(d.cfg)NET.cfg=d.cfg;NET.pub=!!d.pub;netRender()}
+  if(d.t==='lobby'){NET.pl=d.pl||{};NET.code=d.code||NET.code;if(d.cfg)NET.cfg=d.cfg;NET.pub=!!d.pub;netRender();vcSyncPeers()}
   else if(d.t==='kick'){netFail('🚫 โฮสต์เชิญคุณออกจากห้อง')}
   else if(d.t==='pong'){NET.ping=Math.round(performance.now()-d.ts);netAll({t:'lat',ms:NET.ping})}
+  else if(d.t==='busy')netFail('ห้องนี้กำลังเล่นอยู่ · รอจบรอบแล้วค่อยเข้าใหม่ หรือหาห้องอื่น');
   else if(d.t==='full')netFail('ห้องเต็มแล้ว (เล่นได้ '+NET_MAX+' คน)');
   else if(d.t==='ver')netFail('เวอร์ชันเกมไม่ตรงกัน (โฮสต์ v'+d.v+' / เรา v'+NET_VER+') · ปิดแอปแล้วเปิดใหม่ทั้งสองเครื่อง');
   else if(d.t==='emo'){netToast(d.n+': '+String(d.e).slice(0,4));if(typeof sfx==='function')sfx('ui')}
@@ -4667,7 +4668,7 @@ function netApply(s){if(!NETG())return;NET.lastS=performance.now();NET.hold=0;
     if(si===my){G.blade=e[13]||0;G.ba=(e[14]||0)/100;if(e[8]<P.hp-.5)P.hif=HIT_IF;P.hp=e[8];P.max=e[9];NET.down=e[10];NET.rv=e[11]/100;if(e[7])P.mf=.07;G.comp=cpv;if(v)netVisApply(G,v,true);continue}
     let h=MATES[si];if(!h){const k=(NET.slots||[])[si],p=NET.pl[k]||{};h=MATES[si]=netMate({slot:si,id:k,ch:p.ch||'soldier',n:p.n||'เพื่อน'})}
     if(!h.seen){h.x=e[1];h.y=e[2];h.seen=1}h.tx=e[1];h.ty=e[2];h.aim=e[3]/100;h.fx=e[4]/100;h.fy=e[5]/100;h.wm=e[6]/100;if(e[7])h.mf=.07;if(e[8]<h.hp-.5)h.hif=HIT_IF;h.hp=e[8];h.max=e[9];h.down=e[10]||0;h.rv=(e[11]||0)/100;h.shield=e[12]||0;h.bl=e[13]||0;h.ba=(e[14]||0)/100;h.bev=e[15]||0;h.comp=cpv;if(v){h.vis=h.vis||{};netVisApply(h.vis,v,false)}}
-  for(const si in MATES)if(!pres[si]){const m=MATES[si];delete MATES[si];if(m)G.ban={s:'🚪 '+m.n+' ออกจากเกม',t:2.5}}
+  for(const si in MATES)if(!pres[si]){const m=MATES[si];delete MATES[si];if(m){G.ban={s:'🚪 '+m.n+' ออกจากเกม',t:2.5};try{if(m.id)vcDrop(m.id)}catch(e){}}}
   const seen=++NET.sq,zm=NET.zm;
   for(const r of s.z){let z=zm.get(r[0]);const T=TYPES[NET.tk?NET.tk[r[1]]:Object.keys(TYPES)[r[1]]]||TYPES.normal;
     if(!z){z={x:r[2],y:r[3],hp:r[4],max:r[5],T,flash:0,ph:Math.random()*6,bh:0,cd:1,bs:'walk',bt:3,ba:0,bv:r[6],col:null,dead:0,fa:0,nid:r[0]};zm.set(r[0],z);Z.push(z)}
@@ -4898,7 +4899,7 @@ function devTick(){if(!devInGame())return;
 // ===================== v99: คุยด้วยเสียง (WebRTC ผ่าน PeerJS) =====================
 // กด 🎤 เปิด/ปิดไมค์ของเรา · 🔊/🔇 เปิด/ปิดเสียงเพื่อน · เสียงแต่ละฝั่งเป็นสายแยก (ฝั่งที่เปิดไมค์เป็นคนโทรหาอีกฝั่ง)
 const VC={on:0,st:null,outs:{},ins:{},frBy:{},spkBy:{},mute:0,fr:0,frOn:0,spk:0,mateSpk:0,an:null,ac:null,mt:null,need:0,busy:0};
-function vcTargets(){if(!NET.conns.length)return[];return NET.role==='host'?NET.conns.filter(c=>c.open).map(c=>c.peer):[NET_PFX+NET.code]}
+function vcTargets(){if(!NET.conns.length)return[];const ks=Object.keys(NET.pl||{}).filter(k=>k!==NET.me);if(NET.role==='host')return NET.conns.filter(c=>c.open&&NET.pl[c.peer]).map(c=>c.peer);return ks.length?ks:[NET_PFX+NET.code]}  // v108: ทุกคนโทรหาทุกคน
 function vcGameAudio(){try{if(typeof AC!=='undefined'&&AC&&AC.state!=='running')AC.resume()}catch(e){}vcDuck()}
 function vcDuck(){try{if(typeof AC==='undefined'||!AC)return;const on=VC.on||(VC.mateSpk&&!VC.mute),k=on?.3:1;  // v103: ลดเสียงเกมระหว่างไมค์เปิด/เพื่อนพูด
   if(VC.dk===k)return;VC.dk=k;if(sfxBus)sfxBus.gain.setTargetAtTime(.72*sfxVol*k,AC.currentTime,.15);if(musicBus)musicBus.gain.setTargetAtTime(.62*bgmVol*(ducked?.35:1)*k,AC.currentTime,.15)}catch(e){}}
@@ -4921,6 +4922,7 @@ function vcStop(send){try{if(VC.st)VC.st.getTracks().forEach(t=>t.stop())}catch(
 function vcEnd(){vcStop(false);for(const k in VC.ins)vcDrop(k,1);VC.ins={};VC.frBy={};VC.spkBy={};VC.fr=0;VC.frOn=0;VC.mateSpk=0;VC.need=0;vcUI()}
 function vcDrop(id,keepUI){try{if(VC.outs[id])VC.outs[id].close()}catch(e){}delete VC.outs[id];const r=VC.ins[id];if(r){try{if(r.call)r.call.close()}catch(e){}try{r.au.pause();r.au.srcObject=null;r.au.remove()}catch(e){}delete VC.ins[id]}
   delete VC.frBy[id];delete VC.spkBy[id];vcAgg();if(!keepUI)vcUI()}
+function vcSyncPeers(){try{const keep=NET.pl||{};for(const k of Object.keys(VC.outs).concat(Object.keys(VC.ins)))if(!keep[k]&&k!==NET_PFX+NET.code)vcDrop(k);if(VC.on)setTimeout(vcCall,600+Math.random()*400)}catch(e){}}
 function vcAgg(){VC.fr=Object.keys(VC.ins).some(k=>VC.ins[k].au&&VC.ins[k].au.srcObject)?1:0;VC.frOn=Object.keys(VC.frBy).some(k=>VC.frBy[k])?1:0;VC.mateSpk=Object.keys(VC.spkBy).some(k=>VC.spkBy[k])?1:0}
 function vcOnCall(call){const id=call.peer;const old=VC.ins[id];if(old&&old.call&&old.call!==call){try{old.call.close()}catch(e){}}
   VC.ins[id]=VC.ins[id]||{};VC.ins[id].call=call;call.answer();
@@ -5948,7 +5950,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v107 (เกม v107) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v108 (เกม v108) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
