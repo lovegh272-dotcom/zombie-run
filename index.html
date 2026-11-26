@@ -2552,7 +2552,7 @@ function updV61(dt){updV63(dt);
   if(G.cdw){G.cdw.t-=dt;if(G.cdw.t<=0)G.cdw=null}
   if(G.dark>0)G.dark-=dt;if(G.wf>0)G.wf-=dt*1.2;if(G.bigT>0){G.bigT-=dt;G.bgt=(G.bgt||0)-dt;if(G.bgt<=0){G.bgt=.25;for(const z of [...near(P.x,P.y,90)])if(z.hp>0&&Math.hypot(z.x-P.x,z.y-P.y)<85+z.T.r){hitZ(z,(10+G.dmg*.9)*G.ulm);z.brn=Math.max(z.brn||0,2)}}}
   const U=(40+G.dmg*2.2)*G.ulm;
-  if(G.thor){G.thor.t-=dt;G.thor.k-=dt;if(G.thor.k<=0){G.thor.k=.12;const zs=onScreen();if(zs.length){const z=zs[Math.floor(Math.random()*zs.length)];vfx(3,z.x,z.y-55,230,{d:.75});hitU(z,U*.65);addDecal({x:z.x,y:z.y,r:26,c:'#2a2410',t:3});burst(z.x,z.y,'#ff9',4);const z2=zs[Math.floor(Math.random()*zs.length)];if(z2!==z){vfx(3,z2.x,z2.y-55,200,{d:.75});hitU(z2,U*.45)}if(Math.random()<.25){G.fl={t:.08,c:'#fff8c0'};sfx('zap')}}}if(G.thor.t<=0)G.thor=null}
+  if(G.thor){G.thor.t-=dt;G.thor.k-=dt;if(G.thor.k<=0){G.thor.k=.12;const zs=onScreen();if(zs.length){const z=zs[Math.floor(Math.random()*zs.length)];vfx(3,z.x,z.y-55,230,{d:.75});G.thor.v||hitU(z,U*.65);addDecal({x:z.x,y:z.y,r:26,c:'#2a2410',t:3});burst(z.x,z.y,'#ff9',4);const z2=zs[Math.floor(Math.random()*zs.length)];if(z2!==z){vfx(3,z2.x,z2.y-55,200,{d:.75});G.thor.v||hitU(z2,U*.45)}if(Math.random()<.25){G.fl={t:.08,c:'#fff8c0'};sfx('zap')}}}if(G.thor.t<=0)G.thor=null}
   if(G.mini){G.mini.t-=dt;G.mini.k-=dt;G.mini.f-=dt;const z=nearZ(P.x,P.y,600),a=z?Math.atan2(z.y-P.y,z.x-P.x):faceA();
     if(G.mini.k<=0){G.mini.k=.045;const q=a+(Math.random()-.5)*.25;newB(P.x,P.y,Math.cos(q)*760,Math.sin(q)*760,.8,2,G.dmg*1.35*G.ulm,'#ffcf5a');sfx('shoot')}
     if(G.mini.f<=0){G.mini.f=.12;vfx(3,P.x+Math.cos(a)*60,P.y+Math.sin(a)*60,190,{a,d:.4});G.shake=Math.max(G.shake,3)}if(G.mini.t<=0)G.mini=null}
@@ -4101,7 +4101,7 @@ function hudText(s,x,y,st,sh){const g=hudSplit(s);if(g.length===1&&typeof g[0]==
 const COINI='<i class="ei co" style="--ic:url(img/ui/menu/ic_coin.png)"></i>';
 function BI(n){return '<i class="bi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
 function MI(n){return n[0]==='!'?'<i class="mi em">'+n.slice(1)+'</i>':'<i class="mi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
-const GAME_VER='v119';
+const GAME_VER='v120';
 function showMenu(){
   state='menu';STORY_RUN=null;pickCfg();
   const C=CHARS[S.sel];
@@ -4683,7 +4683,23 @@ function netHU(dt){if(!BUDS.length&&!SPECS.length)return;const d=G.def,wv=d&&NET
 function netTK(T){if(!NET.tk){NET.tk=Object.keys(TYPES);NET.tk.forEach((k,i)=>{TYPES[k]._ti=i})}
   if(T._ti!==undefined)return T._ti;const i=NET.tk.findIndex(k=>TYPES[k].id===T.id);T._ti=i>=0?i:NET.tk.indexOf('tank');return T._ti}
 function netPE(si,o,down,rv,bl,ba,bev){const r0=Math.round;return[si,r0(o.x),r0(o.y),r0((o.aim||0)*100),r0((o.fx||0)*100),r0((o.fy||0)*100),r0((o.wm||0)*100),o.mf>0?1:0,Math.ceil(Math.max(0,o.hp)),Math.ceil(o.max),down?1:0,r0((rv||0)*100),o.shield>0?1:0,bl||0,r0((ba||0)*100),bev?1:0]}
-function netSnap(){if(!BUDS.length&&!SPECS.length)return;const d=G.def,R=1150,r0=v=>Math.round(v);NET.sn++;
+let FXP={pl:null,pl2:null,th:null,dk:0};
+function netFxScan(){  // v120: ส่งภาพเอฟเฟกต์ท่าไม้ตาย (เครื่อง host เท่านั้น) ให้เพื่อนเห็น
+  if(NET.role!=='host'||!NET.inGame||!G)return;
+  const p1=G.plane||null,p2=G.plane2||null,th=G.thor||null;
+  if(p1&&p1!==FXP.pl)netAll({t:'ufx',k:'plane',x:p1.x,y:p1.y,a:p1.a});
+  if(p2&&p2!==FXP.pl2)netAll({t:'ufx',k:'plane2',x:p2.x,y:p2.y,a:p2.a});
+  if(th&&th!==FXP.th)netAll({t:'ufx',k:'thor'});
+  if((G.dark||0)>1&&FXP.dk<=.1)netAll({t:'ufx',k:'dark',v:G.dark});
+  FXP={pl:p1,pl2:p2,th:th,dk:G.dark||0};
+}
+function ufxApply(d){  // v120: เครื่องเพื่อน: วาดเอฟเฟกต์อย่างเดียว ไม่ทำดาเมจ
+  if(!G)return;
+  if(d.k==='plane'||d.k==='plane2'){const o={x:+d.x||0,y:+d.y||0,a:+d.a||0,t:0,d:1.9,v:1};if(d.k==='plane')G.plane=o;else G.plane2=o;try{sfx('plane')}catch(_){}}
+  else if(d.k==='thor'){G.thor={t:5,k:0,v:1};try{sfx('zap')}catch(_){}}
+  else if(d.k==='dark'){G.dark=Math.max(G.dark||0,+d.v||0)}
+}
+function netSnap(){netFxScan();if(!BUDS.length&&!SPECS.length)return;const d=G.def,R=1150,r0=v=>Math.round(v);NET.sn++;
   const inB=(q,b)=>Math.abs(q.x-b.x)<R&&Math.abs(q.y-b.y)<R*.85,RC=BUDS.concat(SPECS),inR=q=>RC.some(b=>inB(q,b));
   // เอฟเฟกต์ที่ส่งครั้งเดียว (รวบรวมครั้งเดียว ส่งให้ทุกคน)
   const fx=[];for(const f of FX){if(f._s)continue;f._s=1;if(fx.length<30&&inR(f))fx.push([r0(f.x),r0(f.y),r0(f.max),f.c])}
@@ -4808,6 +4824,7 @@ function netGameMsgHost(c,d){const b=BUDS.find(q=>q.id===c.peer);if(!b){const sp
   if(d.t==='i'){if(Number.isFinite(+d.x))b.tx=+d.x;if(Number.isFinite(+d.y))b.ty=+d.y;b.fx=+d.fx||0;b.fy=+d.fy||0;b.wm=+d.wm||0;return true}
   return false}
 function netGameMsgGuest(d){
+  if(d.t==='ufx'){ufxApply(d);return true}
   if(d.t==='go'){netStartGame(d);if(d.mid)G.ban={s:'👋 เข้าร่วมกลางเกม! ช่วยเพื่อนปกป้องรถ',t:3};return true}
   if(d.t==='sl'){if(Array.isArray(d.slots)){NET.slots=d.slots;NET.np=d.slots.filter(Boolean).length}return true}
   if(d.t==='s'){netApply(d);return true}
@@ -6044,7 +6061,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v119 (เกม v119) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v120 (เกม v120) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
