@@ -1965,14 +1965,15 @@ function useSkill(i){
 function necroCnt(){let n=0;for(let i=0;i<Z.length;i++)if(Z[i].T.kind==='necro'&&Z[i].hp>0)n++;return n}  // v23: เกิดพร้อมกันไม่เกิน 3 ตัว
 function mkZ(type,x,y,k){
   if(Z.length>=MAX_Z && type!=='boss')return null;
-  const T=TYPES[type];k=(k||1)*D.hp;
+  const T=TYPES[type];k=(k||1)*D.hp*(1+Math.min(.15,G.t/400));  // v124: ซอมบี้อึดขึ้นตามเวลา (สูงสุด +15%)
   const z={x,y,hp:T.hp*k,max:T.hp*k,T,flash:0,ph:Math.random()*6,bh:0,cd:1+Math.random()*1.5,bs:'walk',bt:3,ba:0,bv:0,col:null,dead:0,fa:0};
   if(type==='necromancer'){z.cd=3+Math.random()*2;z.mn=0;z.cast=0}  // v23: สกิลเรียกลูกสมุน
   Z.push(z);return z;
 }
 function spawnZ(){
   const t=G.t,r=Math.random();let type='normal';
-  if(t>50&&r>.94)type='tank';
+  const sp=1+Math.min(.5,t/200);  // v124: ตัวพิเศษเจอบ่อยขึ้นตามเวลา
+  if(t>50&&r>1-.06*sp)type='tank';
   else if(t>20&&r<.2)type='fast';
   else if(t>35&&r>=.2&&r<.28)type='boom';
   else if(t>60&&r>=.28&&r<.35)type='spit';
@@ -1983,6 +1984,7 @@ function spawnZ(){
   else if(t>130&&r>=.53&&r<.555&&necroCnt()<3)type='necromancer';
     if(M.bias&&t>15&&Math.random()<M.bp)type=M.bias[Math.floor(Math.random()*M.bias.length)];
   {const mt=MZT[M.id];if(mt&&t>10&&Math.random()<(G.stg?.15:.16))type=mt}
+  if(t>40&&Math.random()<.24*(sp-1))type='fast';  // v124: วิ่งเร็วเพิ่มตามเวลา
   if(type==='necromancer'&&necroCnt()>=3)type='fast';
   if(t>30&&Math.random()<0.015)type='goblin';
   const a=Math.random()*Math.PI*2,d=Math.max(W_,H_)/2+60;
@@ -3225,7 +3227,7 @@ function update(dt){
   updMis(dt);updHeli(dt);if(state!=='play')return;
   updDun(dt);
 
-  G.spawn+=dt*Math.min(9.5,1.2+G.t/55+Math.pow(G.t/120,1.15))*(1+.08*(G.thr||0))*(G.ovr>=0&&G.clp?2.5+G.ovr*.05:1)*(1+.06*(G.prv||0))*(1+(G.prs||0))*Math.max(.3,1.35-Z.length/MAX_Z)*(MOB?.9:1)*D.sp*G.spm*(G.ev==='blood'?1.6:1)*(G.inDun?.5:1);
+  G.spawn+=dt*Math.min(9.5,1.2+G.t/55+Math.pow(G.t/120,1.15))*(1+.08*(G.thr||0))*(1+Math.min(.15,G.t/400))  /*v124*/*(G.ovr>=0&&G.clp?2.5+G.ovr*.05:1)*(1+.06*(G.prv||0))*(1+(G.prs||0))*Math.max(.3,1.35-Z.length/MAX_Z)*(MOB?.9:1)*D.sp*G.spm*(G.ev==='blood'?1.6:1)*(G.inDun?.5:1);
   while(G.spawn>=1){G.spawn--;if(Z.length<MAX_Z)spawnZ()}
   if(S.sel==='berserk')updBz(dt);if(G.wx)updWx(dt);if(G.dcr&&!G.inDun)updDcr(dt);if(G.def){updDef(dt);if(state!=='play')return}if(G.rush)updRush(dt);else if(G.def){}else if(G.t>=G.bossAt){G.bossAt+=G.bossEv||BOSS_EVERY;spawnBoss()}
 
@@ -4105,7 +4107,7 @@ function hudText(s,x,y,st,sh){const g=hudSplit(s);if(g.length===1&&typeof g[0]==
 const COINI='<i class="ei co" style="--ic:url(img/ui/menu/ic_coin.png)"></i>';
 function BI(n){return '<i class="bi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
 function MI(n){return n[0]==='!'?'<i class="mi em">'+n.slice(1)+'</i>':'<i class="mi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
-const GAME_VER='v123';
+const GAME_VER='v124';
 function showMenu(){
   state='menu';STORY_RUN=null;pickCfg();
   const C=CHARS[S.sel];
@@ -6068,7 +6070,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v123 (เกม v123) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v124 (เกม v124) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
