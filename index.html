@@ -1531,6 +1531,9 @@ const UPG=[
   {it:'fuel',n:()=>'⛽ ถังเชื้อเพลิง LV'+(G.fuel+1)+' (เลือดสูงสุด +12)',h:()=>itemHint('fuel'),ok:()=>G.fuel<5,f:()=>{G.fuel++;P.max+=12;P.hp+=12}}
 ];
 function openNext(){if(G.pend>0&&state==='play'){G.pend--;levelUp()}}
+// v122: แสดงระดับอัปเกรดเป็นดาว ★ อ่านง่าย (ทั้งออฟไลน์และออนไลน์)
+function lvPips(cur,max){let h='';for(let i=0;i<max;i++)h+=i<cur?'★':'☆';return '<span style="color:#fd4;letter-spacing:1px;font-size:15px">'+h+'</span> <span style="color:#dcb">'+cur+'/'+max+'</span>'}
+function optLv(o){if(o.it&&typeof G[o.it]==='number')return[G[o.it],5];if(o.wk&&typeof G[o.wk]==='number')return[G[o.wk],5];if(o.mn)return[G.mainLv||0,5];return null}
 function levelUp(){
   sfx('lvl');
   const opts=pickOpts();let bi=-1,bs=2.5;const rs=opts.map((o,i)=>{const r=recOpt(o);if(r[0]>bs){bs=r[0];bi=i}return r});
@@ -1541,7 +1544,7 @@ function levelUp(){
   const pg=ov.querySelector('.pg');pg.style.pointerEvents='none';setTimeout(()=>{pg.style.pointerEvents=''},400);
   opts.forEach((o,i)=>{
     const d=document.createElement('div');d.className='card btn'+(i===bi?' rec':'');
-    d.innerHTML=EJ('<b>'+(i===bi?'⭐ ':'')+o.n()+'</b>'+(o.h?'<small>'+o.h()+'</small>':'')+(rs[i][1]?'<span class="rect">'+(i===bi?'⭐ แนะนำ: ':'💡 ')+rs[i][1]+'</span>':''));
+    const lv=optLv(o);d.innerHTML=EJ('<b>'+(i===bi?'⭐ ':'')+o.n()+'</b>'+(lv?'<div style="margin:4px 0">'+lvPips(lv[0],lv[1])+'<br><small style="color:#fd4">อัปได้อีก '+(lv[1]-lv[0])+' ดาว</small></div>':'')+(o.h?'<small>'+o.h()+'</small>':'')+(rs[i][1]?'<span class="rect">'+(i===bi?'⭐ แนะนำ: ':'💡 ')+rs[i][1]+'</span>':''));
     d.onclick=()=>take(o);
     pg.appendChild(d);
   });
@@ -4101,7 +4104,7 @@ function hudText(s,x,y,st,sh){const g=hudSplit(s);if(g.length===1&&typeof g[0]==
 const COINI='<i class="ei co" style="--ic:url(img/ui/menu/ic_coin.png)"></i>';
 function BI(n){return '<i class="bi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
 function MI(n){return n[0]==='!'?'<i class="mi em">'+n.slice(1)+'</i>':'<i class="mi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
-const GAME_VER='v121';
+const GAME_VER='v122';
 function showMenu(){
   state='menu';STORY_RUN=null;pickCfg();
   const C=CHARS[S.sel];
@@ -4616,11 +4619,12 @@ const NET_UP=[['dmg','💥 ดาเมจ +15%'],['rate','🔫 ยิงเร�
 function netBudUp(b,k){if(!b||!b.g)return;const g=b.g;b.ups=b.ups||{};b.ups[k]=(b.ups[k]||0)+1;
   if(k==='dmg')g.dmg*=1.15;else if(k==='rate')g.rate*=1.12;else if(k==='multi')g.multi=Math.min(4,g.multi+1);else if(k==='pierce')g.pierce+=1;else if(k==='range')g.range*=1.1;
   else if(k==='hp'){b.max*=1.2;b.hp=Math.min(b.max,b.hp+b.max*.2)}}
+const NET_CAP={multi:3,pierce:5,cd:5};
 function netUpPick(){const el=document.getElementById('netUp');if(!NETG()||!(NET.gpend>0)||state!=='play'){if(el)el.remove();return}
   if(el)return;const my=NET.myUps||{},pool=NET_UP.filter(([k])=>!(k==='multi'&&(my.multi||0)>=3)&&!(k==='pierce'&&(my.pierce||0)>=5)&&!(k==='cd'&&(my.cd||0)>=5));
   const opts=pool.sort(()=>Math.random()-.5).slice(0,3),d=document.createElement('div');d.id='netUp';
   d.style.cssText='position:fixed;z-index:20;left:50%;top:max(54px,env(safe-area-inset-top));transform:translateX(-50%);background:#0d1a10ee;border:2px solid #9c6;border-radius:16px;padding:8px 10px;display:flex;gap:6px;align-items:center;box-shadow:0 4px 14px #000a;font:inherit;color:#fff';
-  d.innerHTML='<b style="font-size:13px;white-space:nowrap">⬆️ อัปเกรดของคุณ'+(NET.gpend>1?' ('+NET.gpend+')':'')+'</b>'+opts.map(([k,n])=>'<button data-k="'+k+'" style="font:inherit;font-size:14px;font-weight:700;color:#fff;background:linear-gradient(#4a7a2a,#2a4a18);border:2px solid #9c6;border-radius:12px;padding:8px 10px;white-space:nowrap">'+TI({dmg:'u_dmg',rate:'u_rate',multi:'u_multi',pierce:'u_pierce',range:'u_range',hp:'u_hp',spd:'e_boots',cd:'u_cd'}[k]||'u_dmg')+n.replace(/^\S+\s/,'')+'</button>').join('');
+  d.innerHTML='<b style="font-size:13px;white-space:nowrap">⬆️ อัปเกรดของคุณ'+(NET.gpend>1?' ('+NET.gpend+')':'')+'</b>'+opts.map(([k,n])=>'<button data-k="'+k+'" style="font:inherit;font-size:14px;font-weight:700;color:#fff;background:linear-gradient(#4a7a2a,#2a4a18);border:2px solid #9c6;border-radius:12px;padding:8px 10px;white-space:nowrap">'+TI({dmg:'u_dmg',rate:'u_rate',multi:'u_multi',pierce:'u_pierce',range:'u_range',hp:'u_hp',spd:'e_boots',cd:'u_cd'}[k]||'u_dmg')+n.replace(/^\S+\s/,'')+'<br><small style="font-size:12px;font-weight:400">'+(NET_CAP[k]?lvPips(my[k]||0,NET_CAP[k]):'ครั้งที่ '+((my[k]||0)+1))+'</small></button>').join('');
   d.addEventListener('pointerdown',e=>{e.stopPropagation();const t=e.target.closest('button[data-k]');if(!t)return;const k=t.dataset.k;
     NET.myUps=NET.myUps||{};NET.myUps[k]=(NET.myUps[k]||0)+1;if(k==='spd')P.spd*=1.08;else if(k==='cd')G.cdMul*=.9;else netSend(NET.conns[0],{t:'up',k});
     sfx('lvl');netToast(t.textContent);NET.gpend--;d.remove();setTimeout(netUpPick,120)});
@@ -6063,7 +6067,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v121 (เกม v121) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v122 (เกม v122) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
