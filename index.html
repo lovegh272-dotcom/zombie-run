@@ -262,6 +262,7 @@ const DRULES_GOOD=[
 ];
 function dayKey(off){const d=new Date(Date.now()+7*3600e3-(off||0)*864e5);return d.toISOString().slice(0,10)}
 function dailyCfg(){
+  if(NET.inGame&&NET.dOvr)return NET.dOvr;  // v118: แมพ/กฎรายวันที่ host ตัดสินแล้ว (ทุกคนต้องตรงกัน)
   const k=dayKey();let h=2166136261;for(let i=0;i<k.length;i++){h^=k.charCodeAt(i);h=Math.imul(h,16777619)}
   let a=h>>>0;const rnd=()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296};
   const maps=Object.keys(MAPS).filter(id=>!MAPS[id].hidden&&!(S.custom&&S.custom.maps&&S.custom.maps[id])).sort();
@@ -4099,7 +4100,7 @@ function hudText(s,x,y,st,sh){const g=hudSplit(s);if(g.length===1&&typeof g[0]==
 const COINI='<i class="ei co" style="--ic:url(img/ui/menu/ic_coin.png)"></i>';
 function BI(n){return '<i class="bi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
 function MI(n){return n[0]==='!'?'<i class="mi em">'+n.slice(1)+'</i>':'<i class="mi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
-const GAME_VER='v117';
+const GAME_VER='v118';
 function showMenu(){
   state='menu';STORY_RUN=null;pickCfg();
   const C=CHARS[S.sel];
@@ -4470,7 +4471,7 @@ function netAct(a,i){const c0=NET.conns[0];
   else if(a==='on_copy'){const t='มาเล่น Zombie Run ด้วยกัน! เข้าเมนู 🌐 เล่นออนไลน์ > เข้าห้อง แล้วใส่รหัส '+NET.code+'\n'+location.href.split('#')[0];
     if(navigator.share)navigator.share({text:t}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>netToast('📋 คัดลอกแล้ว')).catch(()=>netToast('รหัสห้อง: '+NET.code));else netToast('รหัสห้อง: '+NET.code)}
   else if(a==='on_start'){if(NET.role!=='host')return;const ks=Object.keys(NET.pl);if(ks.length<1||!ks.every(k=>NET.pl[k].rd||NET.pl[k].spec)){if(typeof sfx==='function')sfx('ui_err');return}
-    const cf=Object.assign({map:'forest',diff:'normal'},NET.cfg||{});if(cf.mode==='daily'){try{cf.map=dailyCfg().map}catch(e){}}const slots=[NET.me].concat(NET.conns.filter(c=>c.open&&NET.pl[c.peer]&&!NET.pl[c.peer].spec).map(c=>c.peer)).slice(0,NET_MAX);netAll({t:'go',map:cf.map,diff:cf.diff,mode:cf.mode,slots});netStartGame({map:cf.map,diff:cf.diff,mode:cf.mode,slots})}}
+    const cf=Object.assign({map:'forest',diff:'normal'},NET.cfg||{});let dg={};if(cf.mode==='daily'){try{const dc=dailyCfg();cf.map=dc.map;dg={db:DRULES_BAD.indexOf(dc.bad),dg:DRULES_GOOD.indexOf(dc.good)};NET.dgo=Object.assign({map:cf.map},dg)}catch(e){}}const slots=[NET.me].concat(NET.conns.filter(c=>c.open&&NET.pl[c.peer]&&!NET.pl[c.peer].spec).map(c=>c.peer)).slice(0,NET_MAX);netAll(Object.assign({t:'go',map:cf.map,diff:cf.diff,mode:cf.mode,slots},dg));netStartGame(Object.assign({map:cf.map,diff:cf.diff,mode:cf.mode,slots},dg))}}
 
 // ---------- หน้าจอ ----------
 function netLobLogHTML(){const L=NET.chat.slice(-15);return L.length?L.map(c=>'<div style="margin:2px 0"><span style="font-weight:700;color:'+(c.me?'#ffd75a':'#9df')+'">'+netEsc(c.n)+':</span> '+netEsc(c.s)+'</div>').join(''):'<small style="opacity:.75">💬 '+(NET.conns.length?'พิมพ์ทักเพื่อนได้เลย':'ยังไม่มีเพื่อนในห้อง')+'</small>'}
@@ -4569,6 +4570,7 @@ function netMkBud(gk,si,c){const g=NET.pl[gk]||{},st=g.st||netStats(g.ch),o=netO
   const C=CHARS[b.ch]||CHARS.soldier;b.g={dmg:st.dm,rate:st.rate,multi:1,pierce:C.pierce||0,range:380*(C.range||1),mevo:0,mc:0,shot:.5,sbuf:0,scrit:0,ult:{t:0,tk:0,k:b.ch,n:0},bigT:0,bzc:0,bzr:0,nad:0,ammo:null,shake:0,blade:0,nade:0,ltn:0,sg:0,ba:0,nt:1.5,ltt:1.5,sgt:1.5,evo:{}};const sw={blader:'blade',berserk:'blade',gren:'nade',storm:'ltn',shot:'sg'}[b.ch];if(sw)b.g[sw]=1;
   for(const k of NET_SKK)b.g[k]=netClone(G[k]);b.g.ulm=1;b.g.ulv=0;b.g.uses=0;b.g.cdMul=1;b.g.gq=[];b.g.comp=null;b.g.relic=0;b.skA=SK.map(q=>({cd:q.cd,t:0}));return b}
 function netStartGame(cfg){
+  NET.dOvr=(cfg.mode==='daily'&&DRULES_BAD[cfg.db]&&DRULES_GOOD[cfg.dg])?{date:dayKey(),map:cfg.map,bad:DRULES_BAD[cfg.db],good:DRULES_GOOD[cfg.dg]}:null;  // v118
   NET.prev={mode:S.mode,diff:S.diff,map:S.map};S.mode=NET_MODES[cfg.mode]?cfg.mode:'defendless';NET.tp=0;
   if(NET.role==='guest'){S.diff=DIFF[cfg.diff]?cfg.diff:S.diff;NET.map=cfg.map}else{if(MAPS[cfg.map]&&S.maps.includes(cfg.map))S.map=cfg.map;if(DIFF[cfg.diff])S.diff=cfg.diff}
   const ks=Object.keys(NET.pl);NET.slots=Array.isArray(cfg.slots)&&cfg.slots.length?cfg.slots.slice(0,NET_MAX):ks;NET.np=NET.slots.length;NET.spec=!!(cfg.spec||(NET.pl[NET.me]&&NET.pl[NET.me].spec));NET.mySlot=NET.spec?-1:Math.max(0,NET.slots.indexOf(NET.me));NET.specI=0;
@@ -4648,10 +4650,10 @@ function netVisOf(g){if(!g)return 0;const o=NET_VK.map(k=>+(+(g[k]||0)).toFixed(
 function netVisApply(dst,v,isG){if(!v)return;NET_VK.forEach((k,i)=>{if((k==='bzA'||k==='bzN')&&!isG&&v[i]>0&&dst[k]>v[i]&&dst[k+'R']===v[i+1])return;dst[k]=v[i]});const n=NET_VK.length;dst.ult=v[n]?{k:v[n],t:v[n+1],tk:1,n:0}:(isG?{t:0,tk:0,k:'',n:0}:null);dst.bzT0=G.t-(v[n+2]||0)}
 function netVisTick(o,dt){if(!o)return;for(const k of ['bigT','bzr','bzA','bzN','ghT','adr'])if(o[k]>0)o[k]=Math.max(0,o[k]-dt);if(o.ult&&o.ult.t>0)o.ult.t=Math.max(0,o.ult.t-dt)}
 function netAura(o,v){const u=v&&v.ult;if(!u||!(u.t>0))return;const col=hexRGB(PCOL[o.ch]||'#3a8cff');const g=ctx.createRadialGradient(o.x,o.y,10,o.x,o.y,90);g.addColorStop(0,'rgba('+col+',.45)');g.addColorStop(1,'rgba('+col+',0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(o.x,o.y,90,0,6.28);ctx.fill()}
-function netSpecJoin(c){if(!NET.inGame||!c.open||SPECS.some(q=>q.id===c.peer))return;SPECS.push({id:c.peer,c,x:P.x,y:P.y});const cf=NET.cfg||{};netSend(c,{t:'go',map:G.mapId||cf.map,diff:cf.diff,mode:S.mode,slots:NET.slots,mid:1,spec:1})}
+function netSpecJoin(c){if(!NET.inGame||!c.open||SPECS.some(q=>q.id===c.peer))return;SPECS.push({id:c.peer,c,x:P.x,y:P.y});const cf=NET.cfg||{};netSend(c,Object.assign({t:'go',map:G.mapId||cf.map,diff:cf.diff,mode:S.mode,slots:NET.slots,mid:1,spec:1},NET.dgo&&cf.mode==='daily'?NET.dgo:{}))}
 function netMidJoin(c){if(!NET.inGame||!c.open||!NET.pl[c.peer]||BUDS.some(b=>b.id===c.peer))return;const k=c.peer,used=new Set(BUDS.map(b=>b.slot));let si=1;while(used.has(si))si++;if(si>=NET_MAX)return;
   NET.slots=NET.slots||[NET.me];NET.slots[si]=k;NET.np=BUDS.length+2;const b=netMkBud(k,si,c);b.inv=3;BUDS.push(b);const cf=NET.cfg||{};
-  netSend(c,{t:'go',map:cf.map,diff:cf.diff,mode:cf.mode,slots:NET.slots,mid:1});netAll({t:'sl',slots:NET.slots},c);G.ban={s:'👋 '+b.n+' เข้าร่วมกลางเกม!',t:3}}
+  netSend(c,Object.assign({t:'go',map:cf.map,diff:cf.diff,mode:cf.mode,slots:NET.slots,mid:1},NET.dgo&&cf.mode==='daily'?NET.dgo:{}));netAll({t:'sl',slots:NET.slots},c);G.ban={s:'👋 '+b.n+' เข้าร่วมกลางเกม!',t:3}}
 function netBudGone(id,msg){const i=BUDS.findIndex(b=>b.id===id);if(i<0)return;BUDS.splice(i,1);G.ban={s:msg+(BUDS.length?'':' · เล่นต่อคนเดียว'),t:3};if(NET.hd&&!BUDS.some(b=>!b.down)){NET.hd=0;setTimeout(()=>{if(state==='play')gameOver(false)},50)}}
 function netHN(){const m=NET.pl[NET.me];return m?m.n:'โฮสต์'}
 function netHostDown(){if(!NETH()||!BUDS.some(b=>!b.down))return false;
@@ -6001,7 +6003,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v117 (เกม v117) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v118 (เกม v118) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
