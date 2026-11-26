@@ -4101,7 +4101,7 @@ function hudText(s,x,y,st,sh){const g=hudSplit(s);if(g.length===1&&typeof g[0]==
 const COINI='<i class="ei co" style="--ic:url(img/ui/menu/ic_coin.png)"></i>';
 function BI(n){return '<i class="bi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
 function MI(n){return n[0]==='!'?'<i class="mi em">'+n.slice(1)+'</i>':'<i class="mi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
-const GAME_VER='v120';
+const GAME_VER='v121';
 function showMenu(){
   state='menu';STORY_RUN=null;pickCfg();
   const C=CHARS[S.sel];
@@ -4683,7 +4683,7 @@ function netHU(dt){if(!BUDS.length&&!SPECS.length)return;const d=G.def,wv=d&&NET
 function netTK(T){if(!NET.tk){NET.tk=Object.keys(TYPES);NET.tk.forEach((k,i)=>{TYPES[k]._ti=i})}
   if(T._ti!==undefined)return T._ti;const i=NET.tk.findIndex(k=>TYPES[k].id===T.id);T._ti=i>=0?i:NET.tk.indexOf('tank');return T._ti}
 function netPE(si,o,down,rv,bl,ba,bev){const r0=Math.round;return[si,r0(o.x),r0(o.y),r0((o.aim||0)*100),r0((o.fx||0)*100),r0((o.fy||0)*100),r0((o.wm||0)*100),o.mf>0?1:0,Math.ceil(Math.max(0,o.hp)),Math.ceil(o.max),down?1:0,r0((rv||0)*100),o.shield>0?1:0,bl||0,r0((ba||0)*100),bev?1:0]}
-let FXP={pl:null,pl2:null,th:null,dk:0};
+let FXP={pl:null,pl2:null,th:null,dk:0,fz:0};
 function netFxScan(){  // v120: ส่งภาพเอฟเฟกต์ท่าไม้ตาย (เครื่อง host เท่านั้น) ให้เพื่อนเห็น
   if(NET.role!=='host'||!NET.inGame||!G)return;
   const p1=G.plane||null,p2=G.plane2||null,th=G.thor||null;
@@ -4691,13 +4691,15 @@ function netFxScan(){  // v120: ส่งภาพเอฟเฟกต์ท่
   if(p2&&p2!==FXP.pl2)netAll({t:'ufx',k:'plane2',x:p2.x,y:p2.y,a:p2.a});
   if(th&&th!==FXP.th)netAll({t:'ufx',k:'thor'});
   if((G.dark||0)>1&&FXP.dk<=.1)netAll({t:'ufx',k:'dark',v:G.dark});
-  FXP={pl:p1,pl2:p2,th:th,dk:G.dark||0};
+  const fz=G.freeze||0;if(fz>0&&FXP.fz<=0)netAll({t:'ufx',k:'freeze',v:fz});
+  FXP={pl:p1,pl2:p2,th:th,dk:G.dark||0,fz};
 }
 function ufxApply(d){  // v120: เครื่องเพื่อน: วาดเอฟเฟกต์อย่างเดียว ไม่ทำดาเมจ
   if(!G)return;
   if(d.k==='plane'||d.k==='plane2'){const o={x:+d.x||0,y:+d.y||0,a:+d.a||0,t:0,d:1.9,v:1};if(d.k==='plane')G.plane=o;else G.plane2=o;try{sfx('plane')}catch(_){}}
   else if(d.k==='thor'){G.thor={t:5,k:0,v:1};try{sfx('zap')}catch(_){}}
   else if(d.k==='dark'){G.dark=Math.max(G.dark||0,+d.v||0)}
+  else if(d.k==='freeze'){G.freeze=Math.max(G.freeze||0,+d.v||0)}
 }
 function netSnap(){netFxScan();if(!BUDS.length&&!SPECS.length)return;const d=G.def,R=1150,r0=v=>Math.round(v);NET.sn++;
   const inB=(q,b)=>Math.abs(q.x-b.x)<R&&Math.abs(q.y-b.y)<R*.85,RC=BUDS.concat(SPECS),inR=q=>RC.some(b=>inB(q,b));
@@ -6061,7 +6063,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v120 (เกม v120) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v121 (เกม v121) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
