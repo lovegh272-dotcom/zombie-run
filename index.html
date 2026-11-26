@@ -4099,7 +4099,7 @@ function hudText(s,x,y,st,sh){const g=hudSplit(s);if(g.length===1&&typeof g[0]==
 const COINI='<i class="ei co" style="--ic:url(img/ui/menu/ic_coin.png)"></i>';
 function BI(n){return '<i class="bi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
 function MI(n){return n[0]==='!'?'<i class="mi em">'+n.slice(1)+'</i>':'<i class="mi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
-const GAME_VER='v116';
+const GAME_VER='v117';
 function showMenu(){
   state='menu';STORY_RUN=null;pickCfg();
   const C=CHARS[S.sel];
@@ -4341,7 +4341,7 @@ function restoreSave(txt){
 // ===================== v89: ออนไลน์ (เฟส 1: ห้อง + เชื่อมต่อ 2 เครื่อง) =====================
 // ใช้ PeerJS (WebRTC แบบ P2P) โหลดจาก CDN ตอนกดเข้าเมนูออนไลน์เท่านั้น · โฮสต์ = เครื่องที่สร้างห้อง
 const NET_VER='114',NET_PFX='zrun-v1-',NET_MAX=4,NET_ABC='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-const NET_ICE={config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}]}};
+const NET_ICE={config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'},{urls:'stun:stun.relay.metered.ca:80'},{urls:'turn:global.relay.metered.ca:80',username:'1d2b0068093859cb311730e3',credential:'Ep1iCyMCYyEJle33'},{urls:'turn:global.relay.metered.ca:80?transport=tcp',username:'1d2b0068093859cb311730e3',credential:'Ep1iCyMCYyEJle33'},{urls:'turn:global.relay.metered.ca:443',username:'1d2b0068093859cb311730e3',credential:'Ep1iCyMCYyEJle33'},{urls:'turns:global.relay.metered.ca:443?transport=tcp',username:'1d2b0068093859cb311730e3',credential:'Ep1iCyMCYyEJle33'}]}};
 try{if(localStorage.zmid===undefined)localStorage.zmid='1'}catch(e){}
 const NET={wantSpec:0,rname:(()=>{try{return localStorage.zrname||''}catch(e){return''}})(),mid:(()=>{try{return localStorage.zmid!=='0'}catch(e){return true}})(),peer:null,conns:[],role:null,code:'',me:null,pl:{},st:'idle',err:'',ping:0,pt:null,to:null,jc:'',inGame:0,sq:0};
 function netNick(){let n='';try{n=localStorage.znick||''}catch(e){}if(!n){n='ผู้เล่น'+(100+Math.floor(Math.random()*900));try{localStorage.znick=n}catch(e){}}return n}
@@ -6001,7 +6001,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v116 (เกม v116) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v117 (เกม v117) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
