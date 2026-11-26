@@ -213,7 +213,7 @@ d.custom={maps:(s.custom&&s.custom.maps)||{},chars:(s.custom&&s.custom.chars)||{
   return d;
 }
 let S=loadSave();
-function save(){try{let o=S;try{if(NET&&(NET.inGame||NET.ssel)){o=Object.assign({},S);if(NET.ssel)o.sel=NET.ssel;if(NET.prev){o.mode=NET.prev.mode;o.diff=NET.prev.diff}}}catch(_){}localStorage.zsave=JSON.stringify(o)}catch(e){}
+function save(){try{let o=S;try{if(NET&&(NET.inGame||NET.ssel)){o=Object.assign({},S);if(NET.ssel)o.sel=NET.ssel;if(NET.prev){o.mode=NET.prev.mode;o.diff=NET.prev.diff}}}catch(_){}localStorage.zsave=JSON.stringify(o);try{cloudSoon()}catch(_){}}catch(e){}
 }
 const lvOf=id=>S.up[id]||0;
 
@@ -1118,6 +1118,7 @@ document.getElementById('sf').addEventListener('pointerdown',e=>{e.preventDefaul
   if(e.pointerType==='mouse'){AIM.on=true;AIM.mouse=true;return}
   if(!aimT){aimT={id:e.pointerId,bx:e.clientX,by:e.clientY,src:'fire'};AIM.on=true}});  // v17: กดค้างปุ่ม FIRE = ยิง ลากเพื่อเลือกทิศ
 applyAimUI();
+setTimeout(()=>{try{cloudInit()}catch(e){}},2500);  // v119: เชื่อมคลาวด์เงียบๆ ตอนเปิดเกม
 const pb=document.getElementById('pb'),mb=document.getElementById('mb'),fb=document.getElementById('fb');
 function setMute(v){muted=v;localStorage.zmute=v?'1':'0';mb.classList.toggle('off',!!v);if(muted)stopBGM();else if(bgmOn)startBGM()}
 setMute(muted);
@@ -4100,7 +4101,7 @@ function hudText(s,x,y,st,sh){const g=hudSplit(s);if(g.length===1&&typeof g[0]==
 const COINI='<i class="ei co" style="--ic:url(img/ui/menu/ic_coin.png)"></i>';
 function BI(n){return '<i class="bi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
 function MI(n){return n[0]==='!'?'<i class="mi em">'+n.slice(1)+'</i>':'<i class="mi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
-const GAME_VER='v118';
+const GAME_VER='v119';
 function showMenu(){
   state='menu';STORY_RUN=null;pickCfg();
   const C=CHARS[S.sel];
@@ -4301,6 +4302,7 @@ function showSet(){
     (devOn()?setCard('perf','perf','บันทึกประสิทธิภาพ','ค่า FPS/ซอมบี้/เฟรมสะดุดของแต่ละรอบ คัดลอกส่งให้ผู้พัฒนา'):'')+
     (devOn()?setCard('dun','key','🕳️ เข้าดันเจี้ยนลับ (ทดสอบ)','เริ่มเกมแล้ววาร์ปเข้าดันเจี้ยนอเวจีทันที ใช้ตัวละคร/ความยากที่เลือกไว้'):'')+
     (devOn()?setCard('devi','dev','ไอคอนนักพัฒนา','ปุ่ม 🛠 ลอยมุมซ้ายล่าง: เหรียญ ปลดล็อก อมตะ สกิลไม่มีคูลดาวน์ เร่งเวลา ฆ่าทั้งจอ เรียกบอส ข้ามคลื่น ฯลฯ · ออนไลน์: เพื่อนใช้ได้เมื่อเปิดทั้งสองคน',tgl(devIcon())):'')+
+    setCard('cloud','floppy','☁️ คลาวด์เซฟ','สำรองอัตโนมัติ · โอนไปเครื่องอื่นด้วยรหัส')+
     setCard('bk','floppy','เซฟสำรอง','คัดลอกข้อมูลทั้งหมดเก็บไว้')+
     setCard('rs','tray','นำเข้าเซฟสำรอง','วางข้อความที่คัดลอกไว้')+
     setCard('reset','trash','ล้างข้อมูลเซฟทั้งหมด','เหรียญ ตัวละคร อันดับ จะหายหมด')+
@@ -5016,14 +5018,50 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout
 // ตัวเกมยังเล่นแบบเครื่องต่อเครื่อง (PeerJS) เหมือนเดิม · Firebase ใช้แค่ "ประกาศ/ค้นหาห้อง"
 // ใส่ค่า config จาก Firebase Console ตรงนี้ (ค่าพวกนี้เปิดเผยได้ ไม่ใช่รหัสลับ — ความปลอดภัยคุมด้วย Rules)
 const FB_CFG=window.ZFB_CFG||{apiKey:"AIzaSyAjApijOTpCd-CGDyiiqlXnycd0deJnAXc",authDomain:"zombie-run-30d30.firebaseapp.com",databaseURL:"https://zombie-run-30d30-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"zombie-run-30d30",storageBucket:"zombie-run-30d30.firebasestorage.app",messagingSenderId:"898997023159",appId:"1:898997023159:web:ea5212e70a744f8cd63832"}; /* ตัวอย่าง: {apiKey:"...",authDomain:"xxx.firebaseapp.com",databaseURL:"https://xxx-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"xxx",appId:"..."} */
-const FB={db:null,ref:null,watch:null,rooms:{},ready:false,err:'',hb:null,loading:null};
+const FB={db:null,ref:null,watch:null,rooms:{},ready:false,err:'',hb:null,loading:null,uid:null};
 function fbOK(){return !!(FB_CFG&&FB_CFG.databaseURL)}
 function fbLib(){if(window.firebase&&window.firebase.database)return Promise.resolve();if(FB.loading)return FB.loading;
   const V='10.12.2',L=u=>new Promise((res,rej)=>{const sc=document.createElement('script');sc.src=u;sc.onload=res;sc.onerror=()=>{sc.remove();rej(new Error('lib'))};document.head.appendChild(sc)});
-  FB.loading=L('https://www.gstatic.com/firebasejs/'+V+'/firebase-app-compat.js').then(()=>L('https://www.gstatic.com/firebasejs/'+V+'/firebase-database-compat.js')).catch(e=>{FB.loading=null;throw e});return FB.loading}
+  FB.loading=L('https://www.gstatic.com/firebasejs/'+V+'/firebase-app-compat.js').then(()=>L('https://www.gstatic.com/firebasejs/'+V+'/firebase-database-compat.js')).then(()=>L('https://www.gstatic.com/firebasejs/'+V+'/firebase-auth-compat.js')).catch(e=>{FB.loading=null;throw e});return FB.loading}
 async function fbInit(){if(FB.db)return true;if(!fbOK()){FB.err='ยังไม่ได้ตั้งค่าเซิร์ฟเวอร์ห้อง (Firebase)';return false}
   try{await fbLib();const app=firebase.apps&&firebase.apps.length?firebase.app():firebase.initializeApp(FB_CFG);FB.db=firebase.database(app);FB.ready=true;return true}
   catch(e){FB.err='เชื่อมต่อเซิร์ฟเวอร์ห้องไม่ได้ ('+((e&&(e.code||e.message))||'?')+')';try{netToast('⚠️ '+FB.err)}catch(_){}return false}}
+// ---------- v119: คลาวด์เซฟ (Firebase anonymous + รหัสโอนย้าย) ----------
+let CLOUD_T=null;
+function cloudSoon(){if(!FB.uid)return;clearTimeout(CLOUD_T);CLOUD_T=setTimeout(cloudPush,3000)}
+function cloudPush(){if(!FB.uid||!FB.db)return;try{FB.db.ref('saves/'+FB.uid).set({v:1,d:bkCode(),t:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{})}catch(e){}}
+async function cloudInit(){if(FB.uid)return true;if(!await fbInit())return false;
+  try{const A=firebase.auth();const u0=await new Promise(res=>{const un=A.onAuthStateChanged(x=>{un();res(x)})});
+    const u=u0||(await A.signInAnonymously()).user;FB.uid=u.uid;FB.err='';cloudPush();return true}
+  catch(e){FB.err='เข้าระบบคลาวด์ไม่ได้ ('+((e&&(e.code||e.message))||'?')+')';return false}}
+function cloudGenCode(){const c='ABCDEFGHJKMNPQRSTUVWXYZ23456789';let r='';for(let i=0;i<6;i++)r+=c[Math.floor(Math.random()*c.length)];return r}
+function showCloud(msg){
+  const st=FB.uid?'✅ เชื่อมคลาวด์แล้ว · สำรองอัตโนมัติทุกครั้งที่บันทึก':'⏳ '+(FB.err||'กำลังเชื่อมคลาวด์...');
+  page('<h2 style="margin:0">☁️ คลาวด์เซฟ</h2>'+
+    '<div style="font-size:13px;color:#bcd;max-width:340px">'+st+'</div>'+
+    '<button class="big" data-a="cloudgen">📤 สร้างรหัสโอนย้าย (ส่งไปเครื่องอื่น)</button>'+
+    '<div style="font-size:13px;color:#bcd;max-width:340px">มีรหัสจากเครื่องเดิม? ใส่รหัส 6 ตัวที่นี่ (ใช้ได้ 15 นาที)</div>'+
+    '<input id="cgc" maxlength="6" placeholder="รหัส 6 ตัว" autocapitalize="characters" style="font:inherit;font-size:20px;letter-spacing:4px;text-align:center;text-transform:uppercase;padding:8px;width:200px">'+
+    '<button class="big" data-a="cloudget">📥 รับเซฟด้วยรหัส</button>'+
+    (msg?'<div class="card"><small>'+clean(msg,200)+'</small></div>':'')+
+    '<button class="big sec" data-a="set">← กลับ</button>');
+}
+async function cloudGen(){if(!await cloudInit()){showCloud('ยังไม่พร้อม: '+FB.err);return}
+  const code=cloudGenCode();
+  try{await FB.db.ref('transfer/'+code).set({d:bkCode(),uid:FB.uid,exp:Date.now()+15*60*1000});showCloud('รหัสโอนย้าย: '+code+' (ใช้ได้ 15 นาที)')}
+  catch(e){showCloud('สร้างรหัสไม่สำเร็จ ('+((e&&e.code)||'?')+')')}}
+async function cloudGet(){const code=String((document.getElementById('cgc')||{}).value||'').trim().toUpperCase();
+  if(code.length!==6){showCloud('กรอกรหัส 6 ตัวก่อนครับ');return}
+  if(!await cloudInit()){showCloud('ยังไม่พร้อม: '+FB.err);return}
+  try{const snap=await FB.db.ref('transfer/'+code).once('value');const v=snap.val();
+    if(!v||!v.d){showCloud('ไม่พบรหัสนี้ หรือหมดอายุแล้ว');return}
+    if(v.exp&&Date.now()>v.exp){FB.db.ref('transfer/'+code).remove().catch(()=>{});showCloud('รหัสนี้หมดอายุแล้ว');return}
+    if(!confirm('เขียนทับเซฟปัจจุบันทั้งหมดด้วยเซฟจากรหัสนี้?'))return;
+    const r=restoreSave(v.d);
+    if(r){showCloud(r);return}
+    FB.db.ref('transfer/'+code).remove().catch(()=>{});
+    location.reload()}
+  catch(e){showCloud('รับเซฟไม่สำเร็จ ('+((e&&e.code)||'?')+')')}}
 // ---------- โฮสต์: ประกาศห้อง ----------
 function fbRoomData(){const cf=NET.cfg||{},me=NET.pl[NET.me]||{};return{n:String(me.n||'ผู้เล่น').slice(0,16),ch:me.ch||'soldier',map:cf.map||'forest',diff:cf.diff||'normal',pl:Object.keys(NET.pl).length,max:NET_MAX,v:NET_VER,rn:String(NET.rname||'').slice(0,20),md:(NET.cfg&&NET.cfg.mode)||'defendless',st:NET.inGame?'play':'lobby',mid:NET.mid?1:0,ts:firebase.database.ServerValue.TIMESTAMP}}
 async function fbPublish(){if(NET.role!=='host'||!NET.pub||!NET.code)return;if(!(await fbInit())){netToast('⚠️ '+FB.err);return}
@@ -5148,6 +5186,9 @@ else if(a==='delimp'){if(confirm('ลบด่านและตัวละค�
     else if(c)alert('รหัสไม่ถูกต้อง');
     showSet();
   }
+  else if(a==='cloud'){showCloud();cloudInit().then(()=>showCloud())}
+  else if(a==='cloudgen')cloudGen();
+  else if(a==='cloudget')cloudGet();
   else if(a==='bk')showBackup();
   else if(a==='perf')showPerf();
   else if(a==='pfcopy'){const t=document.getElementById('pft');if(t){t.select();try{t.setSelectionRange(0,t.value.length)}catch(e){}
@@ -6003,7 +6044,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v118 (เกม v118) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v119 (เกม v119) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
