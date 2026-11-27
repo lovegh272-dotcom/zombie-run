@@ -76,7 +76,7 @@ canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none}
 .ucard small{font-size:13px;color:#3a2410;font-weight:600}
 .ucard.rec{outline:3px solid #c0392b;outline-offset:3px}
 #netUp .ucards{flex-wrap:nowrap}
-#netUp .ucard{min-height:0;width:min(180px,26vw);padding:50px 24px 22px;font-size:13px}
+#netUp .ucard{min-height:0;width:min(170px,25vw);height:auto;aspect-ratio:2/3;justify-content:center;padding:50px 22px 22px;font-size:13px}
 #netUp .ucard b{font-size:14px}
 .card.off{opacity:.55;border-color:#667}
 .card.done{border-color:#4f4}
@@ -4118,7 +4118,7 @@ function hudText(s,x,y,st,sh){const g=hudSplit(s);if(g.length===1&&typeof g[0]==
 const COINI='<i class="ei co" style="--ic:url(img/ui/menu/ic_coin.png)"></i>';
 function BI(n){return '<i class="bi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
 function MI(n){return n[0]==='!'?'<i class="mi em">'+n.slice(1)+'</i>':'<i class="mi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
-const GAME_VER='v126';
+const GAME_VER='v127';
 function showMenu(){
   state='menu';STORY_RUN=null;pickCfg();
   const C=CHARS[S.sel];
@@ -4782,6 +4782,10 @@ function netApply(s){if(!NETG())return;NET.lastS=performance.now();NET.hold=0;
 
 // ---------- ผู้เข้าร่วม: ทุกเฟรม (แทน update) ----------
 function netGU(dt){if(KBM)P.aim=AIM.a;G.fr++;G.t+=dt;G.ban.t-=dt;G.shake=Math.max(0,G.shake-dt*30);gridBuild();
+  // v127: เครื่องเพื่อนต้องลดเวลาเอฟเฟกต์เงาซ้อนเอง ไม่งั้นเงาค้างบนจอ (เดิมลดเฉพาะใน update ของโฮสต์)
+  if(G.gh)for(let i=G.gh.length-1;i>=0;i--){G.gh[i].t-=dt;if(G.gh[i].t<=0)G.gh.splice(i,1)}
+  if(G.ghT>0)G.ghT=Math.max(0,G.ghT-dt);if(G.bigT>0)G.bigT=Math.max(0,G.bigT-dt);
+  if(G.ai&&G.ai.length)for(let i=G.ai.length-1;i>=0;i--){if((G.ai[i].l-=dt)<=0)G.ai.splice(i,1)}
   let mx=joy.dx,my=joy.dy;
   if(keys['w']||keys['arrowup'])my-=1;if(keys['s']||keys['arrowdown'])my+=1;if(keys['a']||keys['arrowleft'])mx-=1;if(keys['d']||keys['arrowright'])mx+=1;
   let m=Math.hypot(mx,my);if(m>1){mx/=m;my/=m;m=1}if(NET.down||P.hp<=0||NET.spec){mx=my=0;m=0}
@@ -6081,7 +6085,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v126 (เกม v126) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v127 (เกม v127) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
