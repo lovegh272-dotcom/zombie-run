@@ -68,6 +68,14 @@ canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none}
 .pg{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;margin:auto}
 .card{background:#2a3340;border:2px solid #6cf;border-radius:12px;padding:10px 14px;width:min(340px,92vw);font-size:15px;text-align:left}
 .card.btn:active{background:#3a4a60}
+.ucards{display:flex;gap:10px;justify-content:center;align-items:stretch;flex-wrap:nowrap;max-width:98vw;margin:6px auto}
+.ucard{width:min(200px,29vw);min-height:240px;border:none!important;border-image:none!important;background:url(img/ui/frames/card_v.png) center/100% 100% no-repeat,linear-gradient(#5a3a1e,#2a1a0c);border-radius:14px;padding:46px 16px 16px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;box-shadow:0 6px 18px #000a;font-size:14px;text-shadow:0 1px 2px #000;color:#fff}
+.ucard b{font-size:16px;line-height:1.25}
+.ucard small{font-size:13px;color:#eed}
+.ucard.rec{outline:3px solid #fd4;outline-offset:3px}
+#netUp .ucards{flex-wrap:nowrap}
+#netUp .ucard{min-height:0;width:min(170px,24vw);padding:40px 12px 12px;font-size:13px}
+#netUp .ucard b{font-size:14px}
 .card.off{opacity:.55;border-color:#667}
 .card.done{border-color:#4f4}
 .cc{--c:#6cf;--cg:rgba(100,200,255,.3);width:min(420px,94vw);box-sizing:border-box;padding:8px 10px 6px;border-radius:14px;border:2px solid var(--c);text-align:left;
@@ -1543,11 +1551,12 @@ function levelUp(){
   state='lvl';ov.style.display='block';
   page('<h2>⬆️ เลือกอัปเกรด (LV '+G.lv+')</h2>'+(S.apk===2?'<div class="sub" id="apkc">เลือก ⭐ ให้อัตโนมัติใน 2 วิ...</div>':''));
   const pg=ov.querySelector('.pg');pg.style.pointerEvents='none';setTimeout(()=>{pg.style.pointerEvents=''},400);
+  const uw=document.createElement('div');uw.className='ucards';pg.appendChild(uw);
   opts.forEach((o,i)=>{
-    const d=document.createElement('div');d.className='card btn'+(i===bi?' rec':'');
+    const d=document.createElement('div');d.className='ucard btn'+(i===bi?' rec':'');
     const lv=optLv(o);d.innerHTML=EJ('<b>'+(i===bi?'⭐ ':'')+o.n()+'</b>'+(lv?'<div style="margin:4px 0">'+lvPips(lv[0],lv[1])+'<br><small style="color:#fd4">อัปได้อีก '+(lv[1]-lv[0])+' ดาว</small></div>':'')+(o.h?'<small>'+o.h()+'</small>':'')+(rs[i][1]?'<span class="rect">'+(i===bi?'⭐ แนะนำ: ':'💡 ')+rs[i][1]+'</span>':''));
     d.onclick=()=>take(o);
-    pg.appendChild(d);
+    uw.appendChild(d);
   });
   if(S.apk===2)G.apkT=setTimeout(()=>{if(state==='lvl'&&ov.contains(pg))take(opts[bi>=0?bi:0])},2000);
 }
@@ -4107,7 +4116,7 @@ function hudText(s,x,y,st,sh){const g=hudSplit(s);if(g.length===1&&typeof g[0]==
 const COINI='<i class="ei co" style="--ic:url(img/ui/menu/ic_coin.png)"></i>';
 function BI(n){return '<i class="bi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
 function MI(n){return n[0]==='!'?'<i class="mi em">'+n.slice(1)+'</i>':'<i class="mi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
-const GAME_VER='v124';
+const GAME_VER='v125';
 function showMenu(){
   state='menu';STORY_RUN=null;pickCfg();
   const C=CHARS[S.sel];
@@ -4626,8 +4635,8 @@ const NET_CAP={multi:3,pierce:5,cd:5,dmg:5,rate:5,range:5,hp:5};
 function netUpPick(){const el=document.getElementById('netUp');if(!NETG()||!(NET.gpend>0)||state!=='play'){if(el)el.remove();return}
   if(el)return;const my=NET.myUps||{},pool=NET_UP.filter(([k])=>!(NET_CAP[k]&&(my[k]||0)>=NET_CAP[k])&&!(k==='multi'&&(my.multi||0)>=3)&&!(k==='pierce'&&(my.pierce||0)>=5)&&!(k==='cd'&&(my.cd||0)>=5));
   const opts=pool.sort(()=>Math.random()-.5).slice(0,3),d=document.createElement('div');d.id='netUp';
-  d.style.cssText='position:fixed;z-index:20;left:50%;top:max(54px,env(safe-area-inset-top));transform:translateX(-50%);background:#0d1a10ee;border:2px solid #9c6;border-radius:16px;padding:8px 10px;display:flex;gap:6px;align-items:center;box-shadow:0 4px 14px #000a;font:inherit;color:#fff';
-  d.innerHTML='<b style="font-size:13px;white-space:nowrap">⬆️ อัปเกรดของคุณ'+(NET.gpend>1?' ('+NET.gpend+')':'')+'</b>'+opts.map(([k,n])=>'<button data-k="'+k+'" style="font:inherit;font-size:14px;font-weight:700;color:#fff;background:linear-gradient(#4a7a2a,#2a4a18);border:2px solid #9c6;border-radius:12px;padding:8px 10px;white-space:nowrap">'+TI({dmg:'u_dmg',rate:'u_rate',multi:'u_multi',pierce:'u_pierce',range:'u_range',hp:'u_hp',spd:'e_boots',cd:'u_cd'}[k]||'u_dmg')+n.replace(/^\S+\s/,'')+'<br><small style="font-size:12px;font-weight:400">'+(NET_CAP[k]?lvPips(my[k]||0,NET_CAP[k]):'ครั้งที่ '+((my[k]||0)+1))+'</small></button>').join('');
+  d.style.cssText='position:fixed;z-index:20;left:50%;top:max(54px,env(safe-area-inset-top));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;font:inherit;color:#fff';
+  d.innerHTML='<b style="font-size:13px;white-space:nowrap">⬆️ อัปเกรดของคุณ'+(NET.gpend>1?' ('+NET.gpend+')':'')+'</b>'+'<div class="ucards">'+opts.map(([k,n])=>'<button class="ucard" data-k="'+k+'">'+TI({dmg:'u_dmg',rate:'u_rate',multi:'u_multi',pierce:'u_pierce',range:'u_range',hp:'u_hp',spd:'e_boots',cd:'u_cd'}[k]||'u_dmg')+n.replace(/^\S+\s/,'')+'<br><small style="font-size:12px;font-weight:400">'+(NET_CAP[k]?lvPips(my[k]||0,NET_CAP[k]):'ครั้งที่ '+((my[k]||0)+1))+'</small></button>').join('')+'</div>';
   d.addEventListener('pointerdown',e=>{e.stopPropagation();const t=e.target.closest('button[data-k]');if(!t)return;const k=t.dataset.k;
     NET.myUps=NET.myUps||{};NET.myUps[k]=(NET.myUps[k]||0)+1;if(k==='spd')P.spd*=1.08;else if(k==='cd')G.cdMul*=.9;else netSend(NET.conns[0],{t:'up',k});
     sfx('lvl');netToast(t.textContent);NET.gpend--;d.remove();setTimeout(netUpPick,120)});
@@ -6070,7 +6079,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v124 (เกม v124) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v125 (เกม v125) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
