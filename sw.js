@@ -1,4 +1,4 @@
-const C = 'zrun-v127';
+const C = 'zrun-v128';
 const FILES = ['./', 'index.html', 'manifest.json', 'icon.svg', 'icon-192.png', 'icon-512.png', 'img/zombies/z_goblin.png', 'img/zombies/z_screamer.png', 'img/zombies/z_shield.png', 'img/zombies/z_healer.png', 'img/zombies/z_necromancer.png'];
 self.addEventListener('install', e => {
   // ถ้าไฟล์ไหนไม่มี จะข้ามไปโดยไม่ทำให้การติดตั้งล้ม
@@ -15,6 +15,6 @@ self.addEventListener('fetch', e => {
     fetch(e.request).then(r => {
       if (r.ok) { const cp = r.clone(); caches.open(C).then(c => c.put(e.request, cp)).catch(() => {}); }
       return r;
-    }).catch(() => caches.match(e.request).then(r => r || caches.match('index.html')))
+    }).catch(() => caches.match(e.request).then(r => r || (e.request.mode === 'navigate' ? caches.match('index.html') : Response.error())))
   );
 });

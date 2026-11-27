@@ -554,6 +554,7 @@ function loadMapImgs(){
     if(MAPREQ[id])continue;MAPREQ[id]=1;
     const im=new Image();
     im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=512;c.getContext('2d').drawImage(im,0,0,512,512);MAPIMG[id]=c;delete MAPPAT[id]};
+    im.onerror=()=>{MAPREQ[id]=0;setTimeout(()=>{try{loadMapImgs()}catch(e){}},2000)};  // v128: โหลดพลาดแล้วลองใหม่ (เดิมค้างเป็นพื้นตารางถาวร)
     im.src=IP('img/maps/map_'+id+'.png');
     for(let n=0;n<MAPS[id].em.length;n++){
       const k=id+'_'+n,o=new Image();
@@ -563,7 +564,7 @@ function loadMapImgs(){
   }
 }
 let BARIMG=null;{const im=new Image();im.onload=()=>{BARIMG=im};im.src='img/maps/obs_barrel.png'}
-function mapPat(){const c=MAPIMG[M.id];if(!c)return null;return MAPPAT[M.id]||(MAPPAT[M.id]=ctx.createPattern(c,'repeat'))}
+function mapPat(){const c=MAPIMG[M.id];if(!c){if(M&&M.id&&!MAPREQ[M.id]&&!mapPat._t){mapPat._t=1;setTimeout(()=>{mapPat._t=0;try{loadMapImgs()}catch(e){}},500)}return null}return MAPPAT[M.id]||(MAPPAT[M.id]=ctx.createPattern(c,'repeat'))}
 
 // ---------- Obstacles ----------
 const CS=360;let OB=new Map();
@@ -4118,7 +4119,7 @@ function hudText(s,x,y,st,sh){const g=hudSplit(s);if(g.length===1&&typeof g[0]==
 const COINI='<i class="ei co" style="--ic:url(img/ui/menu/ic_coin.png)"></i>';
 function BI(n){return '<i class="bi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
 function MI(n){return n[0]==='!'?'<i class="mi em">'+n.slice(1)+'</i>':'<i class="mi" style="--ic:url('+IP('img/ui/ic_'+n+'.png')+')"></i>'}
-const GAME_VER='v127';
+const GAME_VER='v128';
 function showMenu(){
   state='menu';STORY_RUN=null;pickCfg();
   const C=CHARS[S.sel];
@@ -4889,7 +4890,7 @@ function netChatBtn(){let b=document.getElementById('chb');const on=NET.inGame&&
 function netChatToggle(){if(document.getElementById('netChatP'))netChatClose();else netChatOpen()}
 function netChatClose(){const p=document.getElementById('netChatP');if(p){const i=p.querySelector('input');if(i)i.blur();p.remove()}netLogDraw()}
 // v103: ช่องแชทไม่บังเมนู — วางในพื้นที่ว่างด้านซ้ายของเมนู และเลื่อนขึ้นเหนือคีย์บอร์ด
-function chatGutter(){let L=1e9;ov.querySelectorAll('.card,button.big,h1,h2').forEach(e=>{const r=e.getBoundingClientRect();if(r.width>40&&r.height>0)L=Math.min(L,r.left)});return L<1e8?L:0}
+function chatGutter(){const pl=ov.style.paddingLeft;ov.style.paddingLeft='';let L=1e9;ov.querySelectorAll('.card,button.big,h1,h2').forEach(e=>{const r=e.getBoundingClientRect();if(r.width>40&&r.height>0)L=Math.min(L,r.left)});ov.style.paddingLeft=pl;return L<1e8?L:0}  // v128: วัดโดยไม่นับ padding ที่แชทดันเอง กันเมนูกับแชทดันกันไปมา
 function chatKb(){const v=window.visualViewport;if(!v)return 0;return Math.max(0,innerHeight-(v.height+v.offsetTop))}
 function chatPlace(){const kb=chatKb(),bt='calc(max(8px,env(safe-area-inset-bottom)) + '+kb+'px)';
   const menu=ov.style.display==='block',gw=menu?chatGutter():0,sl=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sal'))||0;
@@ -6085,7 +6086,7 @@ function perfSpike(jf){
 function perfReport(n){
   const a=perfLoad().slice(-(n||3));
   if(!a.length)return 'ยังไม่มีข้อมูล เล่นสัก 1 รอบก่อน';
-  let o='ZRUN-PERF v127 (เกม v127) (แสดง '+a.length+' รอบล่าสุด)\n';
+  let o='ZRUN-PERF v128 (เกม v128) (แสดง '+a.length+' รอบล่าสุด)\n';
   a.forEach((r,i)=>{
     o+='\n=== RUN '+(i+1)+' '+r.ch+' | '+r.map+' | '+r.df+' | '+r.mo+' | mob'+r.mob+' dpr'+r.dpr+' vp'+r.vp+' zbase'+r.zb+' | จบที่ '+r.end+'s'+(r.dun!==undefined?' | เข้าดันเจี้ยนที่ '+r.dun+'s':'')+'\n'+r.ua+'\n';
     const mins={};r.rows.forEach(w=>{const m=Math.floor(w[0]/60);(mins[m]=mins[m]||[]).push(w)});
