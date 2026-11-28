@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Rooftop Run (ต้นแบบ)</title>
+<style>
+html,body{margin:0;height:100%;background:#0b0d10;overflow:hidden;font-family:system-ui,sans-serif;color:#fff;-webkit-user-select:none;user-select:none;touch-action:none}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+#hud{position:fixed;left:10px;top:8px;right:10px;font-size:15px;font-weight:700;text-shadow:0 1px 3px #000;pointer-events:none;line-height:1.35}
+#bar{width:min(240px,50vw);height:12px;background:#4a0d0d;border:1px solid #000;border-radius:6px;overflow:hidden;margin-top:4px}
+#bar i{display:block;height:100%;width:100%;background:#e53935}
+#msg{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);font-size:20px;font-weight:800;text-shadow:0 2px 4px #000;text-align:center;pointer-events:none;white-space:pre-line}
+#ctl{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:flex-end;padding:0 12px calc(10px + env(safe-area-inset-bottom));pointer-events:none}
+#ctl div{display:flex;gap:10px;pointer-events:auto}
+.b{width:66px;height:66px;border-radius:50%;border:2px solid #9c6;background:#1b2b1bcc;color:#fff;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;touch-action:none}
+.b.big{width:78px;height:78px;background:#7a2d12cc;border-color:#fb8}
+#ov{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center}
+#ov button{font:inherit;font-size:20px;font-weight:800;padding:12px 26px;border-radius:12px;border:2px solid #fd4;background:#3a2a10;color:#fff}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"><div id="st"></div><div id="bar"><i id="hp"></i></div></div>
+<div id="msg"></div>
+<div id="ctl">
+  <div><button class="b" id="bL">◀</button><button class="b" id="bR">▶</button></div>
+  <div><button class="b" id="bA">เล็ง</button><button class="b" id="bU">ใช้</button><button class="b big" id="bF">ยิง</button></div>
+</div>
+<div id="ov"><div id="ovT"></div><button id="ovB">เริ่มใหม่</button></div>
+<script>
+// ===== Rooftop Run: ต้นแบบชั้นเดียว + ดาดฟ้า (เล่นซ้ายขวา ขึ้นบันได ยิง เปิดไฟ เรียกเฮลิคอปเตอร์) =====
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+let W=0,H=0,DPR=1;
+function fit(){DPR=Math.min(2,window.devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}
+addEventListener('resize',fit);fit();
+
+const NAMES=['soldier_walk_n0','soldier_walk_n1','soldier_walk_n2','soldier_walk_n3','soldier_walk_n4','soldier_walk_n5',
+ 'zombie_n0','zombie_n1','zombie_n2','zombie_n3','zombie_n4','zombie_n5',
+ 'soldier_shoot_0','soldier_shoot_1','soldier_shoot_2','soldier_climb_0','soldier_climb_1','soldier_climb_2','soldier_climb_3',
+ 'soldier_die_0','soldier_die_1','soldier_die_2','soldier_die_3',
+ 'zombie_attack_0','zombie_attack_1','zombie_die_0','zombie_die_1','zombie_climb_0','zombie_climb_1','zombie_climb_2','zombie_climb_3',
+ 'door_closed','door_open','locker','stairs_up_right','switch_off','switch_on','window_broken',
+ 'heli_0','heli_1','heli_2','fx_muzzle','fx_hit','fx_tracer','wall_band_from_scene','floor_tile_0'];
+const IM={};
+function loadAll(){return Promise.all(NAMES.map(n=>new Promise(r=>{const im=new Image();im.onload=()=>{IM[n]=im;r()};im.onerror=()=>r();im.src='rooftop/img/'+n+'.png'})))}
+
+// ----- ค่าคงที่ของด่าน -----
+const RW=640,ROOMS=3,WW=RW*ROOMS;          // ชั้น 1: 3 ห้อง ยาวรวม 1920
+const ROOF_W=1400;
+const DOORS=[RW,RW*2];                       // ประตูระหว่างห้อง
+const SWITCH_X=[RW*0+500,RW*1+500,RW*2+500]; // สวิตช์ไฟแต่ละห้อง
+const STAIR_X=WW-90;                         // บันไดขึ้นดาดฟ้า
+const SIGNAL_X=260,HELI_X=900;
+const AIMH=[0.12,0.19,0.27];   // ระดับยิง: ต่ำ/กลาง/สูง(หัว)
+const SPEED=160,ZSPEED=48,ZDMG=9,SHOT_CD=.32,BSPEED=640,DOOR_HP=6;
+
+let G,scene,cam=0,keys={},ctl={L:0,R:0,F:0,U:0,A:0},aimLv=1;
+
+function newGame(){
+  G={t:0,hp:100,over:false,won:false,P:{x:120,face:1,fire:0,fireHold:0,flash:0,walkT:0,climbT:0,climbing:false,hurt:0},
+     Z:[],B:[],FX:[],doors:DOORS.map(x=>({x,hp:DOOR_HP})),sw:[false,false,false],spawnT:1.5,
+     signalOn:false,heliT:-1,heliLanded:false,msg:'',msgT:0,dieAnim:[]};
+  scene='ground';
+}
+newGame();
+
+function say(t,s=2.2){G.msg=t;G.msgT=s}
+function ground(){return H*0.8}
+
+// วาดสไปรต์ให้เท้าอยู่ที่ (x,gy) ความสูงเป้าหมาย th
+function spr(im,x,gy,th,flip,alpha=1){
+  if(!im)return;const s=th/im.height,w=im.width*s,h=im.height*s;
+  ctx.save();ctx.globalAlpha=alpha;ctx.translate(x,gy);if(flip)ctx.scale(-1,1);
+  ctx.drawImage(im,-w/2,-h,w,h);ctx.restore();
+}
+function wallBand(){ // ผนังซ้ำตามแนวนอน
+  const im=IM.wall_band_from_scene;if(!im)return;const wh=H*0.46,ww=wh*im.width/im.height,top=ground()-wh;
+  const start=Math.floor(cam/ww)*ww;
+  for(let x=start;x<cam+W+ww;x+=ww){ctx.drawImage(im,x-cam,top,ww+1,wh)}
+}
+function floorTiles(y,len){
+  const im=IM.floor_tile_0;if(!im)return;const s=(H-y)*0.9,tw=s;
+  const start=Math.floor(cam/tw)*tw;
+  for(let x=start;x<cam+W+tw;x+=tw)ctx.drawImage(im,x-cam,y,tw+1,(H-y)+1);
+}
+function drawScene(){
+  const yG=ground();
+  ctx.fillStyle=scene==='ground'?'#120c0a':'#0c1420';ctx.fillRect(0,0,W,H);
+  if(scene==='ground'){
+    wallBand();
+    // ประตูและหน้าต่างแต่ละห้อง
+    for(let i=0;i<ROOMS;i++){const wx=RW*i+200-cam;const im=IM.window_broken;spr(im,wx,yG-H*0.28,H*0.24,false,.9)}
+    // พื้นชั้น
+    ctx.fillStyle='#2b2320';ctx.fillRect(0,yG,W,H-yG);floorTiles(yG,0);
+    ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(0,yG,W,H-yG);
+    // ตู้ล็อกเกอร์ตกแต่ง
+    spr(IM.locker,RW*1+60-cam,yG+2,H*0.42,false,.95);
+    spr(IM.locker,RW*2+560-cam,yG+2,H*0.42,true,.95);
+    // ประตู
+    for(const d of G.doors){
+      const open=d.hp<=0;spr(open?IM.door_open:IM.door_closed,d.x-cam,yG+2,H*0.42,false,1);
+    }
+    // สวิตช์ไฟ
+    for(let i=0;i<ROOMS;i++){const im=G.sw[i]?IM.switch_on:IM.switch_off;spr(im,SWITCH_X[i]-cam,yG-H*0.2,H*0.12,false,1)}
+    // บันไดขึ้นดาดฟ้า
+    spr(IM.stairs_up_right,STAIR_X-cam,yG+2,H*0.52,false,1);
+  }else{
+    // ท้องฟ้าดาดฟ้า
+    const g=ctx.createLinearGradient(0,0,0,yG);g.addColorStop(0,'#1a2a44');g.addColorStop(1,'#3a4f6a');ctx.fillStyle=g;ctx.fillRect(0,0,W,yG);
+    ctx.fillStyle='#302a26';ctx.fillRect(0,yG,W,H-yG);floorTiles(yG,0);
+    // เสาสัญญาณ
+    const sx=SIGNAL_X-cam;ctx.fillStyle='#555';ctx.fillRect(sx-4,yG-H*0.46,8,H*0.46);
+    ctx.fillStyle=G.signalOn?'#ffd24a':'#663';ctx.beginPath();ctx.arc(sx,yG-H*0.48,9,0,6.28);ctx.fill();
+    if(G.signalOn){ctx.globalAlpha=.25+.2*Math.sin(G.t*8);ctx.fillStyle='#ffd24a';ctx.beginPath();ctx.arc(sx,yG-H*0.48,22,0,6.28);ctx.fill();ctx.globalAlpha=1}
+    // เฮลิคอปเตอร์
+    if(G.heliT>=0){
+      const hx=HELI_X-cam;const landed=G.heliLanded;
+      let im=landed?(Math.floor(G.t*30)%2?IM.heli_1:IM.heli_2):(Math.floor(G.t*30)%2?IM.heli_2:IM.heli_1);
+      if(!landed&&G.heliT>0&&G.heliT<=0)im=IM.heli_0;
+      spr(im,hx,landed?yG:yG-H*0.2,H*0.34,false,1);
+    }
+  }
+  // ซอมบี้ (ตาย = เฟรมตาย ค้างหนึ่งวินาที)
+  for(const z of G.Z){
+    const sx=z.x-cam;
+    if(z.dead){const f=z.deadT>.35?IM.zombie_die_1:IM.zombie_die_0;spr(f,sx,yG,H*0.26,z.face>0,Math.max(0,1-z.deadT*.4));continue}
+    let f;
+    if(z.attacking)f=(Math.floor(G.t*6)%2)?IM.zombie_attack_0:IM.zombie_attack_1;
+    else f=IM['zombie_n'+(Math.floor(z.walkT*7)%6)];
+    spr(f,sx,yG,H*0.24,z.face>0,1);
+    // แถบเลือด
+    if(z.hp<z.maxHp){ctx.fillStyle='#000a';ctx.fillRect(sx-22,yG-H*0.26,44,5);ctx.fillStyle='#e53935';ctx.fillRect(sx-22,yG-H*0.26,44*z.hp/z.maxHp,5)}
+  }
+  // ทหาร
+  const P=G.P,px=P.x-cam;
+  let pf;
+  if(P.climbing)pf=IM['soldier_climb_'+(Math.floor(G.t*6)%4)];
+  else if(P.fire>SHOT_CD*.55)pf=IM.soldier_shoot_1;
+  else if(P.hurt>0)pf=IM.soldier_walk_n0;
+  else pf=IM['soldier_walk_n'+(P.walkT>0?Math.floor(P.walkT*8)%6:0)];
+  if(G.over&&!G.won)pf=IM.soldier_die_3;
+  spr(pf,px,yG,H*0.27,P.face<0,1);
+  // จุดเล็ง
+  if(!G.over){const lv=ground()-H*AIMH[aimLv];
+    ctx.fillStyle='#ffe48a';ctx.globalAlpha=.8;ctx.beginPath();ctx.arc(px+P.face*52,lv,3.5,0,6.28);ctx.fill();ctx.globalAlpha=1}
+  // กระสุน
+  for(const b of G.B){const im=IM.fx_tracer;const s=H*0.03/im.height;ctx.save();ctx.translate(b.x-cam,b.y);if(b.vx<0)ctx.scale(-1,1);ctx.drawImage(im,-im.width*s/2,-im.height*s/2,im.width*s,im.height*s);ctx.restore()}
+  // เอฟเฟกต์
+  for(const f of G.FX){const im=f.k==='m'?IM.fx_muzzle:IM.fx_hit;const th=f.k==='m'?H*0.15:H*0.12;spr(im,f.x-cam,f.y,th,false,Math.max(0,f.t/.18));}
+}
+
+function update(dt){
+  G.t+=dt;if(G.msgT>0){G.msgT-=dt;if(G.msgT<=0)G.msg=''}
+  if(G.over)return;
+  const P=G.P;
+  // เคลื่อนที่ซ้ายขวา
+  let mv=(keys['ArrowRight']||keys['d']||keys['D']||ctl.R?1:0)-(keys['ArrowLeft']||keys['a']||keys['A']||ctl.L?1:0);
+  const maxX=scene==='ground'?WW-40:ROOF_W-40;
+  if(mv){P.face=mv;P.walkT+=dt}
+  P.x=Math.max(30,Math.min(maxX,P.x+mv*SPEED*dt));
+  if(scene==='ground'){
+    // บันไดขึ้นดาดฟ้า: ต้องเปิดไฟครบก่อน
+    P.climbing=P.x>STAIR_X-40&&mv>0;
+    if(P.x>=STAIR_X+40&&mv>0){
+      if(G.sw.every(Boolean)){scene='roof';P.x=120;cam=0;say('ถึงดาดฟ้าแล้ว! เรียกเฮลิคอปเตอร์ที่เสาสัญญาณ',3)}
+      else{P.x=STAIR_X+36;say('เปิดไฟให้ครบ 3 ห้องก่อน ('+G.sw.filter(Boolean).length+'/3)',1.6)}
+    }
+  }else{
+    P.climbing=false;
+    // ประตูถูกขึ้นชื่อให้ทหาร: เดินลงกลับไม่ได้
+  }
+  // เล็ง / ยิง
+  P.fire=Math.max(0,P.fire-dt);P.hurt=Math.max(0,P.hurt-dt);
+  if(ctl.F||keys[' ']||keys['j']||keys['J'])P.fireHold=1;else P.fireHold=0;
+  if(P.fireHold&&P.fire<=0){shoot()}
+  // การเคลื่อนที่ของทหาร (ใช้ระยะเดินเพื่อเลือกเฟรมเดิน)
+  if(!mv)P.walkT=Math.max(0,P.walkT-dt*4);
+  if(scene==='ground')updateGround(dt);else updateRoof(dt);
+  // กระสุน
+  for(const b of G.B){b.x+=b.vx*dt;b.life-=dt}
+  G.B=G.B.filter(b=>b.life>0&&b.x>-60&&b.x<WW+60);
+  for(const f of G.FX)f.t-=dt;G.FX=G.FX.filter(f=>f.t>0);
+  // ซอมบี้ตาย
+  for(const z of G.Z){if(z.dead)z.deadT+=dt}
+  G.Z=G.Z.filter(z=>!z.dead||z.deadT<1.2);
+  // ซอมบี้ทำดาเมจ
+  // อัปเดตกล้อง
+  const maxCam=(scene==='ground'?WW:ROOF_W)-W;
+  cam=Math.max(0,Math.min(Math.max(0,maxCam),P.x-W*0.45));
+  // ลงโทษตาย
+  if(P.hp<=0&&!G.over)endGame(false,'ทหารล้มลง...\nกดเริ่มใหม่เพื่อลองอีกครั้ง');
+  // อัปเดตแถบ HUD
+  const st=document.getElementById('st');
+  st.textContent=scene==='ground'?'ชั้น 1 · ไฟ '+G.sw.filter(Boolean).length+'/3 · ซอมบี้ '+G.Z.filter(z=>!z.dead).length:
+    'ดาดฟ้า · '+(G.heliT<0?'ยังไม่เรียกเฮลิคอปเตอร์':(G.heliLanded?'เฮลิคอปเตอร์ลงแล้ว วิ่งขึ้นไป!':'เฮลิคอปเตอร์มาใน '+Math.ceil(G.heliT)+' วิ'));
+  document.getElementById('hp').style.width=Math.max(0,P.hp)+'%';
+}
+function shoot(){
+  const P=G.P;if(P.fire>0)return;P.fire=SHOT_CD;P.flash=.1;
+  const yG=ground(),lvY=yG-H*AIMH[aimLv];
+  G.B.push({x:P.x+P.face*44,y:lvY,vx:P.face*BSPEED,life:1.1,lv:aimLv});
+  G.FX.push({k:'m',x:P.x+P.face*60,y:lvY,t:.18});
+  sfxBeep();
+}
+function sfxBeep(){}
+function hitZombie(z,lv){
+  const dmg=lv===2?2:1; // ยิงหัว (ระดับสูง) ดาเมจ 2 เท่า
+  z.hp-=dmg;z.hitT=.15;
+  G.FX.push({k:'h',x:z.x,y:ground()-H*AIMH[lv],t:.18});
+  if(z.hp<=0){z.dead=true;z.deadT=0}
+}
+function spawnZ(){
+  const P=G.P,side=Math.random()<.5?-1:1;
+  const lim=scene==='ground'?WW:ROOF_W;
+  let x=P.x+side*(W*0.6);
+  if(scene==='ground'){x=Math.max(20,Math.min(WW-20,x))}else{x=Math.max(20,Math.min(lim-20,x))}
+  if(Math.abs(x-P.x)<W*0.35)return; // อย่าเกิดใกล้ตัวเกินไป
+  const z={x,hp:3,maxHp:3,face:-1,walkT:Math.random()*2,attacking:false,dead:false,deadT:0,hitT:0,door:-1,speed:ZSPEED*(0.85+Math.random()*0.3)};
+  G.Z.push(z);
+}
+function updateGround(dt){
+  const P=G.P;
+  // เล็งจากคีย์บอร์ดหรือปุ่มเล็ง: เปลี่ยนระดับที่ยิง
+  // ซอมบี้
+  G.spawnT-=dt;if(G.spawnT<=0){spawnZ();G.spawnT=Math.max(1.1,2.6-G.t/90)}
+  for(const z of G.Z){
+    if(z.dead)continue;
+    z.hitT=Math.max(0,z.hitT-dt);
+    z.attacking=false;
+    const dir=Math.sign(P.x-z.x)||-1;
+    z.face=dir;
+    // ประตูกั้น
+    let blocked=false;
+    for(const d of G.doors){
+      if(d.hp>0&&((z.x<d.x&&z.x+dir*z.speed*dt>=d.x-30&&dir>0)||(z.x>d.x&&dir<0&&z.x+dir*z.speed*dt<=d.x+30))){
+        blocked=true;z.attacking=true;d.hp-=dt*1.4;if(d.hp<=0){say('ประตูพังแล้ว!',1)}
+        break;
+      }
+    }
+    if(!blocked){
+      if(Math.abs(z.x-P.x)>34)z.x+=dir*z.speed*dt;
+      z.walkT+=dt;
+    }
+    // โจมตีทหาร
+    if(Math.abs(z.x-P.x)<=34){z.attacking=true;P.hp-=ZDMG*dt;P.hurt=.1}
+  }
+  // กระสุนชนซอมบี้
+  for(const b of G.B){
+    for(const z of G.Z){
+      if(z.dead)continue;
+      if(Math.abs(z.x-b.x)<26&&Math.abs(b.y-(ground()-H*AIMH[b.lv]))<H*0.1){
+        hitZombie(z,b.lv);b.life=0;break;
+      }
+    }
+  }
+  // สวิตช์ไฟ: กดใช้ใกล้ ๆ
+  if(ctl.U){ctl.U=0;useNear()}
+}
+function useNear(){
+  const P=G.P;
+  if(scene==='ground'){
+    for(let i=0;i<ROOMS;i++){
+      if(!G.sw[i]&&Math.abs(P.x-SWITCH_X[i])<70){G.sw[i]=true;say('เปิดไฟห้อง '+(i+1)+' แล้ว ('+G.sw.filter(Boolean).length+'/3)',1.6);return}
+    }
+  }else{
+    if(!G.signalOn&&Math.abs(P.x-SIGNAL_X)<90){G.signalOn=true;G.heliT=30;say('ส่งสัญญาณแล้ว! เฮลิคอปเตอร์กำลังมา',2.2);return}
+  }
+}
+function updateRoof(dt){
+  const P=G.P;
+  if(ctl.U){ctl.U=0;useNear()}
+  if(G.heliT>0){G.heliT-=dt;if(G.heliT<=0){G.heliT=0;G.heliLanded=true;say('เฮลิคอปเตอร์ลงแล้ว รีบขึ้นไป!',2)}}
+  // ซอมบี้บนดาดฟ้า
+  G.spawnT-=dt;if(G.spawnT<=0){spawnZ();G.spawnT=Math.max(1.0,2.2-G.t/120)}
+  for(const z of G.Z){
+    if(z.dead)continue;z.hitT=Math.max(0,z.hitT-dt);z.attacking=false;
+    const dir=Math.sign(P.x-z.x)||-1;z.face=dir;
+    if(Math.abs(z.x-P.x)>34){z.x+=dir*z.speed*dt;z.walkT+=dt}
+    if(Math.abs(z.x-P.x)<=34){z.attacking=true;P.hp-=ZDMG*dt;P.hurt=.1}
+  }
+  for(const b of G.B){for(const z of G.Z){if(z.dead)continue;if(Math.abs(z.x-b.x)<26&&Math.abs(b.y-(ground()-H*AIMH[b.lv]))<H*0.1){hitZombie(z,b.lv);b.life=0;break}}}
+  // ขึ้นเฮลิคอปเตอร์
+  if(G.heliLanded&&!G.won&&Math.abs(P.x-HELI_X)<90){endGame(true,'ขึ้นเฮลิคอปเตอร์สำเร็จ!\nรอดแล้ว')}
+}
+function endGame(won,text){G.over=true;G.won=won;const ov=document.getElementById('ov');document.getElementById('ovT').textContent=text;ov.style.display='flex'}
+document.getElementById('ovB').onclick=()=>{document.getElementById('ov').style.display='none';newGame()};
+
+// ----- ตัวควบคุม -----
+addEventListener('keydown',e=>{keys[e.key]=true;if(e.key==='e'||e.key==='E')ctl.U=1;if(e.key==='w'||e.key==='W'||e.key==='ArrowUp')aimLv=Math.min(2,aimLv+1);if(e.key==='s'||e.key==='S'||e.key==='ArrowDown')aimLv=Math.max(0,aimLv-1);if(e.key===' ')e.preventDefault()});
+addEventListener('keyup',e=>{keys[e.key]=false});
+function bind(id,key,press){const el=document.getElementById(id);el.addEventListener('pointerdown',e=>{e.preventDefault();ctl[key]=1;if(press)press()});['pointerup','pointercancel','pointerleave'].forEach(t=>el.addEventListener(t,()=>{ctl[key]=0}))}
+bind('bL','L');bind('bR','R');bind('bF','F');bind('bU','U',()=>{});
+document.getElementById('bA').addEventListener('pointerdown',e=>{e.preventDefault();aimLv=(aimLv+1)%3});
+
+// ----- ลูปเกม -----
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  if(IM.soldier_walk_n0){ // พร้อมแล้ว
+    update(dt);
+    ctx.clearRect(0,0,W,H);drawScene();
+    if(G.msg){const m=document.getElementById('msg');m.textContent=G.msg;m.style.display='block'}else document.getElementById('msg').style.display='none';
+  }
+  requestAnimationFrame(frame);
+}
+loadAll().then(()=>{say('เปิดไฟ 3 ห้องแล้วขึ้นบันไดขวาสุด\nเดิน ◀ ▶ · ใช้ = E · ยิง = Space',4);requestAnimationFrame(t=>{last=t;frame(t)})});
+</script>
+</body>
+</html>
