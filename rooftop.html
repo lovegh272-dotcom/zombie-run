@@ -15,6 +15,8 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 #ctl div{display:flex;gap:10px;pointer-events:auto}
 .b{width:66px;height:66px;border-radius:50%;border:2px solid #9c6;background:#1b2b1bcc;color:#fff;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;touch-action:none}
 .b.big{width:78px;height:78px;background:#7a2d12cc;border-color:#fb8}
+.b.s{width:58px;height:58px;font-size:20px}
+#pad{display:grid;grid-template-columns:58px 58px 58px;grid-template-rows:58px 58px 58px;gap:4px}
 #ov{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center}
 #ov button{font:inherit;font-size:20px;font-weight:800;padding:12px 26px;border-radius:12px;border:2px solid #fd4;background:#3a2a10;color:#fff}
 </style>
@@ -24,8 +26,13 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 <div id="hud"><div id="st"></div><div id="bar"><i id="hp"></i></div></div>
 <div id="msg"></div>
 <div id="ctl">
-  <div><button class="b" id="bL">◀</button><button class="b" id="bR">▶</button></div>
-  <div><button class="b" id="bA">เล็ง</button><button class="b" id="bU">ใช้</button><button class="b big" id="bF">ยิง</button></div>
+  <div id="pad">
+    <button class="b s" id="bAU" style="grid-area:1/2">▲</button>
+    <button class="b s" id="bL" style="grid-area:2/1">◀</button>
+    <button class="b s" id="bR" style="grid-area:2/3">▶</button>
+    <button class="b s" id="bAD" style="grid-area:3/2">▼</button>
+  </div>
+  <div><button class="b" id="bU">ใช้</button><button class="b big" id="bF">ยิง</button></div>
 </div>
 <div id="ov"><div id="ovT"></div><button id="ovB">เริ่มใหม่</button></div>
 <script>
@@ -42,8 +49,26 @@ const NAMES=['soldier_walk_n0','soldier_walk_n1','soldier_walk_n2','soldier_walk
  'zombie_attack_0','zombie_attack_1','zombie_die_0','zombie_die_1','zombie_climb_0','zombie_climb_1','zombie_climb_2','zombie_climb_3',
  'door_closed','door_open','locker','stairs_up_right','switch_off','switch_on','window_broken',
  'heli_0','heli_1','heli_2','fx_muzzle','fx_hit','fx_tracer','wall_band_from_scene','floor_tile_0'];
-const IM={};
-function loadAll(){return Promise.all(NAMES.map(n=>new Promise(r=>{const im=new Image();im.onload=()=>{IM[n]=im;r()};im.onerror=()=>r();im.src='rooftop/img/'+n+'.png'})))}
+const IM={},BOX={};
+// กรอบทึบของภาพ (ตัดพื้นที่โปร่งใสรอบตัวออก เพื่อให้เท้าอยู่บนพื้นพอดี)
+function bboxOf(im){
+  const full={x:0,y:0,w:im.width,h:im.height};
+  try{
+    const c=document.createElement('canvas');c.width=im.width;c.height=im.height;
+    const x=c.getContext('2d');x.drawImage(im,0,0);
+    const d=x.getImageData(0,0,c.width,c.height).data;
+    let x0=c.width,y0=c.height,x1=-1,y1=-1;
+    for(let y=0;y<c.height;y++)for(let xx=0;xx<c.width;xx++){
+      if(d[(y*c.width+xx)*4+3]>20){if(xx<x0)x0=xx;if(xx>x1)x1=xx;if(y<y0)y0=y;if(y>y1)y1=y}
+    }
+    if(x1<0)return full;
+    return{x:x0,y:y0,w:x1-x0+1,h:y1-y0+1};
+  }catch(e){return full}
+}
+function loadAll(){return Promise.all(NAMES.map(n=>new Promise(r=>{const im=new Image();im.onload=()=>{IM[n]=im;BOX[n]=bboxOf(im);r()};im.onerror=()=>r();im.src='rooftop/img/'+n+'.png'})))}
+// ท่าตาย (นอนราบ) ใช้สเกลเดียวกับท่ายืนของซอมบี้ เพื่อไม่ให้ถูกยืดเป็นตัวใหญ่
+const LYING=new Set(['zombie_die_0','zombie_die_1','soldier_die_2','soldier_die_3']);
+function refH(){return BOX.zombie_n0?BOX.zombie_n0.h:240}
 
 // ----- ค่าคงที่ของด่าน -----
 const RW=640,ROOMS=3,WW=RW*ROOMS;          // ชั้น 1: 3 ห้อง ยาวรวม 1920
@@ -73,6 +98,13 @@ function spr(im,x,gy,th,flip,alpha=1){
   if(!im)return;const s=th/im.height,w=im.width*s,h=im.height*s;
   ctx.save();ctx.globalAlpha=alpha;ctx.translate(x,gy);if(flip)ctx.scale(-1,1);
   ctx.drawImage(im,-w/2,-h,w,h);ctx.restore();
+}
+// วาดตัวละคร: ความสูงตัวเท่ากันทุกตัว เท้าอยู่ที่ (x,gy)
+function sp(n,x,gy,flip,alpha=1){
+  const im=IM[n];if(!im)return;const b=BOX[n]||{x:0,y:0,w:im.width,h:im.height};
+  const th=H*0.26,s=LYING.has(n)?th/refH():th/b.h,w=b.w*s,h=b.h*s;
+  ctx.save();ctx.globalAlpha=alpha;ctx.translate(x,gy);if(flip)ctx.scale(-1,1);
+  ctx.drawImage(im,b.x,b.y,b.w,b.h,-w/2,-h,w,h);ctx.restore();
 }
 function wallBand(){ // ผนังซ้ำตามแนวนอน
   const im=IM.wall_band_from_scene;if(!im)return;const wh=H*0.46,ww=wh*im.width/im.height,top=ground()-wh;
@@ -124,23 +156,23 @@ function drawScene(){
   // ซอมบี้ (ตาย = เฟรมตาย ค้างหนึ่งวินาที)
   for(const z of G.Z){
     const sx=z.x-cam;
-    if(z.dead){const f=z.deadT>.35?IM.zombie_die_1:IM.zombie_die_0;spr(f,sx,yG,H*0.26,z.face>0,Math.max(0,1-z.deadT*.4));continue}
-    let f;
-    if(z.attacking)f=(Math.floor(G.t*6)%2)?IM.zombie_attack_0:IM.zombie_attack_1;
-    else f=IM['zombie_n'+(Math.floor(z.walkT*7)%6)];
-    spr(f,sx,yG,H*0.24,z.face>0,1);
+    if(z.dead){const nm=z.deadT<.3?'zombie_die_0':'zombie_die_1';const a=Math.max(0,Math.min(1,1-(z.deadT-.6)/.6));sp(nm,sx,yG,z.face>0,a);continue}
+    let nm;
+    if(z.attacking)nm=(Math.floor(G.t*6)%2)?'zombie_attack_0':'zombie_attack_1';
+    else nm='zombie_n'+(Math.floor(z.walkT*7)%6);
+    sp(nm,sx,yG,z.face>0,1);
     // แถบเลือด
     if(z.hp<z.maxHp){ctx.fillStyle='#000a';ctx.fillRect(sx-22,yG-H*0.26,44,5);ctx.fillStyle='#e53935';ctx.fillRect(sx-22,yG-H*0.26,44*z.hp/z.maxHp,5)}
   }
   // ทหาร
   const P=G.P,px=P.x-cam;
-  let pf;
-  if(P.climbing)pf=IM['soldier_climb_'+(Math.floor(G.t*6)%4)];
-  else if(P.fire>SHOT_CD*.55)pf=IM.soldier_shoot_1;
-  else if(P.hurt>0)pf=IM.soldier_walk_n0;
-  else pf=IM['soldier_walk_n'+(P.walkT>0?Math.floor(P.walkT*8)%6:0)];
-  if(G.over&&!G.won)pf=IM.soldier_die_3;
-  spr(pf,px,yG,H*0.27,P.face<0,1);
+  let pn;
+  if(P.climbing)pn='soldier_climb_'+(Math.floor(G.t*6)%4);
+  else if(P.fire>SHOT_CD*.55)pn='soldier_shoot_1';
+  else if(P.hurt>0)pn='soldier_walk_n0';
+  else pn='soldier_walk_n'+(P.walkT>0?Math.floor(P.walkT*8)%6:0);
+  if(G.over&&!G.won)pn='soldier_die_3';
+  sp(pn,px,yG,P.face<0,1);
   // จุดเล็ง
   if(!G.over){const lv=ground()-H*AIMH[aimLv];
     ctx.fillStyle='#ffe48a';ctx.globalAlpha=.8;ctx.beginPath();ctx.arc(px+P.face*52,lv,3.5,0,6.28);ctx.fill();ctx.globalAlpha=1}
@@ -291,7 +323,8 @@ addEventListener('keydown',e=>{keys[e.key]=true;if(e.key==='e'||e.key==='E')ctl.
 addEventListener('keyup',e=>{keys[e.key]=false});
 function bind(id,key,press){const el=document.getElementById(id);el.addEventListener('pointerdown',e=>{e.preventDefault();ctl[key]=1;if(press)press()});['pointerup','pointercancel','pointerleave'].forEach(t=>el.addEventListener(t,()=>{ctl[key]=0}))}
 bind('bL','L');bind('bR','R');bind('bF','F');bind('bU','U',()=>{});
-document.getElementById('bA').addEventListener('pointerdown',e=>{e.preventDefault();aimLv=(aimLv+1)%3});
+document.getElementById('bAU').addEventListener('pointerdown',e=>{e.preventDefault();aimLv=Math.min(2,aimLv+1)});
+document.getElementById('bAD').addEventListener('pointerdown',e=>{e.preventDefault();aimLv=Math.max(0,aimLv-1)});
 
 // ----- ลูปเกม -----
 let last=performance.now();
@@ -304,7 +337,7 @@ function frame(now){
   }
   requestAnimationFrame(frame);
 }
-loadAll().then(()=>{say('เปิดไฟ 3 ห้องแล้วขึ้นบันไดขวาสุด\nเดิน ◀ ▶ · ใช้ = E · ยิง = Space',4);requestAnimationFrame(t=>{last=t;frame(t)})});
+loadAll().then(()=>{say('เปิดไฟ 3 ห้องแล้วขึ้นบันไดขวาสุด\nเดิน ◀ ▶ · เล็ง ▲ ▼ · ยิง · ใช้ = E',4);requestAnimationFrame(t=>{last=t;frame(t)})});
 </script>
 </body>
 </html>
